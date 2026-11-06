@@ -1,5 +1,4 @@
 website:
-  title: ""
   search: true
   navbar:
     background: primary
