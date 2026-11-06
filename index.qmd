@@ -42,7 +42,7 @@ website:
         - section: "Physics"
           contents:
           - auto: "doc/Physics/*.qmd"
-      - href: https://github.com/MKReyesH/ScientificWiki
+      - href: https://github.com/MKReyesH/ScientificTable
         text: "GitHub Project"
       - href: about.qmd
 
