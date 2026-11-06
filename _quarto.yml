@@ -3,19 +3,20 @@ website:
   search: true
   navbar:
     background: primary
-    style: "docked"
     logo: "img/logo/logo.png"
     left:
       - text: "Home"
         href: index.qmd
-      - text: "Topics"
+      - text: "Examples"
         menu:
-        - text: "Examples"
-          menu:
-          - auto: "doc/Examples/*.qmd"
-        - text: "Physics"
-          menu:
-          - auto: "doc/Physics/*.qmd"
+          - text: "Example 1"
+            href: "doc/Examples/example1.qmd"
+          - text: "Example 2"
+            href: "doc/Examples/example2.qmd"
+      - text: "Physics"
+        menu:
+          - text: "Example 3"
+            href: "doc/Physics/example3.qmd"
       - text: "GitHub Project"
         href: https://github.com/MKReyesH/ScientificTable
       - text: "About"
