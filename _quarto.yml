@@ -1,23 +1,25 @@
 website:
   title: "Scientific Table Template"
   search: true
-  sidebar:
+  navbar:
+    background: primary
     style: "docked"
     logo: "img/logo/logo.png"
-    contents:
-      - href: index.qmd
-        text: "Home"
-      - section: "Topics"
-        contents:
-        - section: "Examples"
-          contents:
+    left:
+      - text: "Home"
+        href: index.qmd
+      - text: "Topics"
+        menu:
+        - text: "Examples"
+          menu:
           - auto: "doc/Examples/*.qmd"
-        - section: "Physics"
-          contents:
+        - text: "Physics"
+          menu:
           - auto: "doc/Physics/*.qmd"
-      - href: https://github.com/MKReyesH/ScientificTable
-        text: "GitHub Project"
-      - href: about.qmd
+      - text: "GitHub Project"
+        href: https://github.com/MKReyesH/ScientificTable
+      - text: "About"
+        href: about.qmd
 
 bibliography: bib/references.bib
 csl: bib/journal-of-cosmology-and-astroparticle-physics.csl
