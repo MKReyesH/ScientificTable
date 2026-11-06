@@ -1,5 +1,5 @@
 website:
-  title: "Scientific Table Template"
+  title: ""
   search: true
   navbar:
     background: primary
@@ -7,16 +7,12 @@ website:
     left:
       - text: "Home"
         href: index.qmd
-      - text: "Examples"
-        menu:
-          - text: "Example 1"
-            href: "doc/Examples/example1.qmd"
-          - text: "Example 2"
-            href: "doc/Examples/example2.qmd"
-      - text: "Physics"
-        menu:
-          - text: "Example 3"
-            href: "doc/Physics/example3.qmd"
+      - text: "Table"
+        href: "doc/table.qmd"
+      - text: "Processes"
+        href: "doc/processes.qmd"
+      - text: "Backgrounds"
+        href: "doc/backgrounds.qmd"
       - text: "GitHub Project"
         href: https://github.com/MKReyesH/ScientificTable
       - text: "About"
@@ -34,7 +30,7 @@ filters:
 
 format:
   html:
-    theme: cosmo
+    theme: minty # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
     math: mathjax
     css: include/css-config.css
     
