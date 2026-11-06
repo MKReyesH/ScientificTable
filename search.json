@@ -7,20 +7,6 @@
     "text": "About us\n\n    MKReyesH\n\n\n\nPowered By\n\nGitHub Pages: Hosting and deployment infrastructure.\nQuarto: Markdown rendering, cross-referencing, and website generation.\nPandoc: Document format translation.\nBootstrap and Bootswatch: CSS support and user interface.\nMathJax: Mathematical notation rendering.\nGemini: Help writing the Lua filters.\n\n\n\nContributing\nIf you would like to contribute to the core template, add new LaTeX translation rules, or fix a bug, do not hesitate to open a Pull Request at the GitHub Repository."
   },
   {
-    "objectID": "doc/Examples/example2.html",
-    "href": "doc/Examples/example2.html",
-    "title": "Allowed LaTeX syntax for page writing",
-    "section": "",
-    "text": "In the scientific community, it is very common to have texts, equations, and full documents already written in LaTeX. This implies that one needs to translate such content to the Quarto Markdown syntax explained in the previous guide. However, this template allows for the use of some simple LaTeX syntax (in combination with native syntax), which is converted on the fly to the correct Quarto Markdown format. This document serves as both a guide and a test file for the translation rules. It is written using the supported LaTeX commands to explain exactly how the transformation works."
-  },
-  {
-    "objectID": "doc/Examples/example2.html#this-is-a-subsection",
-    "href": "doc/Examples/example2.html#this-is-a-subsection",
-    "title": "Allowed LaTeX syntax for page writing",
-    "section": "This is a subsection",
-    "text": "This is a subsection\n\nThis is a sub-subsection\nBecause the script converts this directly into native Markdown, the system automatically generates a reference identifier for it based on the heading’s name (lowercase, using hyphens instead of spaces). This allows you to easily link back to the translated section using standard Markdown linking, such as typing [this section](#sections-and-subsections) to navigate back to this section."
-  },
-  {
     "objectID": "index.html",
     "href": "index.html",
     "title": "Scientific Table Template",
@@ -54,47 +40,5 @@
     "title": "Scientific Table Template",
     "section": "",
     "text": "Every time you commit changes to your repository, GitHub Actions will automatically take care of the deployment phase. The updated webpage will be built and pushed to the gh-pages branch, going live online in just a few minutes."
-  },
-  {
-    "objectID": "doc/Examples/example1.html",
-    "href": "doc/Examples/example1.html",
-    "title": "How to write a page using Quarto Markdown",
-    "section": "",
-    "text": "GitHub Pages transforms plain text files into HTML webpages. In this template, files use the .qmd extension and follow Quarto Markdown syntax. Below are examples of the most commonly used formatting structures."
-  },
-  {
-    "objectID": "doc/Examples/example1.html#this-is-a-subsection",
-    "href": "doc/Examples/example1.html#this-is-a-subsection",
-    "title": "How to write a page using Quarto Markdown",
-    "section": "This is a subsection",
-    "text": "This is a subsection\n\nThis is a sub-subsection\nTo make a section cross-referenceable, append an identifier starting with #sec- to the header. For example, typing ## Mathematical Equations {#sec-maths} allows the section to be referenced anywhere in the document using @sec-maths."
-  },
-  {
-    "objectID": "doc/Examples/example1.html#footnotes",
-    "href": "doc/Examples/example1.html#footnotes",
-    "title": "How to write a page using Quarto Markdown",
-    "section": "Footnotes",
-    "text": "Footnotes\n\n\nFor example, this is a footnote.↩︎"
-  },
-  {
-    "objectID": "doc/Physics/example3.html",
-    "href": "doc/Physics/example3.html",
-    "title": "\\(\\Lambda\\)CDM Cosmological Model",
-    "section": "",
-    "text": "In order to describe an homogeneous and isotropic universe like in the framework of GR, one should solve the Einstein field equations using a homogeneous, isotropic, and expanding metric (the FLRW metric), \n\\[\nds^2 = dt^2 - a^2(t) \\left(\\frac{dr^2}{1-k r^2}+r^2 d\\Omega\\right) \\,,\n\\tag{1}\\]\n where \\(k\\) is the curvature and \\(a(t)\\) the scale factor of the universe, which is closely related to the redshift, \\(a(t)=1/(1+z(t))\\). We can use this relation to also connect the temporal coordinate to the redshift variable, \n\\[\n\\begin{aligned}\na(t) &=\\frac{1}{1+z(t)} \\\\\n    \\frac{\\dot a(t)}{a(t)} dt &= -\\frac{dz}{1+z(t)} \\\\\n    dt &= -\\frac{dz}{H(z)(1+z)} \\,,\n\\end{aligned}\n\\tag{2}\\]\n where we have defined the Hubble parameter1 as \\(H=\\dot a/a\\)."
-  },
-  {
-    "objectID": "doc/Physics/example3.html#authors",
-    "href": "doc/Physics/example3.html#authors",
-    "title": "\\(\\Lambda\\)CDM Cosmological Model",
-    "section": "List of Authors",
-    "text": "List of Authors\n\n\nAlbert Einstein\nIsaac Newton"
-  },
-  {
-    "objectID": "doc/Physics/example3.html#footnotes",
-    "href": "doc/Physics/example3.html#footnotes",
-    "title": "\\(\\Lambda\\)CDM Cosmological Model",
-    "section": "Footnotes",
-    "text": "Footnotes\n\n\nWe will not discuss here the Hubble tension problem.↩︎"
   }
 ]
