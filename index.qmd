@@ -1,5 +1,5 @@
 ---
-title: 'Scientific Wiki Template'
+title: 'Scientific Table Template'
 ---
 
 # How to use this template
