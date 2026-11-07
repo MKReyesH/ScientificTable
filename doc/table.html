@@ -184,7 +184,7 @@ window.Quarto = {
 </header>
 
 
-<div class="table-responsive my-3"><table id="table_417803" class="table table-striped table-hover table-bordered align-middle w-100">
+<div class="table-responsive my-3"><table id="table_411085" class="table table-striped table-hover table-bordered align-middle w-100">
 <thead class="table-light"><tr>
 <th>Messengers</th>
 <th>Luminality</th>
@@ -310,12 +310,29 @@ window.Quarto = {
     <script>
       (function initTable() {
         if (typeof jQuery !== 'undefined' && $.fn.dataTable) {
-          $('#table_417803').DataTable({
+          $('#table_411085').DataTable({
             responsive: true,
             orderMulti: false,
             order: [],
             pageLength: 10,
             lengthMenu: [5, 10, 25, 50, 100],
+            columnDefs: [
+              {
+                targets: '_all',
+                render: function (data, type, row, meta) {
+                  if (type === 'sort' || type === 'type') {
+                    if (data === null || data === undefined) return '';
+                    var str = String(data).trim();
+                    if (str === '' || str === '+' || str === '-' || str === 'N/A') {
+                      return str;
+                    }
+                    var n = Number(str);
+                    return isNaN(n) ? str : n;
+                  }
+                  return data;
+                }
+              }
+            ],
             language: {
               search: "_INPUT_",
               searchPlaceholder: "Search table..."
