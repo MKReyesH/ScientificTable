@@ -37,7 +37,7 @@ local function render_csv_table(filepath)
     end
     table.insert(html, '</tr></thead><tbody>')
     
-    -- Body (inject data-order attribute for numeric/scientific notation sorting)
+    -- Body
     for i = 2, #rows do
         table.insert(html, '<tr>')
         for _, val in ipairs(rows[i]) do
@@ -52,7 +52,7 @@ local function render_csv_table(filepath)
     end
     table.insert(html, '</tbody></table></div>')
 
-    -- Bootstrap 5 DataTables dependencies + Scientific Notation Sorting Handler
+    -- Bootstrap 5 DataTables dependencies + Scientific Notation & Empty Cell Sorter
     table.insert(html, string.format([[
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -61,16 +61,62 @@ local function render_csv_table(filepath)
     <script>
       (function initTable() {
         if (typeof jQuery !== 'undefined' && $.fn.dataTable) {
-          // Custom scientific notation sorter
+          
+          // Number parser with scientific notation support
+          function parseNumSci(d) {
+            if (d === null || d === undefined) return null;
+            var str = String(d).replace(/<[^>]*>/g, '').trim();
+            if (str === '' || str === '-' || str === 'N/A') return null;
+            var n = Number(str);
+            return isNaN(n) ? null : n;
+          }
+
           if (!$.fn.dataTable.ext.type.detect.includes(sciDetect)) {
             function sciDetect(d) {
-              return (typeof d === 'string' && d.trim() !== '' && !isNaN(Number(d.trim()))) ? 'num-sci' : null;
+              return (parseNumSci(d) !== null) ? 'num-sci' : null;
             }
             $.fn.dataTable.ext.type.detect.unshift(sciDetect);
-            $.fn.dataTable.ext.type.order['num-sci-pre'] = function (d) {
-              var n = parseFloat(d);
-              return isNaN(n) ? -Infinity : n;
+
+            // Scientific Notation Ascending: Empty cells ALWAYS last
+            $.fn.dataTable.ext.type.order['num-sci-asc'] = function (a, b) {
+              var x = parseNumSci(a), y = parseNumSci(b);
+              if (x === null && y === null) return 0;
+              if (x === null) return 1;
+              if (y === null) return -1;
+              return (x < y) ? -1 : ((x > y) ? 1 : 0);
             };
+
+            // Scientific Notation Descending: Empty cells ALWAYS last
+            $.fn.dataTable.ext.type.order['num-sci-desc'] = function (a, b) {
+              var x = parseNumSci(a), y = parseNumSci(b);
+              if (x === null && y === null) return 0;
+              if (x === null) return 1;
+              if (y === null) return -1;
+              return (x < y) ? 1 : ((x > y) ? -1 : 0);
+            };
+
+            // String/Text Columns: Empty cells ALWAYS last
+            function parseStr(d) {
+              if (d === null || d === undefined) return null;
+              var str = String(d).replace(/<[^>]*>/g, '').trim();
+              return str === '' ? null : str;
+            }
+            $.fn.dataTable.ext.type.order['string-asc'] = function (a, b) {
+              var x = parseStr(a), y = parseStr(b);
+              if (x === null && y === null) return 0;
+              if (x === null) return 1;
+              if (y === null) return -1;
+              return x.localeCompare(y, undefined, { numeric: true, sensitivity: 'base' });
+            };
+            $.fn.dataTable.ext.type.order['string-desc'] = function (a, b) {
+              var x = parseStr(a), y = parseStr(b);
+              if (x === null && y === null) return 0;
+              if (x === null) return 1;
+              if (y === null) return -1;
+              return y.localeCompare(x, undefined, { numeric: true, sensitivity: 'base' });
+            };
+            $.fn.dataTable.ext.type.order['html-asc'] = $.fn.dataTable.ext.type.order['string-asc'];
+            $.fn.dataTable.ext.type.order['html-desc'] = $.fn.dataTable.ext.type.order['string-desc'];
           }
 
           $('#%s').DataTable({
