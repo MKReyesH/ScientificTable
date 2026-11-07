@@ -14,7 +14,15 @@ local function render_csv_table(filepath)
             local row = {}
             local line_ext = line:gsub("[\r\n]", "") .. ","
             for val in line_ext:gmatch("([^,]*),") do
-                local clean_val = val:gsub('^%s*(.-)%s*$', '%1'):gsub('^"(.*)"$', '%1')
+                -- Strip quotes first
+                local clean_val = val:gsub('^"(.*)"$', '%1')
+                
+                -- If it's pure whitespace, leave it alone so DataTables doesn't numeric-guess it.
+                -- Otherwise, trim leading/trailing spaces normally.
+                if not clean_val:match("^%s+$") then
+                    clean_val = clean_val:gsub('^%s*(.-)%s*$', '%1')
+                end
+                
                 table.insert(row, clean_val)
             end
             table.insert(rows, row)
