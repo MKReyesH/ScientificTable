@@ -8,7 +8,7 @@ local function render_csv_table(filepath)
         return pandoc.Para({ pandoc.Str("[Error: Could not find CSV file at " .. clean_path .. "]") })
     end
 
-    -- Parse CSV lines
+    -- Parse CSV lines cleanly
     local rows = {}
     for line in file:lines() do
         if line:match("%S") then
@@ -28,17 +28,15 @@ local function render_csv_table(filepath)
     local table_id = "table_" .. tostring(math.random(100000, 999999))
     local html = {}
 
-    -- Bootstrap 5 table structure matching Quarto themes
+    -- Bootstrap 5 table structure
     table.insert(html, string.format('<div class="table-responsive my-3"><table id="%s" class="table table-striped table-hover table-bordered align-middle w-100">', table_id))
     
-    -- Table Header
     table.insert(html, '<thead class="table-light"><tr>')
     for _, col in ipairs(rows[1]) do
         table.insert(html, string.format('<th>%s</th>', col))
     end
     table.insert(html, '</tr></thead><tbody>')
     
-    -- Table Body
     for i = 2, #rows do
         table.insert(html, '<tr>')
         for _, val in ipairs(rows[i]) do
@@ -48,7 +46,7 @@ local function render_csv_table(filepath)
     end
     table.insert(html, '</tbody></table></div>')
 
-    -- Standard DataTables initialization with native default sorting
+    -- DataTables initialization with strict single-column sorting
     table.insert(html, string.format([[
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -59,6 +57,8 @@ local function render_csv_table(filepath)
         if (typeof jQuery !== 'undefined' && $.fn.dataTable) {
           $('#%s').DataTable({
             responsive: true,
+            orderMulti: false, // Disables multi-column persistence; forces single-column sort
+            order: [],         -- Preserves raw CSV order on initial render
             pageLength: 10,
             lengthMenu: [5, 10, 25, 50, 100],
             language: {
