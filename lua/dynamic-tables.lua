@@ -8,7 +8,7 @@ local function render_csv_table(filepath)
         return pandoc.Para({ pandoc.Str("[Error: Could not find CSV file at " .. clean_path .. "]") })
     end
 
-    -- Parse CSV lines (preserves empty fields)
+    -- Parse CSV lines
     local rows = {}
     for line in file:lines() do
         if line:match("%S") then
@@ -31,12 +31,14 @@ local function render_csv_table(filepath)
     -- Bootstrap 5 table structure matching Quarto themes
     table.insert(html, string.format('<div class="table-responsive my-3"><table id="%s" class="table table-striped table-hover table-bordered align-middle w-100">', table_id))
     
+    -- Table Header
     table.insert(html, '<thead class="table-light"><tr>')
     for _, col in ipairs(rows[1]) do
         table.insert(html, string.format('<th>%s</th>', col))
     end
     table.insert(html, '</tr></thead><tbody>')
     
+    -- Table Body
     for i = 2, #rows do
         table.insert(html, '<tr>')
         for _, val in ipairs(rows[i]) do
@@ -46,7 +48,7 @@ local function render_csv_table(filepath)
     end
     table.insert(html, '</tbody></table></div>')
 
-    -- Basic DataTables initialization using default sorting
+    -- Standard DataTables initialization with native default sorting
     table.insert(html, string.format([[
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
