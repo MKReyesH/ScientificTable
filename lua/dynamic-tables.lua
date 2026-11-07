@@ -46,7 +46,7 @@ local function render_csv_table(filepath)
     end
     table.insert(html, '</tbody></table></div>')
 
-    -- DataTables initialization with strict single-column sorting
+    -- Clean DataTables initialization (no JS syntax errors)
     table.insert(html, string.format([[
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -57,8 +57,8 @@ local function render_csv_table(filepath)
         if (typeof jQuery !== 'undefined' && $.fn.dataTable) {
           $('#%s').DataTable({
             responsive: true,
-            orderMulti: false, // Disables multi-column persistence; forces single-column sort
-            order: [],         -- Preserves raw CSV order on initial render
+            orderMulti: false,
+            order: [],
             pageLength: 10,
             lengthMenu: [5, 10, 25, 50, 100],
             language: {
