@@ -1,10 +1,11 @@
+local table_counter = 0
 local assets_injected = false
 
 local function escape_html(str)
     return str and str:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;") or ""
 end
 
--- CSV parser supporting quoted fields, embedded commas, escaped quotes (""), and newlines
+-- Robust CSV parser supporting quotes, commas, escaped quotes (""), and newlines
 local function parse_csv(text)
     local rows, row, field, in_quotes = {}, {}, "", false
     local i, len = 1, #text
@@ -61,7 +62,7 @@ local function read_csv(filepath, doc_path)
     return content, clean_path
 end
 
--- Helper to construct native Pandoc AST cell elements
+-- Helper to construct native Pandoc AST cell elements for PDF/DOCX export
 local function to_cells(row, num_cols)
     local cells = {}
     for c = 1, num_cols do
@@ -80,7 +81,7 @@ local function render_csv_table(filepath, doc_path)
     if #rows == 0 then return nil end
     local num_cols = #rows[1]
 
-    -- Non-HTML output fallback (PDF / DOCX / LaTeX)
+    -- Fallback for non-HTML outputs (PDF / DOCX / LaTeX)
     if not (FORMAT:match("html") or FORMAT:match("revealjs")) then
         local headers = to_cells(rows[1], num_cols)
         local body = {}
@@ -90,36 +91,23 @@ local function render_csv_table(filepath, doc_path)
         return pandoc.utils.from_simple_table(pandoc.SimpleTable({}, {}, headers, body))
     end
 
-    -- HTML output construction
+    table_counter = table_counter + 1
+    local table_id = "csv_table_" .. tostring(table_counter)
     local html = {}
 
-    -- Inject assets & single global initializer once per render using [=[ ... ]=]
+    -- Inject assets once on first table render
     if not assets_injected then
         table.insert(html, [=[
 <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
-<script>
-  (function initTables(retries) {
-    if (window.jQuery && $.fn.dataTable) {
-      $('.csv-datatable:not(.dataTable)').DataTable({
-        responsive: true,
-        order: [[0, 'asc']],
-        orderMulti: false,
-        pageLength: 10,
-        lengthMenu: [5, 10, 25, 50, 100],
-        language: { search: "_INPUT_", searchPlaceholder: "Search table..." }
-      });
-    } else if ((retries || 0) < 50) {
-      setTimeout(function() { initTables((retries || 0) + 1); }, 100);
-    }
-  })();
-</script>
 ]=])
         assets_injected = true
     end
 
-    table.insert(html, '<div class="table-responsive my-3"><table class="table table-striped table-hover table-bordered align-middle w-100 csv-datatable"><thead><tr>')
+    -- Build HTML Table Markup
+    table.insert(html, string.format('<div class="table-responsive my-3"><table id="%s" class="table table-striped table-hover table-bordered align-middle w-100"><thead><tr>', table_id))
     for c = 1, num_cols do
         table.insert(html, string.format('<th>%s</th>', escape_html(rows[1][c])))
     end
@@ -134,7 +122,30 @@ local function render_csv_table(filepath, doc_path)
     end
     table.insert(html, '</tbody></table></div>')
 
-    return pandoc.RawBlock("html", table.concat(html))
+    -- Initialize DataTables safely after DOM loading
+    table.insert(html, string.format([=[
+<script>
+  (function() {
+    function init() {
+      if (window.jQuery && $.fn.dataTable) {
+        $('#%s').DataTable({
+          responsive: true,
+          pageLength: 10,
+          lengthMenu: [5, 10, 25, 50, 100],
+          language: { search: "_INPUT_", searchPlaceholder: "Search table..." }
+        });
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  })();
+</script>
+]=], table_id))
+
+    return pandoc.RawBlock("html", table.concat(html, "\n"))
 end
 
 return {
