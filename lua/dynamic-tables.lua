@@ -342,13 +342,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (table && typeof DataTable !== "undefined") {
 
+ 
         new DataTable(table, {
 
-            responsive: false,
+            ordering: true,
 
-            order: [[0, "asc"]],
+            order: [],
 
-            orderMulti: false,
+            orderMulti: true,
 
             pageLength: 10,
 
@@ -356,12 +357,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             language: {
                 search: "_INPUT_",
-                searchPlaceholder: "Search table...",
-                lengthMenu: "Show _MENU_ entries",
-                info: "Showing _START_ to _END_ of _TOTAL_ entries",
-                infoEmpty: "No entries available",
-                zeroRecords: "No matching records found",
-                emptyTable: "No data available"
+                searchPlaceholder: "Search table..."
             }
 
         });
