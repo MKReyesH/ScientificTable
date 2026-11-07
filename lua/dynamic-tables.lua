@@ -8,13 +8,12 @@ local function render_csv_table(filepath)
         return pandoc.Para({ pandoc.Str("[Error: Could not find CSV file at " .. clean_path .. "]") })
     end
 
-    -- Read and parse CSV rows
+    -- Parse CSV lines
     local rows = {}
     for line in file:lines() do
         if line:match("%S") then
             local row = {}
             for val in line:gmatch('([^,]+)') do
-                -- Trim quotes and extra whitespace
                 local clean_val = val:gsub('^%s*(.-)%s*$', '%1'):gsub('^"(.*)"$', '%1')
                 table.insert(row, clean_val)
             end
@@ -28,38 +27,60 @@ local function render_csv_table(filepath)
     local table_id = "table_" .. tostring(math.random(100000, 999999))
     local html = {}
 
-    -- Build standard HTML table markup
-    table.insert(html, string.format('<div class="table-responsive"><table id="%s" class="display" style="width:100%%">', table_id))
+    -- Bootstrap 5 table structure matching Quarto themes
+    table.insert(html, string.format('<div class="table-responsive my-3"><table id="%s" class="table table-striped table-hover table-bordered align-middle w-100">', table_id))
     
-    -- Table Header (first line of CSV)
-    table.insert(html, '<thead><tr>')
+    -- Header
+    table.insert(html, '<thead class="table-light"><tr>')
     for _, col in ipairs(rows[1]) do
         table.insert(html, string.format('<th>%s</th>', col))
     end
     table.insert(html, '</tr></thead><tbody>')
     
-    -- Table Body (remaining lines)
+    -- Body (inject data-order attribute for numeric/scientific notation sorting)
     for i = 2, #rows do
         table.insert(html, '<tr>')
         for _, val in ipairs(rows[i]) do
-            table.insert(html, string.format('<td>%s</td>', val))
+            local num = tonumber(val)
+            if num then
+                table.insert(html, string.format('<td data-order="%s">%s</td>', tostring(num), val))
+            else
+                table.insert(html, string.format('<td>%s</td>', val))
+            end
         end
         table.insert(html, '</tr>')
     end
     table.insert(html, '</tbody></table></div>')
 
-    -- Embed CDN links and DataTables initializer
+    -- Bootstrap 5 DataTables dependencies + Scientific Notation Sorting Handler
     table.insert(html, string.format([[
-    <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" type="text/css">
-    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" type="text/javascript"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
     <script>
       (function initTable() {
-        if (typeof simpleDatatables !== 'undefined' && simpleDatatables.DataTable) {
-          new simpleDatatables.DataTable("#%s", {
-            searchable: true,
-            fixedHeight: false,
-            perPage: 10,
-            perPageSelect: [5, 10, 25, 50]
+        if (typeof jQuery !== 'undefined' && $.fn.dataTable) {
+          // Custom scientific notation sorter
+          if (!$.fn.dataTable.ext.type.detect.includes(sciDetect)) {
+            function sciDetect(d) {
+              return (typeof d === 'string' && d.trim() !== '' && !isNaN(Number(d.trim()))) ? 'num-sci' : null;
+            }
+            $.fn.dataTable.ext.type.detect.unshift(sciDetect);
+            $.fn.dataTable.ext.type.order['num-sci-pre'] = function (d) {
+              var n = parseFloat(d);
+              return isNaN(n) ? -Infinity : n;
+            };
+          }
+
+          $('#%s').DataTable({
+            responsive: true,
+            pageLength: 10,
+            lengthMenu: [5, 10, 25, 50, 100],
+            language: {
+              search: "_INPUT_",
+              searchPlaceholder: "Search table..."
+            }
           });
         } else {
           setTimeout(initTable, 50);
@@ -72,13 +93,11 @@ local function render_csv_table(filepath)
 end
 
 return {
-    -- Intercept code blocks: ```csv-table ... ```
     CodeBlock = function(el)
         if el.classes:includes("csv-table") then
             return render_csv_table(el.text)
         end
     end,
-    -- Intercept inline paragraphs: !csv-table: path/to/file.csv
     Para = function(el)
         local txt = pandoc.utils.stringify(el)
         local path = txt:match("^!csv%-table:%s*(.+)$")
