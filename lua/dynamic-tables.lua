@@ -8,7 +8,7 @@ local function render_csv_table(filepath)
         return pandoc.Para({ pandoc.Str("[Error: Could not find CSV file at " .. clean_path .. "]") })
     end
 
-    -- 1. Read CSV lines (preserves empty fields)
+    -- Parse CSV lines (preserves empty fields)
     local rows = {}
     for line in file:lines() do
         if line:match("%S") then
@@ -28,7 +28,7 @@ local function render_csv_table(filepath)
     local table_id = "table_" .. tostring(math.random(100000, 999999))
     local html = {}
 
-    -- 2. Bootstrap 5 markup matching Quarto themes
+    -- Bootstrap 5 table structure matching Quarto themes
     table.insert(html, string.format('<div class="table-responsive my-3"><table id="%s" class="table table-striped table-hover table-bordered align-middle w-100">', table_id))
     
     table.insert(html, '<thead class="table-light"><tr>')
@@ -46,7 +46,7 @@ local function render_csv_table(filepath)
     end
     table.insert(html, '</tbody></table></div>')
 
-    -- 3. DataTables 2.0 Type Sorters (Empty cells forced to bottom)
+    -- Basic DataTables initialization using default sorting
     table.insert(html, string.format([[
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -55,73 +55,6 @@ local function render_csv_table(filepath)
     <script>
       (function initTable() {
         if (typeof jQuery !== 'undefined' && $.fn.dataTable) {
-          
-          if (!window._dataTableEmptyBottomSetup) {
-            window._dataTableEmptyBottomSetup = true;
-
-            function isBlank(val) {
-              if (val === null || val === undefined) return true;
-              var str = String(val).replace(/<[^>]*>/g, '').trim();
-              return str === '' || str === '-' || str === 'N/A' || str === 'null' || str === 'undefined';
-            }
-
-            function parseNum(val) {
-              if (isBlank(val)) return null;
-              var str = String(val).replace(/<[^>]*>/g, '').trim();
-              var n = Number(str);
-              return isNaN(n) ? null : n;
-            }
-
-            function parseStr(val) {
-              if (isBlank(val)) return null;
-              return String(val).replace(/<[^>]*>/g, '').trim();
-            }
-
-            // Numeric Sorters (Scientific notation aware, empty values at bottom)
-            var numTypes = ['num', 'html-num', 'num-fmt', 'html-num-fmt'];
-            numTypes.forEach(function (t) {
-              DataTable.type(t, 'order', {
-                pre: null,
-                asc: function (a, b) {
-                  var x = parseNum(a), y = parseNum(b);
-                  if (x === null && y === null) return 0;
-                  if (x === null) return 1;
-                  if (y === null) return -1;
-                  return x < y ? -1 : (x > y ? 1 : 0);
-                },
-                desc: function (a, b) {
-                  var x = parseNum(a), y = parseNum(b);
-                  if (x === null && y === null) return 0;
-                  if (x === null) return 1;
-                  if (y === null) return -1;
-                  return x < y ? 1 : (x > y ? -1 : 0);
-                }
-              });
-            });
-
-            // Text/String Sorters (Alphabetical, empty values at bottom)
-            var strTypes = ['string', 'html'];
-            strTypes.forEach(function (t) {
-              DataTable.type(t, 'order', {
-                pre: null,
-                asc: function (a, b) {
-                  var x = parseStr(a), y = parseStr(b);
-                  if (x === null && y === null) return 0;
-                  if (x === null) return 1;
-                  if (y === null) return -1;
-                  return x.localeCompare(y, undefined, { numeric: true, sensitivity: 'base' });
-                },
-                desc: function (a, b) {
-                  var x = parseStr(a), y = parseStr(b);
-                  if (x === null && y === null) return 0;
-                  if (x === null) return 1;
-                  if (y === null) return -1;
-                  return y.localeCompare(x, undefined, { numeric: true, sensitivity: 'base' });
-                }
-              });
-            });
-          }
-
           $('#%s').DataTable({
             responsive: true,
             pageLength: 10,
