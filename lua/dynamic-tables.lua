@@ -8,7 +8,7 @@ local function render_csv_table(filepath)
         return pandoc.Para({ pandoc.Str("[Error: Could not find CSV file at " .. clean_path .. "]") })
     end
 
-    -- Parse CSV lines cleanly (preserves empty fields)
+    -- Parse CSV lines cleanly
     local rows = {}
     for line in file:lines() do
         if line:match("%S") then
@@ -46,7 +46,7 @@ local function render_csv_table(filepath)
     end
     table.insert(html, '</tbody></table></div>')
 
-    -- Standard DataTables orthogonal rendering across all columns
+    -- Baseline DataTables 2.0 initialization
     table.insert(html, string.format([[
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -57,27 +57,8 @@ local function render_csv_table(filepath)
         if (typeof jQuery !== 'undefined' && $.fn.dataTable) {
           $('#%s').DataTable({
             responsive: true,
-            orderMulti: false,
-            order: [],
             pageLength: 10,
             lengthMenu: [5, 10, 25, 50, 100],
-            columnDefs: [
-              {
-                targets: '_all',
-                render: function (data, type, row, meta) {
-                  if (type === 'sort' || type === 'type') {
-                    if (data === null || data === undefined) return '';
-                    var str = String(data).trim();
-                    if (str === '' || str === '+' || str === '-' || str === 'N/A') {
-                      return str;
-                    }
-                    var n = Number(str);
-                    return isNaN(n) ? str : n;
-                  }
-                  return data;
-                }
-              }
-            ],
             language: {
               search: "_INPUT_",
               searchPlaceholder: "Search table..."
