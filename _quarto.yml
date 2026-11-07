@@ -25,6 +25,7 @@ project:
 
 filters:
   - lua/latex-to-quarto.lua
+  - lua/dynamic-tables.lua
   - lua/mindmap-graph.lua
 
 format:
