@@ -311,38 +311,59 @@ local function render_csv_table(filepath)
     table.insert(html, '</tbody></table></div>')
 
 
+
     -- --------------------------------------------------------
     -- DataTables initialization
     -- --------------------------------------------------------
 
-    -- Dependencies are included only once
+    -- Load DataTables dependencies only once
     if not datatables_loaded then
 
         datatables_loaded = true
 
         table.insert(html, [[
 
+<!-- DataTables CSS -->
 <link rel="stylesheet"
- href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
+ href="https://cdn.datatables.net/2.3.4/css/dataTables.bootstrap5.min.css">
 
-<script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+<!-- DataTables JavaScript -->
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
 
-<script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/2.3.4/js/dataTables.bootstrap5.min.js"></script>
 
 ]])
 
     end
 
-    -- Initialize this table
+    -- Initialize the table
     table.insert(html, string.format([=[
 <script>
-document.addEventListener("DOMContentLoaded", function () {
 
-    const table = document.getElementById("%s");
+(function() {
 
-    if (table && typeof DataTable !== "undefined") {
+    function initializeTable() {
 
- 
+        const table = document.getElementById("%s");
+
+        if (!table) {
+            return;
+        }
+
+        // Check whether DataTables has loaded
+        if (typeof window.DataTable === "undefined") {
+
+            console.error("DataTables library has not loaded.");
+
+            return;
+        }
+
+        // Avoid initializing the same table twice
+        if (DataTable.isDataTable(table)) {
+            return;
+        }
+
+        // Initialize DataTables
         new DataTable(table, {
 
             ordering: true,
@@ -351,20 +372,56 @@ document.addEventListener("DOMContentLoaded", function () {
 
             orderMulti: true,
 
+            searching: true,
+
+            paging: true,
+
+            info: true,
+
             pageLength: 10,
 
             lengthMenu: [5, 10, 25, 50, 100],
 
             language: {
+
                 search: "_INPUT_",
-                searchPlaceholder: "Search table..."
+
+                searchPlaceholder: "Search table...",
+
+                lengthMenu: "Show _MENU_ entries",
+
+                info: "Showing _START_ to _END_ of _TOTAL_ entries",
+
+                infoEmpty: "No entries available",
+
+                zeroRecords: "No matching records found",
+
+                emptyTable: "No data available"
+
             }
 
         });
 
+        console.log("DataTable initialized:", table.id);
+
     }
 
-});
+    // Handle both possible document states
+    if (document.readyState === "loading") {
+
+        document.addEventListener(
+            "DOMContentLoaded",
+            initializeTable
+        );
+
+    } else {
+
+        initializeTable();
+
+    }
+
+})();
+
 </script>
 ]=], table_id))
 
