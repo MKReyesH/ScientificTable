@@ -93,9 +93,9 @@ local function render_csv_table(filepath, doc_path)
     -- HTML output construction
     local html = {}
 
-    -- Inject assets & single global initializer once per render
+    -- Inject assets & single global initializer once per render using [=[ ... ]=]
     if not assets_injected then
-        table.insert(html, [[
+        table.insert(html, [=[
 <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
 <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
@@ -115,7 +115,7 @@ local function render_csv_table(filepath, doc_path)
     }
   })();
 </script>
-]])
+]=])
         assets_injected = true
     end
 
