@@ -184,7 +184,7 @@ window.Quarto = {
 </header>
 
 
-<div class="table-responsive my-3"><table id="table_321841" class="table table-striped table-hover table-bordered align-middle w-100">
+<div class="table-responsive my-3"><table id="table_514794" class="table table-striped table-hover table-bordered align-middle w-100">
 <thead class="table-light"><tr>
 <th>Messengers</th>
 <th>Luminality</th>
@@ -310,19 +310,65 @@ window.Quarto = {
     <script>
       (function initTable() {
         if (typeof jQuery !== 'undefined' && $.fn.dataTable) {
-          // Custom scientific notation sorter
-          if (!$.fn.dataTable.ext.type.detect.includes(sciDetect)) {
-            function sciDetect(d) {
-              return (typeof d === 'string' && d.trim() !== '' && !isNaN(Number(d.trim()))) ? 'num-sci' : null;
-            }
-            $.fn.dataTable.ext.type.detect.unshift(sciDetect);
-            $.fn.dataTable.ext.type.order['num-sci-pre'] = function (d) {
-              var n = parseFloat(d);
-              return isNaN(n) ? -Infinity : n;
-            };
+          
+          // Number parser with scientific notation support
+          function parseNumSci(d) {
+            if (d === null || d === undefined) return null;
+            var str = String(d).replace(/<[^>]*>/g, '').trim();
+            if (str === '' || str === '-' || str === 'N/A') return null;
+            var n = Number(str);
+            return isNaN(n) ? null : n;
           }
 
-          $('#table_321841').DataTable({
+          if (!$.fn.dataTable.ext.type.detect.includes(sciDetect)) {
+            function sciDetect(d) {
+              return (parseNumSci(d) !== null) ? 'num-sci' : null;
+            }
+            $.fn.dataTable.ext.type.detect.unshift(sciDetect);
+
+            // Scientific Notation Ascending: Empty cells ALWAYS last
+            $.fn.dataTable.ext.type.order['num-sci-asc'] = function (a, b) {
+              var x = parseNumSci(a), y = parseNumSci(b);
+              if (x === null && y === null) return 0;
+              if (x === null) return 1;
+              if (y === null) return -1;
+              return (x < y) ? -1 : ((x > y) ? 1 : 0);
+            };
+
+            // Scientific Notation Descending: Empty cells ALWAYS last
+            $.fn.dataTable.ext.type.order['num-sci-desc'] = function (a, b) {
+              var x = parseNumSci(a), y = parseNumSci(b);
+              if (x === null && y === null) return 0;
+              if (x === null) return 1;
+              if (y === null) return -1;
+              return (x < y) ? 1 : ((x > y) ? -1 : 0);
+            };
+
+            // String/Text Columns: Empty cells ALWAYS last
+            function parseStr(d) {
+              if (d === null || d === undefined) return null;
+              var str = String(d).replace(/<[^>]*>/g, '').trim();
+              return str === '' ? null : str;
+            }
+            $.fn.dataTable.ext.type.order['string-asc'] = function (a, b) {
+              var x = parseStr(a), y = parseStr(b);
+              if (x === null && y === null) return 0;
+              if (x === null) return 1;
+              if (y === null) return -1;
+              return x.localeCompare(y, undefined, { numeric: true, sensitivity: 'base' });
+            };
+            $.fn.dataTable.ext.type.order['string-desc'] = function (a, b) {
+              var x = parseStr(a), y = parseStr(b);
+              if (x === null && y === null) return 0;
+              if (x === null) return 1;
+              if (y === null) return -1;
+              return y.localeCompare(x, undefined, { numeric: true, sensitivity: 'base' });
+            };
+            $.fn.dataTable.ext.type.order['html-asc'] = $.fn.dataTable.ext.type.order['string-asc'];
+            $.fn.dataTable.ext.type.order['html-desc'] = $.fn.dataTable.ext.type.order['string-desc'];
+          }
+
+          $('#table_514794').DataTable({
             responsive: true,
             pageLength: 10,
             lengthMenu: [5, 10, 25, 50, 100],
