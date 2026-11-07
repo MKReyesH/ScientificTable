@@ -184,9 +184,12 @@ window.Quarto = {
 </header>
 
 
-<div class="table-responsive my-3">
+<link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
 
-<table id="csv_table_1" class="table table-striped table-hover table-bordered align-middle w-100">
+<div class="table-responsive my-3"><table id="csv_table_1" class="table table-striped table-hover table-bordered align-middle w-100">
 <thead class="table-light"><tr>
 <th>Messengers</th>
 <th> Luminality</th>
@@ -305,72 +308,24 @@ window.Quarto = {
 <td> 2879713</td>
 </tr>
 </tbody></table></div>
-
-<link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
-
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-<script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
-
-<script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
-
-
 <script>
-
-(function initTable() {
-
+  (function initTable() {
     if (typeof jQuery !== 'undefined' && $.fn.dataTable) {
-
-        const table = $('#csv_table_1');
-
-        if (!$.fn.DataTable.isDataTable(table)) {
-
-            table.DataTable({
-
-                ordering: true,
-
-                order: [],
-
-                orderMulti: false,
-
-                searching: true,
-
-                paging: true,
-
-                pageLength: 10,
-
-                lengthMenu: [5, 10, 25, 50, 100],
-
-                language: {
-
-                    search: "_INPUT_",
-
-                    searchPlaceholder: "Search table...",
-
-                    lengthMenu: "Show _MENU_ entries",
-
-                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
-
-                    infoEmpty: "No entries available",
-
-                    zeroRecords: "No matching records found",
-
-                    emptyTable: "No data available"
-
-                }
-
-            });
-
+      $('#csv_table_1').DataTable({
+        responsive: true,
+        order: [[0, 'asc']],
+        orderMulti: false,
+        pageLength: 10,
+        lengthMenu: [5, 10, 25, 50, 100],
+        language: {
+          search: "_INPUT_",
+          searchPlaceholder: "Search table..."
         }
-
+      });
     } else {
-
-        setTimeout(initTable, 50);
-
+      setTimeout(initTable, 50);
     }
-
-})();
-
+  })();
 </script>
 
 
