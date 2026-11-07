@@ -184,7 +184,7 @@ window.Quarto = {
 </header>
 
 
-<div class="table-responsive my-3"><table id="table_673991" class="table table-striped table-hover table-bordered align-middle w-100">
+<div class="table-responsive my-3"><table id="table_890718" class="table table-striped table-hover table-bordered align-middle w-100">
 <thead class="table-light"><tr>
 <th>Messengers</th>
 <th>Luminality</th>
@@ -310,8 +310,10 @@ window.Quarto = {
     <script>
       (function initTable() {
         if (typeof jQuery !== 'undefined' && $.fn.dataTable) {
-          $('#table_673991').DataTable({
+          $('#table_890718').DataTable({
             responsive: true,
+            orderMulti: false, // Disables multi-column persistence; forces single-column sort
+            order: [],         -- Preserves raw CSV order on initial render
             pageLength: 10,
             lengthMenu: [5, 10, 25, 50, 100],
             language: {
