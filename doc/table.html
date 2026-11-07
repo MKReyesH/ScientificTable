@@ -184,7 +184,7 @@ window.Quarto = {
 </header>
 
 
-<div class="table-responsive my-3"><table id="table_514794" class="table table-striped table-hover table-bordered align-middle w-100">
+<div class="table-responsive my-3"><table id="table_844539" class="table table-striped table-hover table-bordered align-middle w-100">
 <thead class="table-light"><tr>
 <th>Messengers</th>
 <th>Luminality</th>
@@ -199,45 +199,45 @@ window.Quarto = {
 <td></td>
 <td>Birefrigence</td>
 <td></td>
-<td data-order="1e-16">1e-16</td>
+<td>1e-16</td>
 <td></td>
-<td data-order="1311435">1311435</td>
+<td>1311435</td>
 </tr>
 <tr>
 <td>Gamma rays</td>
 <td>+</td>
 <td>Time delays</td>
 <td></td>
-<td data-order="9.02">9.02</td>
-<td data-order="5.74e-08">5.74e-8</td>
-<td data-order="2756998">2756998</td>
+<td>9.02</td>
+<td>5.74e-8</td>
+<td>2756998</td>
 </tr>
 <tr>
 <td>Gamma rays</td>
 <td>-</td>
 <td>Time delays</td>
 <td></td>
-<td data-order="8.2">8.20</td>
-<td data-order="5.66e-08">5.66e-8</td>
-<td data-order="2756998">2756998</td>
+<td>8.20</td>
+<td>5.66e-8</td>
+<td>2756998</td>
 </tr>
 <tr>
 <td>Gamma rays</td>
 <td>+</td>
 <td>Pair decay</td>
 <td></td>
-<td data-order="139000.0">1.39e5</td>
-<td data-order="0.000117">1.17e-4</td>
-<td data-order="1863649">1863649</td>
+<td>1.39e5</td>
+<td>1.17e-4</td>
+<td>1863649</td>
 </tr>
 <tr>
 <td>Gamma rays</td>
 <td>+</td>
 <td>Pair decay</td>
 <td></td>
-<td data-order="116000.0">1.16e5</td>
-<td data-order="0.000104">1.04e-4</td>
-<td data-order="1869962">1869962</td>
+<td>1.16e5</td>
+<td>1.04e-4</td>
+<td>1869962</td>
 </tr>
 <tr>
 <td>Gamma rays</td>
@@ -245,17 +245,17 @@ window.Quarto = {
 <td>Splitting</td>
 <td></td>
 <td></td>
-<td data-order="0.00181">1.81e-3</td>
-<td data-order="1869962">1869962</td>
+<td>1.81e-3</td>
+<td>1869962</td>
 </tr>
 <tr>
 <td>Gamma rays</td>
 <td>-</td>
 <td>Breit-Wheeler</td>
 <td></td>
-<td data-order="4.7">4.70</td>
-<td data-order="1.17e-07">1.17e-7</td>
-<td data-order="1701232">1701232</td>
+<td>4.70</td>
+<td>1.17e-7</td>
+<td>1701232</td>
 </tr>
 <tr>
 <td>Gamma rays</td>
@@ -263,44 +263,44 @@ window.Quarto = {
 <td>Bethe-Heitler</td>
 <td></td>
 <td></td>
-<td data-order="1.72e-08">1.72e-8</td>
-<td data-order="1500959">1500959</td>
+<td>1.72e-8</td>
+<td>1500959</td>
 </tr>
 <tr>
 <td>Neutrinos</td>
 <td></td>
 <td>Oscillations</td>
-<td data-order="2.8e-27">2.8e-27</td>
+<td>2.8e-27</td>
 <td></td>
 <td></td>
-<td data-order="930440">930440</td>
+<td>930440</td>
 </tr>
 <tr>
 <td>Neutrinos</td>
 <td>-</td>
 <td>Time delays</td>
-<td data-order="2.5e-18">2.5e-18</td>
-<td data-order="123.0">1.23e2</td>
-<td data-order="3.44e-07">3.44e-7</td>
-<td data-order="1434280">1434280</td>
+<td>2.5e-18</td>
+<td>1.23e2</td>
+<td>3.44e-7</td>
+<td>1434280</td>
 </tr>
 <tr>
 <td>Neutrinos</td>
 <td>+</td>
 <td>Pair emission</td>
-<td data-order="1.8e-21">1.8e-21</td>
+<td>1.8e-21</td>
 <td></td>
 <td></td>
-<td data-order="2890924">2890924</td>
+<td>2890924</td>
 </tr>
 <tr>
 <td>Neutrinos</td>
 <td>+</td>
 <td>Splitting</td>
 <td></td>
-<td data-order="43400000000.0">4.34e10</td>
-<td data-order="0.9">0.9</td>
-<td data-order="2879713">2879713</td>
+<td>4.34e10</td>
+<td>0.9</td>
+<td>2879713</td>
 </tr>
 </tbody></table></div>
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
@@ -311,22 +311,27 @@ window.Quarto = {
       (function initTable() {
         if (typeof jQuery !== 'undefined' && $.fn.dataTable) {
           
-          // Number parser with scientific notation support
-          function parseNumSci(d) {
-            if (d === null || d === undefined) return null;
-            var str = String(d).replace(/<[^>]*>/g, '').trim();
-            if (str === '' || str === '-' || str === 'N/A') return null;
-            var n = Number(str);
-            return isNaN(n) ? null : n;
-          }
+          if (!window._dataTableSciInit) {
+            window._dataTableSciInit = true;
 
-          if (!$.fn.dataTable.ext.type.detect.includes(sciDetect)) {
-            function sciDetect(d) {
-              return (parseNumSci(d) !== null) ? 'num-sci' : null;
+            // Numeric & scientific notation parser
+            function parseNumSci(d) {
+              if (d === null || d === undefined) return null;
+              var str = String(d).replace(/<[^>]*>/g, '').trim();
+              if (str === '' || str === '-' || str === 'N/A') return null;
+              var n = Number(str);
+              return isNaN(n) ? null : n;
             }
-            $.fn.dataTable.ext.type.detect.unshift(sciDetect);
 
-            // Scientific Notation Ascending: Empty cells ALWAYS last
+            // Type detector: empty cells return 'num-sci' so detection doesn't fail on columns with blanks
+            $.fn.dataTable.ext.type.detect.unshift(function (d) {
+              if (d === null || d === undefined) return 'num-sci';
+              var str = String(d).replace(/<[^>]*>/g, '').trim();
+              if (str === '' || str === '-' || str === 'N/A') return 'num-sci';
+              return isNaN(Number(str)) ? null : 'num-sci';
+            });
+
+            // Scientific Notation Sorters (empty cells always at the bottom)
             $.fn.dataTable.ext.type.order['num-sci-asc'] = function (a, b) {
               var x = parseNumSci(a), y = parseNumSci(b);
               if (x === null && y === null) return 0;
@@ -335,7 +340,6 @@ window.Quarto = {
               return (x < y) ? -1 : ((x > y) ? 1 : 0);
             };
 
-            // Scientific Notation Descending: Empty cells ALWAYS last
             $.fn.dataTable.ext.type.order['num-sci-desc'] = function (a, b) {
               var x = parseNumSci(a), y = parseNumSci(b);
               if (x === null && y === null) return 0;
@@ -344,31 +348,31 @@ window.Quarto = {
               return (x < y) ? 1 : ((x > y) ? -1 : 0);
             };
 
-            // String/Text Columns: Empty cells ALWAYS last
+            // String Sorters (empty cells always at the bottom for text columns like Luminosity/Effects)
             function parseStr(d) {
               if (d === null || d === undefined) return null;
               var str = String(d).replace(/<[^>]*>/g, '').trim();
               return str === '' ? null : str;
             }
-            $.fn.dataTable.ext.type.order['string-asc'] = function (a, b) {
-              var x = parseStr(a), y = parseStr(b);
-              if (x === null && y === null) return 0;
-              if (x === null) return 1;
-              if (y === null) return -1;
-              return x.localeCompare(y, undefined, { numeric: true, sensitivity: 'base' });
-            };
-            $.fn.dataTable.ext.type.order['string-desc'] = function (a, b) {
-              var x = parseStr(a), y = parseStr(b);
-              if (x === null && y === null) return 0;
-              if (x === null) return 1;
-              if (y === null) return -1;
-              return y.localeCompare(x, undefined, { numeric: true, sensitivity: 'base' });
-            };
-            $.fn.dataTable.ext.type.order['html-asc'] = $.fn.dataTable.ext.type.order['string-asc'];
-            $.fn.dataTable.ext.type.order['html-desc'] = $.fn.dataTable.ext.type.order['string-desc'];
+            ['string', 'html'].forEach(function (t) {
+              $.fn.dataTable.ext.type.order[t + '-asc'] = function (a, b) {
+                var x = parseStr(a), y = parseStr(b);
+                if (x === null && y === null) return 0;
+                if (x === null) return 1;
+                if (y === null) return -1;
+                return x.localeCompare(y, undefined, { numeric: true, sensitivity: 'base' });
+              };
+              $.fn.dataTable.ext.type.order[t + '-desc'] = function (a, b) {
+                var x = parseStr(a), y = parseStr(b);
+                if (x === null && y === null) return 0;
+                if (x === null) return 1;
+                if (y === null) return -1;
+                return y.localeCompare(x, undefined, { numeric: true, sensitivity: 'base' });
+              };
+            });
           }
 
-          $('#table_514794').DataTable({
+          $('#table_844539').DataTable({
             responsive: true,
             pageLength: 10,
             lengthMenu: [5, 10, 25, 50, 100],
