@@ -46,8 +46,8 @@ local function render_csv_table(filepath)
     end
     table.insert(html, '</tbody></table></div>')
 
-    -- Stock DataTables initialization
-    table.insert(html, string.format([[
+    -- DataTables initialization safely enclosed using [=[ ... ]=]
+    table.insert(html, string.format([=[
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
@@ -71,7 +71,7 @@ local function render_csv_table(filepath)
         }
       })();
     </script>
-    ]], table_id))
+    ]=], table_id))
 
     return pandoc.RawBlock("html", table.concat(html, "\n"))
 end
