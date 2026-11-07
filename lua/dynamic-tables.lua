@@ -8,7 +8,6 @@ local function render_csv_table(filepath)
         return pandoc.Para({ pandoc.Str("[Error: Could not find CSV file at " .. clean_path .. "]") })
     end
 
-    -- Parse CSV lines cleanly
     local rows = {}
     for line in file:lines() do
         if line:match("%S") then
@@ -28,7 +27,6 @@ local function render_csv_table(filepath)
     local table_id = "table_" .. tostring(math.random(100000, 999999))
     local html = {}
 
-    -- Bootstrap 5 table structure
     table.insert(html, string.format('<div class="table-responsive my-3"><table id="%s" class="table table-striped table-hover table-bordered align-middle w-100">', table_id))
     
     table.insert(html, '<thead class="table-light"><tr>')
@@ -46,12 +44,11 @@ local function render_csv_table(filepath)
     end
     table.insert(html, '</tbody></table></div>')
 
-    -- DataTables initialization safely enclosed using [=[ ... ]=]
     table.insert(html, string.format([=[
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.bootstrap5.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/2.3.2/js/dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/2.3.2/js/dataTables.bootstrap5.min.js"></script>
     <script>
       (function initTable() {
         if (typeof jQuery !== 'undefined' && $.fn.dataTable) {
