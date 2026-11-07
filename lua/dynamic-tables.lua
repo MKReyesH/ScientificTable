@@ -46,7 +46,7 @@ local function render_csv_table(filepath)
     end
     table.insert(html, '</tbody></table></div>')
 
-    -- DataTables initialization with single-column enforcement
+    -- Stock DataTables initialization
     table.insert(html, string.format([[
     <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -57,7 +57,7 @@ local function render_csv_table(filepath)
         if (typeof jQuery !== 'undefined' && $.fn.dataTable) {
           $('#%s').DataTable({
             responsive: true,
-            order: [0],
+            order: [[0, 'asc']],
             orderMulti: false,
             pageLength: 10,
             lengthMenu: [5, 10, 25, 50, 100],
