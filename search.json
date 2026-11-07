@@ -11,7 +11,7 @@
     "href": "doc/table.html",
     "title": "Table",
     "section": "",
-    "text": "!csv-table: data/bounds.csv"
+    "text": "Messengers\nLuminality\nEffects\ndelta(0)\nELIV(1)\nELIV(2)\nInspireID\n\n\nGamma rays\n\nBirefrigence\n\n1e-16\n\n1311435\n\n\nGamma rays\n+\nTime delays\n\n9.02\n5.74e-8\n2756998\n\n\nGamma rays\n-\nTime delays\n\n8.20\n5.66e-8\n2756998\n\n\nGamma rays\n+\nPair decay\n\n1.39e5\n1.17e-4\n1863649\n\n\nGamma rays\n+\nPair decay\n\n1.16e5\n1.04e-4\n1869962\n\n\nGamma rays\n+\nSplitting\n\n\n1.81e-3\n1869962\n\n\nGamma rays\n-\nBreit-Wheeler\n\n4.70\n1.17e-7\n1701232\n\n\nGamma rays\n-\nBethe-Heitler\n\n\n1.72e-8\n1500959\n\n\nNeutrinos\n\nOscillations\n2.8e-27\n\n\n930440\n\n\nNeutrinos\n-\nTime delays\n2.5e-18\n1.23e2\n3.44e-7\n1434280\n\n\nNeutrinos\n+\nPair emission\n1.8e-21\n\n\n2890924\n\n\nNeutrinos\n+\nSplitting\n\n4.34e10\n0.9\n2879713"
   },
   {
     "objectID": "index.html",

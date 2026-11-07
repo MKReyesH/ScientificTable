@@ -184,7 +184,142 @@ window.Quarto = {
 </header>
 
 
-<p>!csv-table: data/bounds.csv</p>
+<div class="table-responsive"><table id="table_234478" class="display" style="width:100%">
+<thead><tr>
+<th>Messengers</th>
+<th>Luminality</th>
+<th>Effects</th>
+<th>delta(0)</th>
+<th>ELIV(1)</th>
+<th>ELIV(2)</th>
+<th>InspireID</th>
+</tr></thead><tbody>
+<tr>
+<td>Gamma rays</td>
+<td></td>
+<td>Birefrigence</td>
+<td></td>
+<td>1e-16</td>
+<td></td>
+<td>1311435</td>
+</tr>
+<tr>
+<td>Gamma rays</td>
+<td>+</td>
+<td>Time delays</td>
+<td></td>
+<td>9.02</td>
+<td>5.74e-8</td>
+<td>2756998</td>
+</tr>
+<tr>
+<td>Gamma rays</td>
+<td>-</td>
+<td>Time delays</td>
+<td></td>
+<td>8.20</td>
+<td>5.66e-8</td>
+<td>2756998</td>
+</tr>
+<tr>
+<td>Gamma rays</td>
+<td>+</td>
+<td>Pair decay</td>
+<td></td>
+<td>1.39e5</td>
+<td>1.17e-4</td>
+<td>1863649</td>
+</tr>
+<tr>
+<td>Gamma rays</td>
+<td>+</td>
+<td>Pair decay</td>
+<td></td>
+<td>1.16e5</td>
+<td>1.04e-4</td>
+<td>1869962</td>
+</tr>
+<tr>
+<td>Gamma rays</td>
+<td>+</td>
+<td>Splitting</td>
+<td></td>
+<td></td>
+<td>1.81e-3</td>
+<td>1869962</td>
+</tr>
+<tr>
+<td>Gamma rays</td>
+<td>-</td>
+<td>Breit-Wheeler</td>
+<td></td>
+<td>4.70</td>
+<td>1.17e-7</td>
+<td>1701232</td>
+</tr>
+<tr>
+<td>Gamma rays</td>
+<td>-</td>
+<td>Bethe-Heitler</td>
+<td></td>
+<td></td>
+<td>1.72e-8</td>
+<td>1500959</td>
+</tr>
+<tr>
+<td>Neutrinos</td>
+<td></td>
+<td>Oscillations</td>
+<td>2.8e-27</td>
+<td></td>
+<td></td>
+<td>930440</td>
+</tr>
+<tr>
+<td>Neutrinos</td>
+<td>-</td>
+<td>Time delays</td>
+<td>2.5e-18</td>
+<td>1.23e2</td>
+<td>3.44e-7</td>
+<td>1434280</td>
+</tr>
+<tr>
+<td>Neutrinos</td>
+<td>+</td>
+<td>Pair emission</td>
+<td>1.8e-21</td>
+<td></td>
+<td></td>
+<td>2890924</td>
+</tr>
+<tr>
+<td>Neutrinos</td>
+<td>+</td>
+<td>Splitting</td>
+<td></td>
+<td>4.34e10</td>
+<td>0.9</td>
+<td>2879713</td>
+</tr>
+</tbody></table></div>
+    <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" type="text/css">
+    <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" type="text/javascript"></script>
+    <script>
+      (function initTable() {
+        if (typeof simpleDatatables !== 'undefined' && simpleDatatables.DataTable) {
+          new simpleDatatables.DataTable("#table_234478", {
+            searchable: true,
+            fixedHeight: false,
+            perPage: 10,
+            perPageSelect: [5, 10, 25, 50]
+          });
+        } else {
+          setTimeout(initTable, 50);
+        }
+      })();
+    </script>
+    
 
 
 
