@@ -281,13 +281,13 @@ x=\frac{-b\pm \sqrt{b^2-4ac}}{2a} \,,
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ss">  X &amp;= Y - Z </span><span class="sc">\label</span><span class="ss">{eq:systems_latex_2}</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">\end</span>{<span class="ex">align</span>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>will automatically render as an aligned block:</p>
-<p><span id="eq-systems_latex_2"><span class="math display">\[
+<p><span id="eq-systems_latex_1"><span class="math display">\[
 \begin{aligned}
 A &amp;= B + C  \\
   X &amp;= Y - Z
 \end{aligned}
 \tag{2}\]</span></span></p>
-<p>However, to ensure compatibility with Quarto’s cross-referencing engine, these environments are translated into Quarto’s inner environments (<code>aligned</code>, <code>gathered</code>, and <code>split</code>) wrapped inside a single display math block with a single label (<code>$$...$$ {#eq-ref}</code>). This means that the whole block can only have a single shared label (the last one), which can then be used for referencing, such as in Eq. (<a href="#eq-systems_latex_2" class="quarto-xref">2</a>).</p>
+<p>However, to ensure compatibility with Quarto’s cross-referencing engine, these environments are translated into Quarto’s inner environments (<code>aligned</code>, <code>gathered</code>, and <code>split</code>) wrapped inside a single display math block with a single label (<code>$$...$$ {#eq-ref}</code>). This means that the whole block can only have a single shared label (the first one), which can then be used for referencing, such as in Eq. (<a href="#eq-systems_latex_1" class="quarto-xref">2</a>).</p>
 </section>
 <section id="text-formatting" class="level1">
 <h1>Text Formatting</h1>
