@@ -13,14 +13,14 @@
 --    per-page: 15                -- Optional (default: 15)
 --    sortable: true              -- Optional (default: true)
 --    column 0: unsortable        -- Disables header sorting
---    column 1: dropdown          -- Injects value filter dropdown
+--    column 1: dropdown          -- Injects value filter dropdown (forces string type)
 --    column 4: units(eV: 1, keV: 1e-3, MeV: 1e-6, GeV: 1e-9) -- Unit switcher
 --    :::
 -- =============================================================================
 
 local has_dynamic_table = false
 
--- Client-side library & modular feature engine
+-- Client-side library & custom column feature engine
 local CLIENT_ASSETS_HTML = [[
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
 <style>
@@ -59,19 +59,23 @@ local CLIENT_ASSETS_HTML = [[
         catch (e) { console.error("Error parsing columns metadata:", e); }
       }
 
-      // 1. Build Simple-DataTables column rules
+      // Configure explicit column rules for Simple-DataTables
       const columnRules = [];
       customColumns.forEach(col => {
-        if (col.type === "unsortable" || col.type === "dropdown" || col.type === "units") {
-          // Keep custom controls from triggering accidental header sorts
+        if (col.type === "unsortable") {
+          columnRules.push({ select: col.index, sortable: false });
+        } else if (col.type === "dropdown") {
+          // Force string type to prevent auto-numeric detection on +, -, empty strings
+          columnRules.push({ select: col.index, type: "string" });
         }
       });
 
-      // 2. Instantiate Simple-DataTables
+      // Instantiate Simple-DataTables
       const dt = new simpleDatatables.DataTable(table, {
         searchable: searchable,
         sortable: sortable,
         perPage: perPage,
+        columns: columnRules.length > 0 ? columnRules : undefined,
         labels: {
           placeholder: "Search table...",
           perPage: "entries per page",
@@ -80,7 +84,7 @@ local CLIENT_ASSETS_HTML = [[
         }
       });
 
-      // 3. Attach custom column controls after table init
+      // Attach UI controls after table initialization
       dt.on("datatable.init", () => {
         setupCustomColumnFeatures(table, dt, customColumns);
       });
@@ -103,11 +107,14 @@ local CLIENT_ASSETS_HTML = [[
     if (!ths || !ths[colIndex]) return;
     const th = ths[colIndex];
 
-    // Read unique values from Simple-DataTables internal row storage
+    // Read unique values directly from table body cells
     const uniqueVals = new Set();
-    dt.data.data.forEach(row => {
-      const cellText = (row[colIndex] && row[colIndex].text) ? row[colIndex].text.trim() : "";
-      if (cellText !== "") uniqueVals.add(cellText);
+    table.querySelectorAll("tbody tr").forEach(tr => {
+      const cell = tr.children[colIndex];
+      if (cell) {
+        const val = cell.textContent.trim();
+        if (val !== "") uniqueVals.add(val);
+      }
     });
 
     const container = document.createElement("div");
@@ -128,25 +135,25 @@ local CLIENT_ASSETS_HTML = [[
       select.appendChild(opt);
     });
 
-    // Isolate dropdown interaction completely from sorting click events
+    // Isolate click events to prevent triggering header sort
     container.addEventListener("click", (e) => e.stopPropagation());
     select.addEventListener("click", (e) => e.stopPropagation());
 
     select.addEventListener("change", (e) => {
-      const val = e.target.value.trim();
-      // Search specifically within the target column index
-      if (val === "") {
-        dt.columns().search("", colIndex);
-      } else {
-        dt.columns().search(val, colIndex);
-      }
+      const filterVal = e.target.value.trim();
+      table.querySelectorAll("tbody tr").forEach(tr => {
+        const cell = tr.children[colIndex];
+        if (!cell) return;
+        const cellVal = cell.textContent.trim();
+        tr.style.display = (filterVal === "" || cellVal === filterVal) ? "" : "none";
+      });
     });
 
     container.appendChild(select);
     th.appendChild(container);
   }
 
-  // --- Feature 2: Dynamic Unit Converter ---
+  // --- Feature 2: Interactive Unit Converter ---
   function setupUnitConverter(table, dt, col) {
     const ths = table.querySelectorAll("thead th");
     if (!ths || !ths[col.index] || !col.units || !col.map) return;
@@ -165,26 +172,25 @@ local CLIENT_ASSETS_HTML = [[
       select.appendChild(opt);
     });
 
-    function formatNum(n) {
-      if (isNaN(n)) return "";
-      const abs = Math.abs(n);
-      if (abs > 0 && (abs < 1e-3 || abs >= 1e4)) {
-        return n.toExponential(2);
+    function formatValue(num) {
+      if (isNaN(num)) return "";
+      const absVal = Math.abs(num);
+      if (absVal > 0 && (absVal < 1e-3 || absVal >= 1e4)) {
+        return num.toExponential(2);
       }
-      return Number(n.toFixed(4)).toString();
+      return Number(num.toFixed(4)).toString();
     }
 
-    function applyConversion(unitName) {
+    function convertColumn(unitName) {
       const factor = col.map[unitName];
       if (factor === undefined) return;
 
-      // Safely update raw text inside table cells while retaining dataset attributes
       table.querySelectorAll("tbody tr").forEach(tr => {
         const cell = tr.children[col.index];
         if (cell && cell.dataset.order !== undefined) {
-          const rawNum = parseFloat(cell.dataset.order);
-          if (!isNaN(rawNum)) {
-            cell.textContent = formatNum(rawNum * factor);
+          const baseNum = parseFloat(cell.dataset.order);
+          if (!isNaN(baseNum)) {
+            cell.textContent = formatValue(baseNum * factor);
           }
         }
       });
@@ -192,7 +198,7 @@ local CLIENT_ASSETS_HTML = [[
 
     container.addEventListener("click", (e) => e.stopPropagation());
     select.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("change", (e) => applyConversion(e.target.value));
+    select.addEventListener("change", (e) => convertColumn(e.target.value));
 
     container.appendChild(select);
     th.appendChild(container);
