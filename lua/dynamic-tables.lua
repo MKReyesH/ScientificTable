@@ -9,7 +9,8 @@
 --                        per-page: 15
 --                        sortable: true|false
 --                        column 0: unsortable
---                        column 1: dropdown
+--                        column 1: dropdown, string
+--                        column 3: sortable, number
 --                        column 4: units(eV: 1, keV: 1e-3, MeV: 1e-6, GeV: 1e-9)
 --                        :::
 -- =============================================================================
@@ -18,10 +19,15 @@ local has_dynamic_table = false
 
 local CLIENT_ASSETS_HTML = [[
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
-<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
 <style>
   table.dynamic-table-target th { vertical-align: top !important; }
+  .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; }
+  .dynamic-table-ctrl-select {
+    display: block; width: 100%; max-width: 120px; font-size: 0.8em;
+    padding: 2px 4px; border-radius: 4px; border: 1px solid #ced4da; background: #fff; cursor: pointer;
+  }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("table.dynamic-table-target").forEach((table) => {
@@ -30,16 +36,23 @@ local CLIENT_ASSETS_HTML = [[
         try { customColumns = JSON.parse(table.dataset.columns); } catch (e) {}
       }
 
+      const globalSortable = table.dataset.sortable !== "false";
+
+      // Build per-column rules with explicit override hierarchy
       const columnRules = customColumns.map(col => {
         const rule = { select: col.index };
-        if (col.sortable === false) rule.sortable = false;
+        if (col.sortable !== undefined) {
+          rule.sortable = col.sortable;
+        } else if (!globalSortable) {
+          rule.sortable = false;
+        }
         if (col.type && col.type !== "units") rule.type = col.type;
         return rule;
       });
 
       const dt = new simpleDatatables.DataTable(table, {
         searchable: table.dataset.searchable !== "false",
-        sortable: table.dataset.sortable !== "false",
+        sortable: true, // Keep core engine enabled so column-level overrides work
         perPage: parseInt(table.dataset.perPage || "15", 10),
         ignorePunctuation: false,
         columns: columnRules.length > 0 ? columnRules : undefined,
@@ -207,6 +220,7 @@ local function parse_column_rule(line)
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag:lower())
         if tag == "unsortable" then rule.sortable = false
+        elseif tag == "sortable" then rule.sortable = true
         elseif tag == "dropdown" then rule.dropdown = true
         elseif tag == "string" or tag == "text" then rule.type = "string"
         elseif tag == "number" or tag == "numeric" then rule.type = "number" end
