@@ -6,7 +6,9 @@ title: Bounds
 src: ../data/bounds.csv
 searchable: true
 per-page: 15
-column 0: unsortable
-column 1: dropdown
+column 0: dropdown
+column 1: dropdown, string
+column 2: dropdown
 column 4: units(eV: 1, keV: 1e-3, MeV: 1e-6, GeV: 1e-9)
+column 5: units(eV: 1, keV: 1e-3, MeV: 1e-6, GeV: 1e-9)
 :::
