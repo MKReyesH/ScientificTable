@@ -39,7 +39,6 @@ local CLIENT_ASSETS_HTML = [[
         const rule = { select: col.index };
         if (col.sortable === false) rule.sortable = false;
         if (col.type && col.type !== "units") rule.type = col.type;
-        if (col.ignorePunctuation !== undefined) rule.ignorePunctuation = col.ignorePunctuation;
         return rule;
       });
 
@@ -47,6 +46,7 @@ local CLIENT_ASSETS_HTML = [[
         searchable: table.dataset.searchable !== "false",
         sortable: table.dataset.sortable !== "false",
         perPage: parseInt(table.dataset.perPage || "15", 10),
+        ignorePunctuation: false, // Ensures +, -, and special symbols are sorted deterministically
         columns: columnRules.length > 0 ? columnRules : undefined,
         labels: { placeholder: "Search table...", perPage: "entries per page", noRows: "No entries found", info: "Showing {start} to {end} of {rows} entries" }
       });
@@ -213,14 +213,12 @@ local function parse_column_rule(line)
         tag = trim(tag:lower())
         if tag == "unsortable" then rule.sortable = false
         elseif tag == "dropdown" then rule.dropdown = true
-        elseif tag == "string" or tag == "text" then rule.type = "string"; rule.ignorePunctuation = false
-        elseif tag == "number" or tag == "numeric" then rule.type = "number"
-        elseif tag == "no-punctuation" then rule.ignorePunctuation = false end
+        elseif tag == "string" or tag == "text" then rule.type = "string"
+        elseif tag == "number" or tag == "numeric" then rule.type = "number" end
     end
 
     if rule.dropdown and not rule.type then
         rule.type = "string"
-        rule.ignorePunctuation = false
     end
 
     return rule
@@ -270,7 +268,7 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         table.insert(html, '      </tr>')
     end
 
-    table.insert(html, '    </tbody></table></div>')
+    table.insert(html, '    </tbody>mtable</div>')
     return pandoc.RawBlock('html', table.concat(html, "\n"))
 end
 
