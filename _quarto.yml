@@ -32,8 +32,5 @@ format:
   html:
     theme: minty # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
     math: mathjax
-    css:
-      - include/css-config.css
-    include-after-body:
-      - include/dynamic-tables.html
+    css: include/css-config.css
     
