@@ -54,7 +54,7 @@ will automatically render as an aligned block:
   X &= Y - Z \label{eq:systems_latex_2}
 \end{align}
 
-However, to ensure compatibility with Quarto's cross-referencing engine, these environments are translated into Quarto's inner environments (`aligned`, `gathered`, and `split`) wrapped inside a single display math block with a single label (`$$...$$ {#eq-ref}`). This means that the whole block can only have a single shared label (the last one), which can then be used for referencing, such as in Eq. \eqref{eq:systems_latex_2}.
+However, to ensure compatibility with Quarto's cross-referencing engine, these environments are translated into Quarto's inner environments (`aligned`, `gathered`, and `split`) wrapped inside a single display math block with a single label (`$$...$$ {#eq-ref}`). This means that the whole block can only have a single shared label (the first one), which can then be used for referencing, such as in Eq. \eqref{eq:systems_latex_1}.
 
 \section{Text Formatting}
 

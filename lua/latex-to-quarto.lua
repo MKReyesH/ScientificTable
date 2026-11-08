@@ -26,23 +26,22 @@ local inline_rules = {
         return "[" .. table.concat(refs, "; ") .. "]"
     end },
     
-    -- Equation & Section references: \ref{eq:foo} -> [-@eq-foo]
+    -- Generic references: \ref{fig:foo} -> [-@fig-foo]
     { pattern = "\\ref{([^}]+)}", replace = function(ref)
-        ref = string.gsub(ref, "^eq:", "eq-")
-        ref = string.gsub(ref, "^sec:", "sec-")
+        ref = string.gsub(ref, ":", "-")
         return "[-@" .. ref .. "]"
     end },
     
     -- Equation references: \eqref{eq:foo} -> ([-@eq-foo])
     { pattern = "\\eqref{([^}]+)}", replace = function(ref)
-        ref = string.gsub(ref, "^eq:", "eq-")
+        ref = string.gsub(ref, ":", "-")
         if not string.match(ref, "^eq%-") then ref = "eq-" .. ref end
         return "([-@" .. ref .. "])"
     end }
 
 }
 
--- Environment rules
+-- Math environment rules
 local environment_rules = {
     { env = "equation", inner = nil },
     { env = "split",    inner = "split" },
@@ -60,14 +59,17 @@ local section_rules = {
 -- Main transformation pipeline 
 local function transform_tex(text)
     
-    -- 1. Process LaTeX environments into Quarto display math blocks
+    -- 1. Process LaTeX math environments into Quarto display math blocks
     for _, rule in ipairs(environment_rules) do
-        local pattern = "\\begin{" .. rule.env .. "%*?}(.-)\\end{" .. rule.env .. "%*?}"
+        local pattern = "\\begin{" .. rule.env .. "%*?}([%s%S]-)\\end{" .. rule.env .. "%*?}"
         text = string.gsub(text, pattern, function(content)
             local q_label = nil
             content = string.gsub(content, "\\label{([^}]+)}", function(lbl)
-                q_label = string.gsub(lbl, "^eq:", "eq-")
-                if not string.match(q_label, "^eq%-") then q_label = "eq-" .. q_label end
+                if not q_label then
+                    local formatted = string.gsub(lbl, ":", "-")
+                    if not string.match(formatted, "^eq%-") then formatted = "eq-" .. formatted end
+                    q_label = formatted
+                end
                 return ""
             end)
             
@@ -113,9 +115,9 @@ function RawInline(el)
     if el.format == "tex" or el.format == "latex" then
         local md = transform_tex(el.text)
         local doc = pandoc.read(md, "markdown")
-        if #doc.blocks == 1 and (doc.blocks[1].t == "Para" or doc.blocks[1].t == "Plain") then
+        if doc.blocks[1] and doc.blocks[1].content then
             return doc.blocks[1].content
         end
-        return doc.blocks
+        return {}
     end
 end
