@@ -312,16 +312,21 @@ window.Quarto = {
   table.dynamic-table-target th {
     vertical-align: top !important;
   }
+  .dynamic-table-control-container {
+    display: block;
+    margin-top: 4px;
+  }
   .dynamic-table-dropdown-filter,
   .dynamic-table-unit-select {
     display: block;
-    margin-top: 4px;
+    width: 100%;
+    max-width: 120px;
     font-size: 0.8em;
     padding: 2px 4px;
     border-radius: 4px;
+    border: 1px solid #ced4da;
+    background-color: #fff;
     cursor: pointer;
-    width: 100%;
-    max-width: 120px;
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
@@ -339,20 +344,19 @@ window.Quarto = {
         catch (e) { console.error("Error parsing columns metadata:", e); }
       }
 
-      // Build native Simple-DataTables column rules
+      // 1. Build Simple-DataTables column rules
       const columnRules = [];
       customColumns.forEach(col => {
-        if (col.type === "unsortable") {
-          columnRules.push({ select: col.index, sortable: false });
+        if (col.type === "unsortable" || col.type === "dropdown" || col.type === "units") {
+          // Keep custom controls from triggering accidental header sorts
         }
       });
 
-      // Instantiate Simple-DataTables
+      // 2. Instantiate Simple-DataTables
       const dt = new simpleDatatables.DataTable(table, {
         searchable: searchable,
         sortable: sortable,
         perPage: perPage,
-        columns: columnRules.length > 0 ? columnRules : undefined,
         labels: {
           placeholder: "Search table...",
           perPage: "entries per page",
@@ -361,7 +365,7 @@ window.Quarto = {
         }
       });
 
-      // Attach dynamic extensions once table is initialized
+      // 3. Attach custom column controls after table init
       dt.on("datatable.init", () => {
         setupCustomColumnFeatures(table, dt, customColumns);
       });
@@ -380,17 +384,19 @@ window.Quarto = {
 
   // --- Feature 1: Header Dropdown Filter ---
   function setupDropdownFilter(table, dt, colIndex) {
-    const th = table.querySelectorAll("thead th")[colIndex];
-    if (!th) return;
+    const ths = table.querySelectorAll("thead th");
+    if (!ths || !ths[colIndex]) return;
+    const th = ths[colIndex];
 
+    // Read unique values from Simple-DataTables internal row storage
     const uniqueVals = new Set();
-    table.querySelectorAll("tbody tr").forEach(tr => {
-      const cell = tr.children[colIndex];
-      if (cell) {
-        const val = cell.textContent.trim();
-        if (val !== "") uniqueVals.add(val);
-      }
+    dt.data.data.forEach(row => {
+      const cellText = (row[colIndex] && row[colIndex].text) ? row[colIndex].text.trim() : "";
+      if (cellText !== "") uniqueVals.add(cellText);
     });
+
+    const container = document.createElement("div");
+    container.className = "dynamic-table-control-container";
 
     const select = document.createElement("select");
     select.className = "dynamic-table-dropdown-filter";
@@ -407,29 +413,32 @@ window.Quarto = {
       select.appendChild(opt);
     });
 
+    // Isolate dropdown interaction completely from sorting click events
+    container.addEventListener("click", (e) => e.stopPropagation());
     select.addEventListener("click", (e) => e.stopPropagation());
+
     select.addEventListener("change", (e) => {
-      const filterVal = e.target.value.trim();
-      table.querySelectorAll("tbody tr").forEach(tr => {
-        const cell = tr.children[colIndex];
-        if (!cell) return;
-        const cellVal = cell.textContent.trim();
-        
-        if (filterVal === "" || cellVal === filterVal) {
-          tr.style.display = "";
-        } else {
-          tr.style.display = "none";
-        }
-      });
+      const val = e.target.value.trim();
+      // Search specifically within the target column index
+      if (val === "") {
+        dt.columns().search("", colIndex);
+      } else {
+        dt.columns().search(val, colIndex);
+      }
     });
 
-    th.appendChild(select);
+    container.appendChild(select);
+    th.appendChild(container);
   }
 
-  // --- Feature 2: Interactive Unit Converter ---
+  // --- Feature 2: Dynamic Unit Converter ---
   function setupUnitConverter(table, dt, col) {
-    const th = table.querySelectorAll("thead th")[col.index];
-    if (!th || !col.units || !col.map) return;
+    const ths = table.querySelectorAll("thead th");
+    if (!ths || !ths[col.index] || !col.units || !col.map) return;
+    const th = ths[col.index];
+
+    const container = document.createElement("div");
+    container.className = "dynamic-table-control-container";
 
     const select = document.createElement("select");
     select.className = "dynamic-table-unit-select";
@@ -441,36 +450,37 @@ window.Quarto = {
       select.appendChild(opt);
     });
 
-    function formatValue(num) {
-      if (isNaN(num)) return "";
-      const absVal = Math.abs(num);
-      if (absVal > 0 && (absVal < 1e-3 || absVal >= 1e4)) {
-        return num.toExponential(2);
+    function formatNum(n) {
+      if (isNaN(n)) return "";
+      const abs = Math.abs(n);
+      if (abs > 0 && (abs < 1e-3 || abs >= 1e4)) {
+        return n.toExponential(2);
       }
-      return Number(num.toFixed(4)).toString();
+      return Number(n.toFixed(4)).toString();
     }
 
-    function convertColumn(unitName) {
+    function applyConversion(unitName) {
       const factor = col.map[unitName];
       if (factor === undefined) return;
 
+      // Safely update raw text inside table cells while retaining dataset attributes
       table.querySelectorAll("tbody tr").forEach(tr => {
         const cell = tr.children[col.index];
         if (cell && cell.dataset.order !== undefined) {
-          const baseNum = parseFloat(cell.dataset.order);
-          if (!isNaN(baseNum)) {
-            cell.textContent = formatValue(baseNum * factor);
+          const rawNum = parseFloat(cell.dataset.order);
+          if (!isNaN(rawNum)) {
+            cell.textContent = formatNum(rawNum * factor);
           }
         }
       });
     }
 
+    container.addEventListener("click", (e) => e.stopPropagation());
     select.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("change", (e) => {
-      convertColumn(e.target.value);
-    });
+    select.addEventListener("change", (e) => applyConversion(e.target.value));
 
-    th.appendChild(select);
+    container.appendChild(select);
+    th.appendChild(container);
   }
 </script>
 
