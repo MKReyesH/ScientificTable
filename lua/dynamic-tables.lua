@@ -103,7 +103,7 @@ local CLIENT_ASSETS_HTML = [[
       const cell = tr.children[colIndex];
       if (cell) {
         const val = cell.textContent.trim();
-        if (val) uniqueVals.add(val);
+        if (val !== "") uniqueVals.add(val);
       }
     });
 
@@ -124,7 +124,18 @@ local CLIENT_ASSETS_HTML = [[
 
     select.addEventListener("click", (e) => e.stopPropagation());
     select.addEventListener("change", (e) => {
-      dt.search(e.target.value);
+      const filterVal = e.target.value.trim();
+      table.querySelectorAll("tbody tr").forEach(tr => {
+        const cell = tr.children[colIndex];
+        if (!cell) return;
+        const cellVal = cell.textContent.trim();
+        
+        if (filterVal === "" || cellVal === filterVal) {
+          tr.style.display = "";
+        } else {
+          tr.style.display = "none";
+        }
+      });
     });
 
     th.appendChild(select);
