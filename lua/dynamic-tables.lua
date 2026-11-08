@@ -149,7 +149,7 @@ function Pandoc(doc)
         perPage: 15,
         labels: {
           placeholder: "Search table...",
-          perPage: "{select} entries per page",
+          perPage: "entries per page",
           noRows: "No entries found",
           info: "Showing {start} to {end} of {rows} entries",
         }
