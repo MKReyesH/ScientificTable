@@ -185,7 +185,7 @@ window.Quarto = {
 
 
 <div class="dynamic-table-wrapper">
-  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;ignorePunctuation&quot;:false,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;ignorePunctuation&quot;:false,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;ignorePunctuation&quot;:false,&quot;index&quot;:2,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:1.0e-9,&quot;MeV&quot;:1.0e-6,&quot;eV&quot;:1,&quot;keV&quot;:1.0e-3},&quot;type&quot;:&quot;units&quot;,&quot;units&quot;:[&quot;eV&quot;,&quot;keV&quot;,&quot;MeV&quot;,&quot;GeV&quot;]},{&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:1.0e-9,&quot;MeV&quot;:1.0e-6,&quot;eV&quot;:1,&quot;keV&quot;:1.0e-3},&quot;type&quot;:&quot;units&quot;,&quot;units&quot;:[&quot;eV&quot;,&quot;keV&quot;,&quot;MeV&quot;,&quot;GeV&quot;]}]">
+  mtable<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css"><table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:2,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:1.0e-9,&quot;MeV&quot;:1.0e-6,&quot;eV&quot;:1,&quot;keV&quot;:1.0e-3},&quot;type&quot;:&quot;units&quot;,&quot;units&quot;:[&quot;eV&quot;,&quot;keV&quot;,&quot;MeV&quot;,&quot;GeV&quot;]},{&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:1.0e-9,&quot;MeV&quot;:1.0e-6,&quot;eV&quot;:1,&quot;keV&quot;:1.0e-3},&quot;type&quot;:&quot;units&quot;,&quot;units&quot;:[&quot;eV&quot;,&quot;keV&quot;,&quot;MeV&quot;,&quot;GeV&quot;]}]">
     <thead><tr>
         <th>Messengers</th>
         <th>Luminality</th>
@@ -303,11 +303,11 @@ window.Quarto = {
         <td data-order="0.9">0.9</td>
         <td data-order="2879713">2879713</td>
       </tr>
-    </tbody></table></div>
+    </tbody>
 
 
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
+
 <style>
   table.dynamic-table-target th { vertical-align: top !important; }
   .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; }
@@ -329,7 +329,6 @@ window.Quarto = {
         const rule = { select: col.index };
         if (col.sortable === false) rule.sortable = false;
         if (col.type && col.type !== "units") rule.type = col.type;
-        if (col.ignorePunctuation !== undefined) rule.ignorePunctuation = col.ignorePunctuation;
         return rule;
       });
 
@@ -337,6 +336,7 @@ window.Quarto = {
         searchable: table.dataset.searchable !== "false",
         sortable: table.dataset.sortable !== "false",
         perPage: parseInt(table.dataset.perPage || "15", 10),
+        ignorePunctuation: false, // Ensures +, -, and special symbols are sorted deterministically
         columns: columnRules.length > 0 ? columnRules : undefined,
         labels: { placeholder: "Search table...", perPage: "entries per page", noRows: "No entries found", info: "Showing {start} to {end} of {rows} entries" }
       });
@@ -418,7 +418,7 @@ window.Quarto = {
   }
 </script>
 
-</main> <!-- /main -->
+ <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
@@ -895,9 +895,9 @@ window.Quarto = {
   <script type="application/javascript">
   window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
   </script>
-</div> <!-- /content -->
+ <!-- /content -->
 
 
 
 
-</body></html>
+</table></div></main></div></body></html>
