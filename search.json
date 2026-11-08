@@ -11,7 +11,7 @@
     "href": "doc/table.html",
     "title": "Table",
     "section": "",
-    "text": "Inputs.table(data, {\n  search: true,\n  sort: true,\n  rows: 15\n})"
+    "text": "data = FileAttachment(\"../data/bounds.csv\").csv()\nInputs.table(data, {\n  search: true,\n  sort: true,\n  rows: 15\n})"
   },
   {
     "objectID": "index.html",
