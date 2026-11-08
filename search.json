@@ -11,7 +11,7 @@
     "href": "doc/table.html",
     "title": "Table",
     "section": "",
-    "text": "data = FileAttachment(\"../data/bounds.csv\").csv({ typed: true })\n\n// 2. Render an interactive table with built-in search and sorting\nInputs.table(data)"
+    "text": "Inputs.table(data, {\n  search: true,\n  sort: true,\n  rows: 15\n})"
   },
   {
     "objectID": "index.html",
