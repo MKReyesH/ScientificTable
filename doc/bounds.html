@@ -185,7 +185,7 @@ window.Quarto = {
 
 
 <div class="dynamic-table-wrapper">
-  <table class="dynamic-table-target table table-striped table-hover">
+  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-unsortable="">
     <thead><tr>
         <th>Messengers</th>
         <th>Luminality</th>
@@ -313,10 +313,27 @@ window.Quarto = {
   document.addEventListener("DOMContentLoaded", function () {
     const tables = document.querySelectorAll("table.dynamic-table-target");
     tables.forEach((table) => {
+      const searchable = table.dataset.searchable !== "false";
+      const sortable = table.dataset.sortable !== "false";
+      const perPage = parseInt(table.dataset.perPage || "15", 10);
+      
+      const columnRules = [];
+      if (table.dataset.unsortable && table.dataset.unsortable.trim() !== "") {
+        const unsortList = table.dataset.unsortable
+          .split(",")
+          .map((x) => parseInt(x.trim(), 10))
+          .filter((x) => !isNaN(x));
+        
+        if (unsortList.length > 0) {
+          columnRules.push({ select: unsortList, sortable: false });
+        }
+      }
+
       new simpleDatatables.DataTable(table, {
-        searchable: true,
-        sortable: true,
-        perPage: 15,
+        searchable: searchable,
+        sortable: sortable,
+        perPage: perPage,
+        columns: columnRules.length > 0 ? columnRules : undefined,
         labels: {
           placeholder: "Search table...",
           perPage: "entries per page",
