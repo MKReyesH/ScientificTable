@@ -48,17 +48,6 @@ function renderSmartTable(fileAttachment, options = {}) {
 }
 ```
 
-    return Inputs.table(rows, {
-      search: true,
-      sort: true,
-      rows: 15,
-      format,
-      ...options
-    });
-  });
-}
-```
-
 ```{ojs}
 //| echo: false
 renderSmartTable(FileAttachment("../data/bounds.csv"))
