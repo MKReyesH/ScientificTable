@@ -185,7 +185,7 @@ window.Quarto = {
 
 
 <div class="dynamic-table-wrapper">
-  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;unsortable&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;dropdown&quot;},{&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:1.0e-9,&quot;MeV&quot;:1.0e-6,&quot;eV&quot;:1,&quot;keV&quot;:1.0e-3},&quot;type&quot;:&quot;units&quot;,&quot;units&quot;:[&quot;eV&quot;,&quot;keV&quot;,&quot;MeV&quot;,&quot;GeV&quot;]}]">
+  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;ignorePunctuation&quot;:false,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;ignorePunctuation&quot;:false,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;ignorePunctuation&quot;:false,&quot;index&quot;:2,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:1.0e-9,&quot;MeV&quot;:1.0e-6,&quot;eV&quot;:1,&quot;keV&quot;:1.0e-3},&quot;type&quot;:&quot;units&quot;,&quot;units&quot;:[&quot;eV&quot;,&quot;keV&quot;,&quot;MeV&quot;,&quot;GeV&quot;]},{&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:1.0e-9,&quot;MeV&quot;:1.0e-6,&quot;eV&quot;:1,&quot;keV&quot;:1.0e-3},&quot;type&quot;:&quot;units&quot;,&quot;units&quot;:[&quot;eV&quot;,&quot;keV&quot;,&quot;MeV&quot;,&quot;GeV&quot;]}]">
     <thead><tr>
         <th>Messengers</th>
         <th>Luminality</th>
@@ -309,90 +309,51 @@ window.Quarto = {
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
 <style>
-  table.dynamic-table-target th {
-    vertical-align: top !important;
-  }
-  .dynamic-table-control-container {
-    display: block;
-    margin-top: 4px;
-  }
-  .dynamic-table-dropdown-filter,
-  .dynamic-table-unit-select {
-    display: block;
-    width: 100%;
-    max-width: 120px;
-    font-size: 0.8em;
-    padding: 2px 4px;
-    border-radius: 4px;
-    border: 1px solid #ced4da;
-    background-color: #fff;
-    cursor: pointer;
+  table.dynamic-table-target th { vertical-align: top !important; }
+  .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; }
+  .dynamic-table-ctrl-select {
+    display: block; width: 100%; max-width: 120px; font-size: 0.8em;
+    padding: 2px 4px; border-radius: 4px; border: 1px solid #ced4da; background: #fff; cursor: pointer;
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const tables = document.querySelectorAll("table.dynamic-table-target");
-    tables.forEach((table) => {
-      const searchable = table.dataset.searchable !== "false";
-      const sortable = table.dataset.sortable !== "false";
-      const perPage = parseInt(table.dataset.perPage || "15", 10);
-      
+    document.querySelectorAll("table.dynamic-table-target").forEach((table) => {
       let customColumns = [];
       if (table.dataset.columns) {
-        try { customColumns = JSON.parse(table.dataset.columns); } 
-        catch (e) { console.error("Error parsing columns metadata:", e); }
+        try { customColumns = JSON.parse(table.dataset.columns); } catch (e) {}
       }
 
-      // Configure explicit column rules for Simple-DataTables
-      const columnRules = [];
-      customColumns.forEach(col => {
-        if (col.type === "unsortable") {
-          columnRules.push({ select: col.index, sortable: false });
-        } else if (col.type === "dropdown") {
-          // Force string type to prevent auto-numeric detection on +, -, empty strings
-          columnRules.push({ select: col.index, type: "string" });
-        }
+      const columnRules = customColumns.map(col => {
+        const rule = { select: col.index };
+        if (col.sortable === false) rule.sortable = false;
+        if (col.type && col.type !== "units") rule.type = col.type;
+        if (col.ignorePunctuation !== undefined) rule.ignorePunctuation = col.ignorePunctuation;
+        return rule;
       });
 
-      // Instantiate Simple-DataTables
       const dt = new simpleDatatables.DataTable(table, {
-        searchable: searchable,
-        sortable: sortable,
-        perPage: perPage,
+        searchable: table.dataset.searchable !== "false",
+        sortable: table.dataset.sortable !== "false",
+        perPage: parseInt(table.dataset.perPage || "15", 10),
         columns: columnRules.length > 0 ? columnRules : undefined,
-        labels: {
-          placeholder: "Search table...",
-          perPage: "entries per page",
-          noRows: "No entries found",
-          info: "Showing {start} to {end} of {rows} entries",
-        }
+        labels: { placeholder: "Search table...", perPage: "entries per page", noRows: "No entries found", info: "Showing {start} to {end} of {rows} entries" }
       });
 
-      // Attach UI controls after table initialization
       dt.on("datatable.init", () => {
-        setupCustomColumnFeatures(table, dt, customColumns);
+        customColumns.forEach(col => {
+          if (col.dropdown) setupDropdownFilter(table, col.index);
+          if (col.type === "units") setupUnitConverter(table, col);
+        });
       });
     });
   });
 
-  function setupCustomColumnFeatures(table, dt, customColumns) {
-    customColumns.forEach(col => {
-      if (col.type === "dropdown") {
-        setupDropdownFilter(table, dt, col.index);
-      } else if (col.type === "units") {
-        setupUnitConverter(table, dt, col);
-      }
-    });
-  }
+  function setupDropdownFilter(table, colIndex) {
+    const th = table.querySelectorAll("thead th")[colIndex];
+    if (!th) return;
 
-  // --- Feature 1: Header Dropdown Filter ---
-  function setupDropdownFilter(table, dt, colIndex) {
-    const ths = table.querySelectorAll("thead th");
-    if (!ths || !ths[colIndex]) return;
-    const th = ths[colIndex];
-
-    // Read unique values directly from table body cells
     const uniqueVals = new Set();
     table.querySelectorAll("tbody tr").forEach(tr => {
       const cell = tr.children[colIndex];
@@ -402,91 +363,58 @@ window.Quarto = {
       }
     });
 
-    const container = document.createElement("div");
-    container.className = "dynamic-table-control-container";
-
+    const wrap = document.createElement("div");
+    wrap.className = "dynamic-table-ctrl-wrap";
     const select = document.createElement("select");
-    select.className = "dynamic-table-dropdown-filter";
-    
-    const defaultOpt = document.createElement("option");
-    defaultOpt.value = "";
-    defaultOpt.textContent = "All";
-    select.appendChild(defaultOpt);
+    select.className = "dynamic-table-ctrl-select";
+    select.innerHTML = '<option value="">All</option>' + Array.from(uniqueVals).sort().map(v => `<option value="${v}">${v}</option>`).join("");
 
-    Array.from(uniqueVals).sort().forEach(val => {
-      const opt = document.createElement("option");
-      opt.value = val;
-      opt.textContent = val;
-      select.appendChild(opt);
-    });
-
-    // Isolate click events to prevent triggering header sort
-    container.addEventListener("click", (e) => e.stopPropagation());
+    wrap.addEventListener("click", (e) => e.stopPropagation());
     select.addEventListener("click", (e) => e.stopPropagation());
-
     select.addEventListener("change", (e) => {
       const filterVal = e.target.value.trim();
       table.querySelectorAll("tbody tr").forEach(tr => {
         const cell = tr.children[colIndex];
-        if (!cell) return;
-        const cellVal = cell.textContent.trim();
-        tr.style.display = (filterVal === "" || cellVal === filterVal) ? "" : "none";
+        if (cell) {
+          const cellVal = cell.textContent.trim();
+          tr.style.display = (filterVal === "" || cellVal === filterVal) ? "" : "none";
+        }
       });
     });
 
-    container.appendChild(select);
-    th.appendChild(container);
+    wrap.appendChild(select);
+    th.appendChild(wrap);
   }
 
-  // --- Feature 2: Interactive Unit Converter ---
-  function setupUnitConverter(table, dt, col) {
-    const ths = table.querySelectorAll("thead th");
-    if (!ths || !ths[col.index] || !col.units || !col.map) return;
-    const th = ths[col.index];
+  function setupUnitConverter(table, col) {
+    const th = table.querySelectorAll("thead th")[col.index];
+    if (!th || !col.units || !col.map) return;
 
-    const container = document.createElement("div");
-    container.className = "dynamic-table-control-container";
-
+    const wrap = document.createElement("div");
+    wrap.className = "dynamic-table-ctrl-wrap";
     const select = document.createElement("select");
-    select.className = "dynamic-table-unit-select";
+    select.className = "dynamic-table-ctrl-select";
+    select.innerHTML = col.units.map(u => `<option value="${u}">${u}</option>`).join("");
 
-    col.units.forEach(u => {
-      const opt = document.createElement("option");
-      opt.value = u;
-      opt.textContent = u;
-      select.appendChild(opt);
-    });
-
-    function formatValue(num) {
-      if (isNaN(num)) return "";
-      const absVal = Math.abs(num);
-      if (absVal > 0 && (absVal < 1e-3 || absVal >= 1e4)) {
-        return num.toExponential(2);
-      }
-      return Number(num.toFixed(4)).toString();
-    }
-
-    function convertColumn(unitName) {
-      const factor = col.map[unitName];
+    wrap.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("change", (e) => {
+      const factor = col.map[e.target.value];
       if (factor === undefined) return;
-
       table.querySelectorAll("tbody tr").forEach(tr => {
         const cell = tr.children[col.index];
         if (cell && cell.dataset.order !== undefined) {
-          const baseNum = parseFloat(cell.dataset.order);
-          if (!isNaN(baseNum)) {
-            cell.textContent = formatValue(baseNum * factor);
+          const num = parseFloat(cell.dataset.order);
+          if (!isNaN(num)) {
+            const abs = Math.abs(num * factor);
+            cell.textContent = (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? (num * factor).toExponential(2) : Number((num * factor).toFixed(4)).toString();
           }
         }
       });
-    }
+    });
 
-    container.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("change", (e) => convertColumn(e.target.value));
-
-    container.appendChild(select);
-    th.appendChild(container);
+    wrap.appendChild(select);
+    th.appendChild(wrap);
   }
 </script>
 
