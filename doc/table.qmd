@@ -3,10 +3,52 @@ title: Table
 ---
 
 ```{ojs}
-data = FileAttachment("../data/bounds.csv").csv()
-Inputs.table(data, {
-  search: true,
-  sort: true,
-  rows: 15
-})
+//| echo: false
+
+// Generic function to render any CSV file with smart formatting and sorting
+function renderSmartTable(fileAttachment, options = {}) {
+  const data = fileAttachment.csv({ typed: true });
+  
+  return data.then(rows => {
+    // Dynamically retrieve column names from the dataset
+    const columns = rows.columns || Object.keys(rows[0] || {});
+    const format = {};
+
+    // Build smart formatters for all columns dynamically
+    for (const col of columns) {
+      format[col] = value => {
+        if (value == null || value === "") return "";
+        
+        if (typeof value === "number") {
+          // 1. Integer IDs & counts: output raw string without commas (e.g., 1434280)
+          if (Number.isInteger(value)) return String(value);
+          
+          // 2. Scientific notation / extreme floats (|x| < 0.01 or |x| >= 10,000)
+          const abs = Math.abs(value);
+          if (abs > 0 && (abs < 0.01 || abs >= 1e4)) {
+            return value.toExponential();
+          }
+          
+          // 3. Standard decimal numbers
+          return String(value);
+        }
+        
+        return String(value);
+      };
+    }
+
+    return Inputs.table(rows, {
+      search: true,
+      sort: true,
+      rows: 15,
+      format,
+      ...options
+    });
+  });
+}
+```
+
+```{ojs}
+//| echo: false
+renderSmartTable(FileAttachment("../data/bounds.csv"))
 ```
