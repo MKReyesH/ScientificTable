@@ -130,15 +130,15 @@ window.Quarto = {
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link active" href="../doc/table.html" aria-current="page"> 
+    <a class="nav-link" href="../doc/example1.html"> 
 <span class="menu-text">Table</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../doc/processes.html"> 
+    <a class="nav-link" href="../doc/example2.html"> 
 <span class="menu-text">Processes</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../doc/backgrounds.html"> 
+    <a class="nav-link" href="../doc/example3.html"> 
 <span class="menu-text">Backgrounds</span></a>
   </li>  
   <li class="nav-item">
@@ -184,149 +184,7 @@ window.Quarto = {
 </header>
 
 
-<link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
-
-<div class="table-responsive my-3"><table id="csv_table_1" class="table table-striped table-hover table-bordered align-middle w-100"><thead><tr>
-<th>Messengers</th>
-<th> Luminality</th>
-<th> Effects</th>
-<th> delta(0)</th>
-<th> ELIV(1)</th>
-<th> ELIV(2)</th>
-<th> InspireID</th>
-</tr></thead><tbody>
-<tr>
-<td>Gamma rays</td>
-<td> </td>
-<td> Birefrigence</td>
-<td> </td>
-<td> 1e-16</td>
-<td> </td>
-<td> 1311435</td>
-</tr>
-<tr>
-<td>Gamma rays</td>
-<td> +</td>
-<td> Time delays</td>
-<td> </td>
-<td> 9.02</td>
-<td> 5.74e-8</td>
-<td> 2756998</td>
-</tr>
-<tr>
-<td>Gamma rays</td>
-<td> -</td>
-<td> Time delays</td>
-<td> </td>
-<td> 8.20</td>
-<td> 5.66e-8</td>
-<td> 2756998</td>
-</tr>
-<tr>
-<td>Gamma rays</td>
-<td> +</td>
-<td> Pair decay</td>
-<td> </td>
-<td> 1.39e5</td>
-<td> 1.17e-4</td>
-<td> 1863649</td>
-</tr>
-<tr>
-<td>Gamma rays</td>
-<td> +</td>
-<td> Pair decay</td>
-<td> </td>
-<td> 1.16e5</td>
-<td> 1.04e-4</td>
-<td> 1869962</td>
-</tr>
-<tr>
-<td>Gamma rays</td>
-<td> +</td>
-<td> Splitting</td>
-<td> </td>
-<td> </td>
-<td> 1.81e-3</td>
-<td> 1869962</td>
-</tr>
-<tr>
-<td>Gamma rays</td>
-<td> -</td>
-<td> Breit-Wheeler</td>
-<td> </td>
-<td> 4.70</td>
-<td> 1.17e-7</td>
-<td> 1701232</td>
-</tr>
-<tr>
-<td>Gamma rays</td>
-<td> -</td>
-<td> Bethe-Heitler</td>
-<td> </td>
-<td> </td>
-<td> 1.72e-8</td>
-<td> 1500959</td>
-</tr>
-<tr>
-<td>Neutrinos</td>
-<td> </td>
-<td> Oscillations</td>
-<td> 2.8e-27</td>
-<td> </td>
-<td> </td>
-<td> 930440</td>
-</tr>
-<tr>
-<td>Neutrinos</td>
-<td> -</td>
-<td> Time delays</td>
-<td> 2.5e-18</td>
-<td> 1.23e2</td>
-<td> 3.44e-7</td>
-<td> 1434280</td>
-</tr>
-<tr>
-<td>Neutrinos</td>
-<td> +</td>
-<td> Pair emission</td>
-<td> 1.8e-21</td>
-<td> </td>
-<td> </td>
-<td> 2890924</td>
-</tr>
-<tr>
-<td>Neutrinos</td>
-<td> +</td>
-<td> Splitting</td>
-<td> </td>
-<td> 4.34e10</td>
-<td> 0.9</td>
-<td> 2879713</td>
-</tr>
-</tbody></table></div>
-<script>
-  (function() {
-    function init() {
-      if (window.jQuery && $.fn.dataTable) {
-        $('#csv_table_1').DataTable({
-          responsive: true,
-          pageLength: 10,
-          lengthMenu: [5, 10, 25, 50, 100],
-          language: { search: "_INPUT_", searchPlaceholder: "Search table..." }
-        });
-      }
-    }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
-    }
-  })();
-</script>
-
+<p>!csv-table: data/bounds.csv</p>
 
 
 
