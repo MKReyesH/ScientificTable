@@ -9,7 +9,7 @@
 --                        per-page: 15
 --                        sortable: true|false
 --                        column 0: unsortable
---                        column 1: dropdown, string
+--                        column 1: dropdown
 --                        column 4: units(eV: 1, keV: 1e-3, MeV: 1e-6, GeV: 1e-9)
 --                        :::
 -- =============================================================================
@@ -18,14 +18,6 @@ local has_dynamic_table = false
 
 local CLIENT_ASSETS_HTML = [[
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
-<style>
-  table.dynamic-table-target th { vertical-align: top !important; }
-  .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; }
-  .dynamic-table-ctrl-select {
-    display: block; width: 100%; max-width: 120px; font-size: 0.8em;
-    padding: 2px 4px; border-radius: 4px; border: 1px solid #ced4da; background: #fff; cursor: pointer;
-  }
-</style>
 <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
@@ -46,7 +38,7 @@ local CLIENT_ASSETS_HTML = [[
         searchable: table.dataset.searchable !== "false",
         sortable: table.dataset.sortable !== "false",
         perPage: parseInt(table.dataset.perPage || "15", 10),
-        ignorePunctuation: false, // Ensures +, -, and special symbols are sorted deterministically
+        ignorePunctuation: false,
         columns: columnRules.length > 0 ? columnRules : undefined,
         labels: { placeholder: "Search table...", perPage: "entries per page", noRows: "No entries found", info: "Showing {start} to {end} of {rows} entries" }
       });
@@ -217,10 +209,6 @@ local function parse_column_rule(line)
         elseif tag == "number" or tag == "numeric" then rule.type = "number" end
     end
 
-    if rule.dropdown and not rule.type then
-        rule.type = "string"
-    end
-
     return rule
 end
 
@@ -268,7 +256,7 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         table.insert(html, '      </tr>')
     end
 
-    table.insert(html, '    </tbody>mtable</div>')
+    table.insert(html, '    </tbody></table></div>')
     return pandoc.RawBlock('html', table.concat(html, "\n"))
 end
 
