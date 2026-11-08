@@ -23,6 +23,22 @@ local has_dynamic_table = false
 -- Client-side library & custom column feature engine
 local CLIENT_ASSETS_HTML = [[
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
+<style>
+  table.dynamic-table-target th {
+    vertical-align: top !important;
+  }
+  .dynamic-table-dropdown-filter,
+  .dynamic-table-unit-select {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.8em;
+    padding: 2px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    max-width: 120px;
+  }
+</style>
 <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
@@ -93,7 +109,6 @@ local CLIENT_ASSETS_HTML = [[
 
     const select = document.createElement("select");
     select.className = "dynamic-table-dropdown-filter";
-    select.style.cssText = "margin-left: 6px; font-size: 0.8em; padding: 2px 4px; border-radius: 4px; cursor: pointer;";
     
     const defaultOpt = document.createElement("option");
     defaultOpt.value = "";
@@ -122,7 +137,6 @@ local CLIENT_ASSETS_HTML = [[
 
     const select = document.createElement("select");
     select.className = "dynamic-table-unit-select";
-    select.style.cssText = "margin-left: 6px; font-size: 0.8em; padding: 2px 4px; border-radius: 4px; cursor: pointer;";
 
     col.units.forEach(u => {
       const opt = document.createElement("option");
