@@ -308,10 +308,15 @@ window.Quarto = {
 
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
-<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
 <style>
   table.dynamic-table-target th { vertical-align: top !important; }
+  .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; }
+  .dynamic-table-ctrl-select {
+    display: block; width: 100%; max-width: 120px; font-size: 0.8em;
+    padding: 2px 4px; border-radius: 4px; border: 1px solid #ced4da; background: #fff; cursor: pointer;
+  }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("table.dynamic-table-target").forEach((table) => {
@@ -320,16 +325,23 @@ window.Quarto = {
         try { customColumns = JSON.parse(table.dataset.columns); } catch (e) {}
       }
 
+      const globalSortable = table.dataset.sortable !== "false";
+
+      // Build per-column rules with explicit override hierarchy
       const columnRules = customColumns.map(col => {
         const rule = { select: col.index };
-        if (col.sortable === false) rule.sortable = false;
+        if (col.sortable !== undefined) {
+          rule.sortable = col.sortable;
+        } else if (!globalSortable) {
+          rule.sortable = false;
+        }
         if (col.type && col.type !== "units") rule.type = col.type;
         return rule;
       });
 
       const dt = new simpleDatatables.DataTable(table, {
         searchable: table.dataset.searchable !== "false",
-        sortable: table.dataset.sortable !== "false",
+        sortable: true, // Keep core engine enabled so column-level overrides work
         perPage: parseInt(table.dataset.perPage || "15", 10),
         ignorePunctuation: false,
         columns: columnRules.length > 0 ? columnRules : undefined,
