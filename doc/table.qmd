@@ -3,6 +3,7 @@ title: Table
 ---
 
 ```{ojs}
+data = FileAttachment("../data/bounds.csv").csv()
 Inputs.table(data, {
   search: true,
   sort: true,
