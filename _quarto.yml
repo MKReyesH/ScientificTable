@@ -35,5 +35,5 @@ format:
     css:
       - include/css-config.css
     include-after-body:
-      - include/dynamic-tables.js
+      - include/dynamic-tables.html
     
