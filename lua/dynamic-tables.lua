@@ -19,6 +19,9 @@ local has_dynamic_table = false
 local CLIENT_ASSETS_HTML = [[
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
 <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
+<style>
+  table.dynamic-table-target th { vertical-align: top !important; }
+</style>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("table.dynamic-table-target").forEach((table) => {
