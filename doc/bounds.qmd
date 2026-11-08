@@ -4,8 +4,9 @@ title: Bounds
 
 ::: {.dynamic-table}
 src: ../data/bounds.csv
-searchable: false
-per-page: 10
+searchable: true
+per-page: 15
 column 0: unsortable
-column 3: unsortable
+column 1: dropdown
+column 4: units(eV: 1, keV: 1e-3, MeV: 1e-6, GeV: 1e-9)
 :::
