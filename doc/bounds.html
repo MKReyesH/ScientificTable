@@ -307,6 +307,26 @@ window.Quarto = {
 
 
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
+<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const tables = document.querySelectorAll("table.dynamic-table-target");
+    tables.forEach((table) => {
+      new simpleDatatables.DataTable(table, {
+        searchable: true,
+        sortable: true,
+        perPage: 15,
+        labels: {
+          placeholder: "Search table...",
+          perPage: "{select} entries per page",
+          noRows: "No entries found",
+          info: "Showing {start} to {end} of {rows} entries",
+        }
+      });
+    });
+  });
+</script>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
