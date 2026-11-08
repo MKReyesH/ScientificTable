@@ -1,0 +1,6 @@
+---
+title: Bounds
+---
+
+::: {.dynamic-table src="../data/bounds.csv"}
+:::

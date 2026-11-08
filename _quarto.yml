@@ -6,8 +6,8 @@ website:
     left:
       - text: "Home"
         href: index.qmd
-      - text: "Table"
-        href: "doc/table.qmd"
+      - text: "Bounds"
+        href: "doc/Bounds.qmd"
       - text: "Processes"
         href: "doc/processes.qmd"
       - text: "Backgrounds"
@@ -32,5 +32,8 @@ format:
   html:
     theme: minty # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
     math: mathjax
-    css: include/css-config.css
+    css:
+      - include/css-config.css
+    include-after-body:
+      - include/dynamic-tables.js
     
