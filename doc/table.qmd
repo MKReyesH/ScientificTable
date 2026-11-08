@@ -5,37 +5,48 @@ title: Table
 ```{ojs}
 //| echo: false
 
-// Generic function to render any CSV file with smart formatting and sorting
+// Universal table renderer preserving exact CSV strings with true numerical sorting
 function renderSmartTable(fileAttachment, options = {}) {
-  const data = fileAttachment.csv({ typed: true });
-  
-  return data.then(rows => {
-    // Dynamically retrieve column names from the dataset
-    const columns = rows.columns || Object.keys(rows[0] || {});
-    const format = {};
-
-    // Build smart formatters for all columns dynamically
-    for (const col of columns) {
-      format[col] = value => {
-        if (value == null || value === "") return "";
-        
-        if (typeof value === "number") {
-          // 1. Integer IDs & counts: output raw string without commas (e.g., 1434280)
-          if (Number.isInteger(value)) return String(value);
-          
-          // 2. Scientific notation / extreme floats (|x| < 0.01 or |x| >= 10,000)
-          const abs = Math.abs(value);
-          if (abs > 0 && (abs < 0.01 || abs >= 1e4)) {
-            return value.toExponential();
-          }
-          
-          // 3. Standard decimal numbers
-          return String(value);
+  // Read CSV as raw strings to preserve exact formatting (4.34e10, 1311435, etc.)
+  return fileAttachment.csv().then(rawRows => {
+    if (!rawRows.length) return Inputs.table(rawRows);
+    
+    const columns = rawRows.columns || Object.keys(rawRows[0]);
+    
+    // Wrap cell values so Inputs.table sorts numerically but renders raw strings
+    const smartRows = rawRows.map(row => {
+      const newRow = {};
+      for (const col of columns) {
+        const raw = row[col] != null ? String(row[col]).trim() : "";
+        if (raw === "") {
+          newRow[col] = "";
+          continue;
         }
         
-        return String(value);
-      };
-    }
+        const num = Number(raw);
+        if (!isNaN(num)) {
+          // Numeric cell: valueOf() returns number for sorting, toString() returns raw string
+          newRow[col] = {
+            valueOf: () => num,
+            toString: () => raw
+          };
+        } else {
+          // Text cell
+          newRow[col] = raw;
+        }
+      }
+      return newRow;
+    });
+
+    return Inputs.table(smartRows, {
+      search: true,
+      sort: true,
+      rows: 15,
+      ...options
+    });
+  });
+}
+```
 
     return Inputs.table(rows, {
       search: true,
