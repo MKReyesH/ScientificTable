@@ -2,4 +2,10 @@
 title: Table
 ---
 
-!csv-table: data/bounds.csv
+```{ojs}
+// 1. Load the CSV file relative to doc/table.qmd
+data = FileAttachment("../data/bounds.csv").csv({ typed: true })
+
+// 2. Render an interactive table with built-in search and sorting
+Inputs.table(data)
+```
