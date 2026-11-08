@@ -7,7 +7,7 @@ website:
       - text: "Home"
         href: index.qmd
       - text: "Bounds"
-        href: "doc/Bounds.qmd"
+        href: "doc/bounds.qmd"
       - text: "Processes"
         href: "doc/processes.qmd"
       - text: "Backgrounds"
