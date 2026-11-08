@@ -1,8 +1,25 @@
 -- =============================================================================
--- Dynamic CSV Table Pre-Renderer & Hydrator (Pandoc Lua Filter)
--- Supports:
---   1. Quick Syntax: !dynamic-table: path/to/file.csv
---   2. Customized Syntax: ::: {.dynamic-table} with multiline settings
+-- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
+--
+-- SYNTAX SPECIFICATION:
+--
+-- 1. Quick Syntax (Single-line command with default settings):
+--    !dynamic-table: path/to/data.csv
+--
+--    Defaults applied:
+--      - searchable: true
+--      - per-page: 15
+--      - sortable: true (all columns)
+--
+-- 2. Customized Syntax (Multiline Div with explicit properties):
+--    ::: {.dynamic-table}
+--    src: path/to/data.csv
+--    searchable: false           -- Optional (default: true)
+--    per-page: 25                -- Optional (default: 15)
+--    sortable: true              -- Optional (default: true)
+--    column 0: unsortable        -- Optional (0-based index)
+--    column 3: unsortable
+--    :::
 -- =============================================================================
 
 local has_dynamic_table = false
@@ -139,7 +156,7 @@ end
 -- 1. QUICK SYNTAX HANDLER (!dynamic-table: path/to/file.csv)
 function Para(p)
     local txt = pandoc.utils.stringify(p):match("^%s*(.-)%s*$")
-    local src = txt:match("^%!dynamic%-table:%s*(%S+)") or txt:match("^%!table:%s*(%S+)")
+    local src = txt:match("^%!dynamic%-table:%s*(%S+)")
     if src then
         local raw = render_table(src, "true", "15", "true", "")
         if raw then return raw end
@@ -149,39 +166,36 @@ end
 
 -- 2. CUSTOMIZED MULTILINE SYNTAX HANDLER (::: {.dynamic-table})
 function Div(el)
-    if not el.classes:includes("dynamic-table") and not el.classes:includes("table") then
+    if not el.classes:includes("dynamic-table") then
         return nil
     end
 
-    local src = el.attributes["src"] or el.attributes["file"]
-    local searchable = el.attributes["searchable"] or el.attributes["search"] or "true"
-    local per_page = el.attributes["per-page"] or el.attributes["per_page"] or "15"
-    local sortable = el.attributes["sortable"] or "true"
+    local src = el.attributes["src"]
+    local searchable = "true"
+    local per_page = "15"
+    local sortable = "true"
     local unsortable_tbl = {}
 
-    -- Parse line-by-line configuration inside the Div body
+    -- Single-pass strict key-value parsing
     local text_content = pandoc.utils.stringify(el)
     for line in text_content:gmatch("[^\r\n]+") do
         line = line:match("^%s*(.-)%s*$")
         if line ~= "" and not line:match("^#") then
-            if line:match("^src:%s*") then
-                src = line:match("^src:%s*(%S+)")
-            elseif line:match("^searchable:%s*") then
-                searchable = line:match("^searchable:%s*(%S+)")
-            elseif line:match("^search:%s*") then
-                searchable = line:match("^search:%s*(%S+)")
-            elseif line:match("^per%-page:%s*") then
-                per_page = line:match("^per%-page:%s*(%S+)")
-            elseif line:match("^per_page:%s*") then
-                per_page = line:match("^per_page:%s*(%S+)")
-            elseif line:match("^sortable:%s*") then
-                sortable = line:match("^sortable:%s*(%S+)")
-            elseif line:match("^column") or line:match("^col") then
+            local key, val = line:match("^([%w_%-]+):%s*(.-)%s*$")
+            if key and val then
+                if key == "src" then
+                    src = val
+                elseif key == "searchable" then
+                    searchable = val
+                elseif key == "per-page" then
+                    per_page = val
+                elseif key == "sortable" then
+                    sortable = val
+                end
+            elseif line:lower():match("^column") then
                 local col_num = line:match("%d+")
-                if col_num then
-                    if line:lower():match("unsortable") then
-                        table.insert(unsortable_tbl, col_num)
-                    end
+                if col_num and line:lower():match("unsortable") then
+                    table.insert(unsortable_tbl, col_num)
                 end
             end
         end
