@@ -7,11 +7,11 @@ website:
       - text: "Home"
         href: index.qmd
       - text: "Table"
-        href: "doc/table.qmd"
+        href: "doc/example1.qmd"
       - text: "Processes"
-        href: "doc/processes.qmd"
+        href: "doc/example2.qmd"
       - text: "Backgrounds"
-        href: "doc/backgrounds.qmd"
+        href: "doc/example3.qmd"
       - text: "GitHub Project"
         href: https://github.com/MKReyesH/ScientificTable
       - text: "About"
