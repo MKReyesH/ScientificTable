@@ -11,7 +11,7 @@
     "href": "doc/table.html",
     "title": "Table",
     "section": "",
-    "text": "data = FileAttachment(\"../data/bounds.csv\").csv()\nInputs.table(data, {\n  search: true,\n  sort: true,\n  rows: 15\n})"
+    "text": "// Generic function to render any CSV file with smart formatting and sorting\nfunction renderSmartTable(fileAttachment, options = {}) {\n  const data = fileAttachment.csv({ typed: true });\n  \n  return data.then(rows =&gt; {\n    // Dynamically retrieve column names from the dataset\n    const columns = rows.columns || Object.keys(rows[0] || {});\n    const format = {};\n\n    // Build smart formatters for all columns dynamically\n    for (const col of columns) {\n      format[col] = value =&gt; {\n        if (value == null || value === \"\") return \"\";\n        \n        if (typeof value === \"number\") {\n          // 1. Integer IDs & counts: output raw string without commas (e.g., 1434280)\n          if (Number.isInteger(value)) return String(value);\n          \n          // 2. Scientific notation / extreme floats (|x| &lt; 0.01 or |x| &gt;= 10,000)\n          const abs = Math.abs(value);\n          if (abs &gt; 0 && (abs &lt; 0.01 || abs &gt;= 1e4)) {\n            return value.toExponential();\n          }\n          \n          // 3. Standard decimal numbers\n          return String(value);\n        }\n        \n        return String(value);\n      };\n    }\n\n    return Inputs.table(rows, {\n      search: true,\n      sort: true,\n      rows: 15,\n      format,\n      ...options\n    });\n  });\n}\n\n\n\n\n\n\n\nrenderSmartTable(FileAttachment(\"../data/bounds.csv\"))"
   },
   {
     "objectID": "index.html",
