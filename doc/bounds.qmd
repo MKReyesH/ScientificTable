@@ -4,8 +4,8 @@ title: Bounds
 
 ::: {.dynamic-table}
 src: ../data/bounds.csv
-searchable: true
 per-page: 15
+searchable: true
 column 0: dropdown
 column 1: dropdown, string
 column 2: dropdown

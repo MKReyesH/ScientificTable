@@ -5,8 +5,8 @@
 -- 1. Quick Syntax:       !dynamic-table: path/to/data.csv
 -- 2. Customized Syntax:  ::: {.dynamic-table}
 --                        src: path/to/data.csv
---                        searchable: true|false
 --                        per-page: 15
+--                        searchable: true|false
 --                        sortable: true|false
 --                        column 0: unsortable
 --                        column 1: dropdown, string
@@ -46,7 +46,7 @@ local CLIENT_ASSETS_HTML = [[
         } else if (!globalSortable) {
           rule.sortable = false;
         }
-        if (col.type && col.type !== "units") rule.type = col.type;
+        if (col.type) rule.type = col.type;
         return rule;
       });
 
@@ -62,7 +62,7 @@ local CLIENT_ASSETS_HTML = [[
       dt.on("datatable.init", () => {
         customColumns.forEach(col => {
           if (col.dropdown) setupDropdownFilter(table, col.index);
-          if (col.type === "units") setupUnitConverter(table, col);
+          if (col.units) setupUnitConverter(table, col);
         });
       });
     });
@@ -206,17 +206,20 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    if body:lower():match("units%((.-)%)") then
-        local args = body:match("units%((.-)%)")
+    -- 1. Extract units(...) if present anywhere on the line
+    local units_str = body:match("units%((.-)%)")
+    if units_str then
         local map, units = {}, {}
-        for pair in args:gmatch("[^,]+") do
+        for pair in units_str:gmatch("[^,]+") do
             local u, f = pair:match("^%s*([%w_%-%%]+)%s*:%s*([%d%.eE%-%+]+)%s*$")
             if u and f then map[u] = tonumber(f); table.insert(units, u) end
         end
-        rule.type = "units"; rule.map = map; rule.units = units
-        return rule
+        rule.units = units
+        rule.map = map
+        body = body:gsub("units%((.-)%)", "")
     end
 
+    -- 2. Parse remaining comma-separated tags (unsortable, sortable, dropdown, string, number)
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag:lower())
         if tag == "unsortable" then rule.sortable = false
