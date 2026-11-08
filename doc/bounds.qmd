@@ -2,5 +2,10 @@
 title: Bounds
 ---
 
-::: {.dynamic-table src="../data/bounds.csv"}
+::: {.dynamic-table}
+src: ../data/bounds.csv
+searchable: false
+per-page: 10
+column 0: unsortable
+column 3: unsortable
 :::
