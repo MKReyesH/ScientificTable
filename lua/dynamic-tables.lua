@@ -10,7 +10,7 @@ local function html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
 end
 
--- Safely strips ASCII quotes (" and ') and UTF-8 smart quotes (“ ” ‘ ’)
+-- Strips ASCII quotes (" and ') and UTF-8 smart quotes (“ ” ‘ ’) safely
 local function strip_quotes(s)
     if not s then return "" end
     s = trim(s)
@@ -24,6 +24,7 @@ local function strip_quotes(s)
     return trim(s)
 end
 
+-- CSV row line parser
 local function parse_csv_line(line)
     local res, pos, len = {}, 1, #line
     while pos <= len do
@@ -58,7 +59,7 @@ local function open_csv_file(src)
     return nil
 end
 
--- Accurately extracts lines preserving linebreaks from Pandoc Div AST
+-- Extracts lines preserving soft and hard linebreaks from Pandoc Div AST
 local function extract_lines_from_div(el)
     local lines = {}
     for _, block in ipairs(el.content) do
@@ -80,7 +81,7 @@ local function extract_lines_from_div(el)
     return lines
 end
 
--- Safely extracts header text without corrupting UTF-8 byte sequences
+-- Safely extracts header strings without breaking multi-byte UTF-8 sequences
 local function extract_header(body)
     local hdr
     hdr = body:match('header%s*=%s*"(.-)"')
@@ -101,6 +102,7 @@ local function extract_header(body)
     return nil, body
 end
 
+-- Parses column rule directives into orthogonal metadata properties
 local function parse_column_rule(line)
     local col_idx = tonumber(line:match("^col%a*%s+(%d+)"))
     if not col_idx then return nil end
