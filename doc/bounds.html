@@ -339,20 +339,13 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
       const globalSortable = table.dataset.sortable !== "false";
 
-      // 1. Initialize scale factors and presentation formatters
+      // 1. Initialize scale factors per column
       customColumns.forEach(col => {
         col.scaleFactor = 1.0;
-        col.formatter = col.latexnum ? CELL_FORMATTERS.latexnum : CELL_FORMATTERS.default;
       });
 
-      // 2. Initial cell render BEFORE Simple-DataTables initializes (enables accurate numeric sorting)
-      customColumns.forEach(col => {
-        if (col.units || col.latexnum || col.type === "number") {
-          renderColumnCells(table, col);
-        }
-      });
-
-      // 3. Build column rules with custom numerical comparator (fixes exponent truncation)
+      // 2. Build column rules using native Simple-DataTables `render` hooks
+      // Keeps raw floats in memory for sorting, returns LaTeX math HTML for rendering
       const columnRules = customColumns.map(col => {
         const rule = { select: col.index };
         if (col.sortable !== undefined) rule.sortable = col.sortable;
@@ -360,10 +353,16 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
         if (col.type === "number" || col.latexnum) {
           rule.type = "number";
-          rule.sort = (a, b) => {
-            const valA = parseFloat(a.attributes?.["data-order"] || a.data || 0);
-            const valB = parseFloat(b.attributes?.["data-order"] || b.data || 0);
-            return valA - valB;
+          rule.render = (data, cell, rowIndex, cellIndex) => {
+            if (data === null || data === undefined || data === "") return "";
+            const rawNum = parseFloat(data);
+            if (isNaN(rawNum)) return data;
+
+            const scaledVal = rawNum * (col.scaleFactor || 1.0);
+            if (col.latexnum) {
+              return formatLatexNumber(scaledVal);
+            }
+            return formatStandardNumber(scaledVal);
           };
         } else if (col.type === "string") {
           rule.type = "string";
@@ -371,7 +370,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
         return rule;
       });
 
-      // 4. Instantiate Simple-DataTables
+      // 3. Instantiate Simple-DataTables
       const dt = new simpleDatatables.DataTable(table, {
         searchable: table.dataset.searchable !== "false",
         sortable: true,
@@ -382,7 +381,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
       });
 
       dt.on("datatable.init", () => {
-        // 5. Hydrate UI controls (units dropdowns, category filters)
+        // 4. Hydrate header controls (units dropdowns, category filters)
         customColumns.forEach(col => {
           Object.values(UI_MODULES).forEach(module => {
             if (module.isApplicable(col)) {
@@ -401,45 +400,22 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
   });
 
   // ===========================================================================
-  // CELL FORMATTER PIPELINE (Pure Functions)
+  // CELL FORMATTING UTILITIES (Value -> Output String)
   // ===========================================================================
 
-  const CELL_FORMATTERS = {
-    default: (val) => {
-      const abs = Math.abs(val);
-      return (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? val.toExponential(2) : Number(val.toFixed(4)).toString();
-    },
-
-    latexnum: (val) => {
-      if (val === 0) return '<span class="math inline">\\({0}\\)</span>';
-      const abs = Math.abs(val);
-      if (abs >= 1e-3 && abs < 1e4) {
-        return `<span class="math inline">\\({${Number(val.toFixed(4))}}\\)</span>`;
-      }
-      const parts = val.toExponential(2).split("e");
-      return `<span class="math inline">\\({${parts[0]} \\times 10^{${parseInt(parts[1], 10)}}}\\)</span>`;
+  function formatLatexNumber(val) {
+    if (val === 0) return '<span class="math inline">\\({0}\\)</span>';
+    const abs = Math.abs(val);
+    if (abs >= 1e-3 && abs < 1e4) {
+      return `<span class="math inline">\\({${Number(val.toFixed(4))}}\\)</span>`;
     }
-  };
+    const parts = val.toExponential(2).split("e");
+    return `<span class="math inline">\\({${parts[0]} \\times 10^{${parseInt(parts[1], 10)}}}\\)</span>`;
+  }
 
-  function renderColumnCells(table, col) {
-    table.querySelectorAll("tbody tr").forEach(tr => {
-      const cell = tr.children[col.index];
-      if (cell && cell.dataset.order !== undefined) {
-        const rawNum = parseFloat(cell.dataset.order);
-        if (!isNaN(rawNum)) {
-          const scaledValue = rawNum * (col.scaleFactor || 1.0);
-          cell.setAttribute("data-order", scaledValue.toString());
-          cell.dataset.order = scaledValue.toString();
-
-          const outputHtml = col.formatter(scaledValue);
-          if (col.latexnum) {
-            cell.innerHTML = outputHtml;
-          } else {
-            cell.textContent = outputHtml;
-          }
-        }
-      }
-    });
+  function formatStandardNumber(val) {
+    const abs = Math.abs(val);
+    return (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? val.toExponential(2) : Number(val.toFixed(4)).toString();
   }
 
   function typesetMath(element) {
@@ -454,6 +430,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
   const UI_MODULES = {
 
+    // MODULE A: Category Dropdown Filter
     dropdown: {
       isApplicable: (col) => col.dropdown === true,
       init: (table, col, dt) => {
@@ -493,6 +470,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
       }
     },
 
+    // MODULE B: Dynamic Unit Converter (Updates col.scaleFactor multiplier)
     units: {
       isApplicable: (col) => col.units && col.map,
       init: (table, col, dt) => {
@@ -509,7 +487,8 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
         const applyUnits = () => {
           col.scaleFactor = col.map[select.value] !== undefined ? col.map[select.value] : 1.0;
-          renderColumnCells(table, col);
+          // Trigger internal DataTable render pass to update all column cell displays
+          dt.render();
           typesetMath(table);
         };
 
