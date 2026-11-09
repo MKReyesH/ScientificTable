@@ -8,7 +8,8 @@ per-page: 15
 searchable: true
 column 0: dropdown
 column 1: dropdown, string
-column 2: dropdown, latexnum, header="$\delta^{(0)}$"
+column 2: dropdown,
+column 2: latexnum, header="$\delta^{(0)}$"
 column 4: latexnum, units(Planck units: 1, eV: 1.22e28, GeV: 1.22e19), header="$E_\text{Pl}^{(1)}$"
 column 5: latexnum, units(Planck units: 1, eV: 1.22e28, GeV: 1.22e19), header="$E_\text{Pl}^{(2)}$"
 :::
