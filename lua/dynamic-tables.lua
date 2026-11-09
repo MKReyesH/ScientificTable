@@ -1,18 +1,5 @@
 -- =============================================================================
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
---
--- SYNTAX SPECIFICATION:
--- 1. Quick Syntax:       !dynamic-table: path/to/data.csv
--- 2. Customized Syntax:  ::: {.dynamic-table}
---                        src: path/to/data.csv
---                        per-page: 15
---                        searchable: true|false
---                        sortable: true|false
---                        column 0: header="ID", unsortable
---                        column 1: header="Category", dropdown, string
---                        column 3: sortable, number
---                        column 4: header=$E_{\text{LIV}}^{(1)}$, units(Planck units: 1, eV: 1.22e28), latexnum
---                        :::
 -- =============================================================================
 
 local has_dynamic_table = false
@@ -26,13 +13,10 @@ end
 local function strip_quotes(s)
     if not s then return "" end
     s = trim(s)
-    -- ASCII double or single quotes
     if (s:sub(1,1) == '"' and s:sub(-1) == '"') or (s:sub(1,1) == "'" and s:sub(-1) == "'") then
         s = s:sub(2, -2)
-    -- UTF-8 Smart double quotes: “ (\226\128\156) and ” (\226\128\157)
     elseif s:sub(1,3) == "\226\128\156" and s:sub(-3) == "\226\128\157" then
         s = s:sub(4, -4)
-    -- UTF-8 Smart single quotes: ‘ (\226\128\152) and ’ (\226\128\153)
     elseif s:sub(1,3) == "\226\128\152" and s:sub(-3) == "\226\128\153" then
         s = s:sub(4, -4)
     end
@@ -92,26 +76,20 @@ local function extract_lines_from_div(el)
     return lines
 end
 
--- Safely extracts headers without corrupting UTF-8 byte sequences
 local function extract_header(body)
     local hdr
-    -- 1. ASCII Double Quotes
     hdr = body:match('header%s*=%s*"(.-)"')
     if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*".-"', "")) end
 
-    -- 2. ASCII Single Quotes
-    hdr = body:match("header%s*=%s*'(.-)'")
+    hdr = body:match("header%s*=%s*'([^']+)'")
     if hdr then return strip_quotes(hdr), (body:gsub("header%s*=%s*'.-'", "")) end
 
-    -- 3. UTF-8 Smart Double Quotes “...” (\226\128\156 ... \226\128\157)
     hdr = body:match('header%s*=%s*\226\128\156(.-)\226\128\157')
     if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*\226\128\156.-\226\128\157', "")) end
 
-    -- 4. UTF-8 Smart Single Quotes ‘...’ (\226\128\152 ... \226\128\153)
     hdr = body:match('header%s*=%s*\226\128\152(.-)\226\128\153')
     if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*\226\128\152.-\226\128\153', "")) end
 
-    -- 5. Unquoted header up to next comma or end of string
     hdr = body:match('header%s*=%s*([^,]+)')
     if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*[^,]+', "")) end
 
@@ -124,14 +102,12 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    -- Extract header
     local hdr, clean_body = extract_header(body)
     if hdr then
         rule.header = hdr
         body = clean_body
     end
 
-    -- Extract units(...)
     local units_str = body:match("units%((.-)%)")
     if units_str then
         local map, units = {}, {}
@@ -144,7 +120,6 @@ local function parse_column_rule(line)
         body = body:gsub("units%((.-)%)", "")
     end
 
-    -- Extract column tags
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag:lower())
         if tag == "unsortable" then rule.sortable = false
@@ -162,13 +137,11 @@ local function format_header_html(hdr)
     if not hdr then return nil end
     hdr = strip_quotes(hdr)
 
-    -- Explicit math delimiters: $...$ or \(...\)
     local math_content = hdr:match("^%$(.*)%$") or hdr:match("^\\%((.*)\\%)$")
     if math_content then
         return string.format('<span class="math inline">\\(%s\\)</span>', math_content)
     end
 
-    -- Implicit TeX syntax (\cmd, _, ^)
     if hdr:match("\\[%a]+") or hdr:match("[_%^]") then
         return string.format('<span class="math inline">\\(%s\\)</span>', hdr)
     end
