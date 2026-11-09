@@ -23,22 +23,6 @@ local function html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
 end
 
-local function strip_quotes(s)
-    if not s then return "" end
-    s = trim(s)
-    -- ASCII double / single quotes
-    if (s:sub(1,1) == '"' and s:sub(-1) == '"') or (s:sub(1,1) == "'" and s:sub(-1) == "'") then
-        s = s:sub(2, -2)
-    -- Smart double quotes: “ (\226\128\156) and ” (\226\128\157)
-    elseif s:sub(1,3) == "\226\128\156" and s:sub(-3) == "\226\128\157" then
-        s = s:sub(4, -4)
-    -- Smart single quotes: ‘ (\226\128\152) and ’ (\226\128\153)
-    elseif s:sub(1,3) == "\226\128\152" and s:sub(-3) == "\226\128\153" then
-        s = s:sub(4, -4)
-    end
-    return trim(s)
-end
-
 local function parse_csv_line(line)
     local res, pos, len = {}, 1, #line
     while pos <= len do
@@ -92,23 +76,43 @@ local function extract_lines_from_div(el)
     return lines
 end
 
+-- Safely extracts header content without corrupting UTF-8 byte sequences
+local function extract_header(body)
+    local hdr
+    -- 1. ASCII Double Quotes
+    hdr = body:match('header%s*=%s*"(.-)"')
+    if hdr then return trim(hdr), (body:gsub('header%s*=%s*".-"', "")) end
+
+    -- 2. ASCII Single Quotes
+    hdr = body:match("header%s*=%s*'(.-)'")
+    if hdr then return trim(hdr), (body:gsub("header%s*=%s*'.-'", "")) end
+
+    -- 3. UTF-8 Smart Double Quotes “...” (\226\128\156 ... \226\128\157)
+    hdr = body:match('header%s*=%s*\226\128\156(.-)\226\128\157')
+    if hdr then return trim(hdr), (body:gsub('header%s*=%s*\226\128\156.-\226\128\157', "")) end
+
+    -- 4. UTF-8 Smart Single Quotes ‘...’ (\226\128\152 ... \226\128\153)
+    hdr = body:match('header%s*=%s*\226\128\152(.-)\226\128\153')
+    if hdr then return trim(hdr), (body:gsub('header%s*=%s*\226\128\152.-\226\128\153', "")) end
+
+    -- 5. Unquoted header up to next comma or end of string
+    hdr = body:match('header%s*=%s*([^,]+)')
+    if hdr then return trim(hdr), (body:gsub('header%s*=%s*[^,]+', "")) end
+
+    return nil, body
+end
+
 local function parse_column_rule(line)
     local col_idx = tonumber(line:match("^col%a*%s+(%d+)"))
     if not col_idx then return nil end
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    -- Extract header=... (handles quoted, smart-quoted, or unquoted values)
-    local q_hdr = body:match('header%s*=%s*(["\'\226\128\156\226\128\152].-["\'\226\128\157\226\128\153])')
-    if q_hdr then
-        rule.header = strip_quotes(q_hdr)
-        body = body:gsub('header%s*=%s*["\'\226\128\156\226\128\152].-["\'\226\128\157\226\128\153]', "")
-    else
-        local unq_hdr = body:match('header%s*=%s*([^,]+)')
-        if unq_hdr then
-            rule.header = strip_quotes(unq_hdr)
-            body = body:gsub('header%s*=%s*[^,]+', "")
-        end
+    -- Extract header
+    local hdr, clean_body = extract_header(body)
+    if hdr then
+        rule.header = hdr
+        body = clean_body
     end
 
     -- Extract units(...)
@@ -140,15 +144,15 @@ end
 
 local function format_header_html(hdr)
     if not hdr then return nil end
-    hdr = strip_quotes(hdr)
+    hdr = trim(hdr)
 
-    -- If math delimiters are explicitly present: $...$ or \(...\)
+    -- Explicit math delimiters: $...$ or \(...\)
     local math_content = hdr:match("^%$(.*)%$") or hdr:match("^\\%((.*)\\%)$")
     if math_content then
         return string.format('<span class="math inline">\\(%s\\)</span>', math_content)
     end
 
-    -- If Pandoc stringify stripped $ delimiters, but string contains TeX syntax (\, _, ^)
+    -- Implicit TeX syntax (\cmd, _, ^)
     if hdr:match("\\[%a]+") or hdr:match("[_%^]") then
         return string.format('<span class="math inline">\\(%s\\)</span>', hdr)
     end
