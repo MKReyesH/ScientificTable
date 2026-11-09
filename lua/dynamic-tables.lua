@@ -228,7 +228,7 @@ local function parse_column_rule(line)
     if units_str then
         local map, units = {}, {}
         for pair in units_str:gmatch("[^,]+") do
-            local u, f = pair:match("^%s*(.-)%s*:%s*([%d%.eE%-%+]+)%s*$")
+            local u, f = pair:match("^%s*([%w_%-%%]+)%s*:%s*([%d%.eE%-%+]+)%s*$")
             if u and f then map[u] = tonumber(f); table.insert(units, u) end
         end
         rule.units = units
