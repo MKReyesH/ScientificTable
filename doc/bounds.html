@@ -185,7 +185,7 @@ window.Quarto = {
 
 
 <div class="dynamic-table-wrapper">
-  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;index&quot;:0},{&quot;dropdown&quot;:true,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:2},{&quot;header&quot;:&quot;\\delta^{(0)}&quot;,&quot;index&quot;:3,&quot;type&quot;:&quot;latexnum&quot;},{&quot;header&quot;:&quot;E_\\text{Pl}^{(1)}&quot;,&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;latexnum&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]},{&quot;header&quot;:&quot;E_\\text{Pl}^{(2)}&quot;,&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;latexnum&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]}]">
+  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:2,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;\\delta^{(0)}&quot;,&quot;index&quot;:3,&quot;type&quot;:&quot;latexnum&quot;},{&quot;header&quot;:&quot;E_\\text{Pl}^{(1)}&quot;,&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;latexnum&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]},{&quot;header&quot;:&quot;E_\\text{Pl}^{(2)}&quot;,&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;latexnum&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]}]">
     <thead><tr>
         <th>Messengers</th>
         <th>Luminality</th>
@@ -339,10 +339,12 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
       const globalSortable = table.dataset.sortable !== "false";
 
+      // Register column sorting behavior
       const columnRules = customColumns.map(col => {
         const rule = { select: col.index };
         if (col.sortable !== undefined) rule.sortable = col.sortable;
         else if (!globalSortable) rule.sortable = false;
+        
         if (col.type === "string") rule.type = "string";
         else if (col.type === "number" || col.type === "latexnum") rule.type = "number";
         return rule;
@@ -360,12 +362,12 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
       dt.on("datatable.init", () => {
         const updateHandlers = [];
 
-        // 1. Assign default scaleFactor and renderer pipeline per column
+        // 1. Configure scale factors and formatters
         customColumns.forEach(col => {
           col.scaleFactor = 1.0;
           col.formatter = CELL_FORMATTERS[col.type] || CELL_FORMATTERS.default;
 
-          // 2. Hydrate UI control modules (units dropdown, category filter)
+          // 2. Hydrate UI control modules (units, dropdown filters)
           Object.values(UI_MODULES).forEach(module => {
             if (module.isApplicable(col)) {
               const handler = module.init(table, col);
@@ -374,10 +376,10 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
           });
         });
 
-        // 3. Render all active dynamic cell values
+        // 3. Perform initial cell rendering and data-order sync
         const renderAllCells = () => {
           customColumns.forEach(col => {
-            if (col.units || col.type === "latexnum") {
+            if (col.units || col.type === "latexnum" || col.type === "number") {
               renderColumnCells(table, col);
             }
           });
@@ -400,17 +402,15 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
   });
 
   // ===========================================================================
-  // 1. DECOUPLED CELL FORMATTERS (Value -> Output String)
+  // 1. DECOUPLED CELL FORMATTERS
   // ===========================================================================
 
   const CELL_FORMATTERS = {
-    // Standard numerical formatting (plain text display)
     default: (val) => {
       const abs = Math.abs(val);
       return (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? val.toExponential(2) : Number(val.toFixed(4)).toString();
     },
 
-    // Scientific notation wrapped in an indivisible TeX atom {...}
     latexnum: (val) => {
       if (val === 0) return '<span class="math inline">\\({0}\\)</span>';
       const abs = Math.abs(val);
@@ -422,7 +422,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
     }
   };
 
-  // Generic cell render runner
+  // Synchronizes cell HTML and updates numeric data-order attribute
   function renderColumnCells(table, col) {
     table.querySelectorAll("tbody tr").forEach(tr => {
       const cell = tr.children[col.index];
@@ -430,6 +430,11 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
         const rawNum = parseFloat(cell.dataset.order);
         if (!isNaN(rawNum)) {
           const scaledValue = rawNum * (col.scaleFactor || 1.0);
+          
+          // Dynamically update dataset order so simple-datatables sorts numerically on scaled values
+          cell.setAttribute("data-order", scaledValue.toString());
+          cell.dataset.order = scaledValue.toString();
+
           const outputHtml = col.formatter(scaledValue);
           if (col.type === "latexnum") {
             cell.innerHTML = outputHtml;
@@ -442,12 +447,11 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
   }
 
   // ===========================================================================
-  // 2. INDEPENDENT UI MODULES (Header Controls & Category Filters)
+  // 2. INDEPENDENT UI MODULES
   // ===========================================================================
 
   const UI_MODULES = {
 
-    // MODULE A: Category Dropdown Filter
     dropdown: {
       isApplicable: (col) => col.dropdown === true,
       init: (table, col) => {
@@ -489,7 +493,6 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
       }
     },
 
-    // MODULE B: Dynamic Unit Converter (Updates col.scaleFactor multiplier)
     units: {
       isApplicable: (col) => col.units && col.map,
       init: (table, col) => {
