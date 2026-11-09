@@ -1,5 +1,5 @@
 -- =============================================================================
--- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
+-- DYNAMIC CSV TABLE RENDERER (Pandoc Lua Filter)
 -- =============================================================================
 
 local has_dynamic_table = false
@@ -10,15 +10,13 @@ local function html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
 end
 
--- Safely strips quotes without breaking UTF-8 byte sequences
 local function strip_quotes(s)
     if not s then return "" end
     s = trim(s)
     if (s:sub(1,1) == '"' and s:sub(-1) == '"') or (s:sub(1,1) == "'" and s:sub(-1) == "'") then
         return trim(s:sub(2, -2))
-    elseif s:sub(1,3) == "\226\128\156" and s:sub(-3) == "\226\128\157" then
-        return trim(s:sub(4, -4))
-    elseif s:sub(1,3) == "\226\128\152" and s:sub(-3) == "\226\128\153" then
+    end
+    if s:sub(1,3) == "\226\128\156" and s:sub(-3) == "\226\128\157" then
         return trim(s:sub(4, -4))
     end
     return s
@@ -77,26 +75,6 @@ local function extract_lines_from_div(el)
     return lines
 end
 
-local function extract_header(body)
-    local hdr
-    hdr = body:match('header%s*=%s*"(.-)"')
-    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*".-"', "")) end
-
-    hdr = body:match("header%s*=%s*'([^']+)'")
-    if hdr then return strip_quotes(hdr), (body:gsub("header%s*=%s*'.-'", "")) end
-
-    hdr = body:match('header%s*=%s*\226\128\156(.-)\226\128\157')
-    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*\226\128\156.-\226\128\157', "")) end
-
-    hdr = body:match('header%s*=%s*\226\128\152(.-)\226\128\153')
-    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*\226\128\152.-\226\128\153', "")) end
-
-    hdr = body:match('header%s*=%s*([^,]+)')
-    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*[^,]+', "")) end
-
-    return nil, body
-end
-
 -- Additive left-to-right tag parser
 local function parse_column_rule(line)
     local col_idx = tonumber(line:match("^col%a*%s+(%d+)"))
@@ -104,14 +82,14 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    -- Extract Header
-    local hdr, clean_body = extract_header(body)
+    -- Header extraction
+    local hdr = body:match('header%s*=%s*"(.-)"') or body:match("header%s*=%s*'([^']+)'") or body:match('header%s*=%s*\226\128\156(.-)\226\128\157')
     if hdr then
-        rule.header = hdr
-        body = clean_body
+        rule.header = strip_quotes(hdr)
+        body = body:gsub('header%s*=%s*".-"', ""):gsub("header%s*=%s*'.-'", ""):gsub('header%s*=%s*\226\128\156.-\226\128\157', "")
     end
 
-    -- Extract units(...)
+    -- Units map extraction
     local units_str = body:match("units%((.-)%)")
     if units_str then
         local map, units = {}, {}
@@ -124,14 +102,14 @@ local function parse_column_rule(line)
         body = body:gsub("units%((.-)%)", "")
     end
 
-    -- Additive Tag Evaluation (Left to Right)
+    -- Additive tag parsing (later tags override earlier ones)
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag:lower())
         if tag == "sortable" then rule.sortable = true
         elseif tag == "unsortable" then rule.sortable = false
         elseif tag == "string" or tag == "text" then rule.type = "string"
         elseif tag == "number" or tag == "numeric" then rule.type = "number"
-        elseif tag == "latexnum" or tag == "latex-number" or tag == "latex_number" then
+        elseif tag == "latexnum" or tag == "latex-number" then
             rule.type = "number"
             rule.formatter = "latexnum"
         elseif tag == "dropdown" then rule.dropdown = true end
@@ -143,16 +121,13 @@ end
 local function format_header_html(hdr)
     if not hdr then return nil end
     hdr = strip_quotes(hdr)
-
     local math_content = hdr:match("^%$(.*)%$") or hdr:match("^\\%((.*)\\%)$")
     if math_content then
         return string.format('<span class="math inline">\\(%s\\)</span>', math_content)
     end
-
     if hdr:match("\\[%a]+") or hdr:match("[_%^]") then
         return string.format('<span class="math inline">\\(%s\\)</span>', hdr)
     end
-
     return html_escape(hdr)
 end
 
@@ -186,8 +161,7 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
                 end
             end
         end
-        local header_content = col_override or html_escape(trim(h))
-        table.insert(html, '        <th>' .. header_content .. '</th>')
+        table.insert(html, '        <th>' .. (col_override or html_escape(trim(h))) .. '</th>')
     end
     table.insert(html, '    </tr></thead><tbody>')
 
@@ -196,18 +170,7 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         table.insert(html, '      <tr>')
         for j = 1, #headers do
             local cell_trimmed = trim(row[j])
-            if cell_trimmed == "" then
-                table.insert(html, '        <td></td>')
-            else
-                local num = tonumber(cell_trimmed)
-                local display_txt = html_escape(cell_trimmed)
-                if num then
-                    -- Preserve raw double precision for native JS numeric sorting
-                    table.insert(html, string.format('        <td data-order="%.17g" data-raw="%.17g">%s</td>', num, num, display_txt))
-                else
-                    table.insert(html, string.format('        <td>%s</td>', display_txt))
-                end
-            end
+            table.insert(html, string.format('        <td>%s</td>', html_escape(cell_trimmed)))
         end
         table.insert(html, '      </tr>')
     end
@@ -219,14 +182,12 @@ end
 local function load_client_assets()
     local script_dir = PANDOC_SCRIPT_DIR or "."
     local target_path = script_dir .. "/../include/dynamic-tables.html"
-    local file = io.open(target_path, "r")
-    if not file then file = io.open("include/dynamic-tables.html", "r") end
+    local file = io.open(target_path, "r") or io.open("include/dynamic-tables.html", "r")
     if file then
         local content = file:read("*a")
         file:close()
         return content
     end
-    io.stderr:write("[dynamic-tables] Error: Could not locate include/dynamic-tables.html\n")
     return ""
 end
 
