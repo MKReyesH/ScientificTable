@@ -33,10 +33,7 @@ local CLIENT_ASSETS_HTML = [[
           rule.sortable = false;
         }
         if (col.type) {
-          rule.type = col.type;
-          if (col.type === "number") {
-            rule.numeric = true;
-          }
+          rule.type = col.type; // Pass "number" or "string" directly to simple-datatables engine
         }
         return rule;
       });
@@ -58,7 +55,7 @@ local CLIENT_ASSETS_HTML = [[
             if (h) updateHandlers.push(h);
           }
           if (col.units) {
-            const h = setupUnitConverter(table, col, dt);
+            const h = setupUnitConverter(table, col);
             if (h) updateHandlers.push(h);
           }
         });
@@ -110,7 +107,7 @@ local CLIENT_ASSETS_HTML = [[
     return applyFilter;
   }
 
-  function setupUnitConverter(table, col, dt) {
+  function setupUnitConverter(table, col) {
     const th = table.querySelectorAll("thead th")[col.index];
     if (!th || !col.units || !col.map) return null;
 
@@ -126,11 +123,11 @@ local CLIENT_ASSETS_HTML = [[
       
       table.querySelectorAll("tbody tr").forEach(tr => {
         const cell = tr.children[col.index];
-        if (cell) {
-          const baseNum = parseFloat(cell.dataset.baseOrder || cell.dataset.order);
+        // Only target cells with valid numeric data-base-order; leave empty cells completely untouched
+        if (cell && cell.dataset.baseOrder !== undefined) {
+          const baseNum = parseFloat(cell.dataset.baseOrder);
           if (!isNaN(baseNum)) {
             const convertedNum = baseNum * factor;
-            // Update numeric order attribute for simple-datatables sorting
             cell.dataset.order = convertedNum.toString();
             
             const abs = Math.abs(convertedNum);
@@ -279,13 +276,13 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         for j = 1, #headers do
             local cell_trimmed = trim(row[j] or "")
             if cell_trimmed == "" then
-                -- Standardize empty cells so simple-datatables sorts them predictably
-                table.insert(html, '        <td data-order="-Infinity"></td>')
+                -- Pure clean HTML element for empty cells
+                table.insert(html, '        <td></td>')
             else
                 local num = tonumber(cell_trimmed)
                 local display_txt = html_escape(cell_trimmed)
                 if num then
-                    -- Preserve raw unscaled number in data-base-order for unit conversions
+                    -- Numeric cell with float order key and raw base value
                     table.insert(html, string.format('        <td data-order="%s" data-base-order="%s">%s</td>', tostring(num), tostring(num), display_txt))
                 else
                     table.insert(html, string.format('        <td>%s</td>', display_txt))
