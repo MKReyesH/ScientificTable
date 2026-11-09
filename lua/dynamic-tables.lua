@@ -1,6 +1,5 @@
 -- =============================================================================
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
--- High-Performance, Modular, Non-Clashing Implementation
 -- =============================================================================
 
 local has_dynamic_table = false
@@ -25,7 +24,6 @@ local function strip_quotes(s)
     return trim(s)
 end
 
--- High-performance CSV line parser
 local function parse_csv_line(line)
     local res, pos, len = {}, 1, #line
     while pos <= len do
@@ -60,7 +58,29 @@ local function open_csv_file(src)
     return nil
 end
 
--- Extract header text safely without corrupting UTF-8 byte sequences
+-- Accurately extracts lines preserving linebreaks from Pandoc Div AST
+local function extract_lines_from_div(el)
+    local lines = {}
+    for _, block in ipairs(el.content) do
+        if block.content then
+            local current = {}
+            for _, inline in ipairs(block.content) do
+                if inline.t == "SoftBreak" or inline.t == "LineBreak" then
+                    local l = trim(table.concat(current))
+                    if l ~= "" then table.insert(lines, l) end
+                    current = {}
+                else
+                    table.insert(current, pandoc.utils.stringify(inline))
+                end
+            end
+            local final = trim(table.concat(current))
+            if final ~= "" then table.insert(lines, final) end
+        end
+    end
+    return lines
+end
+
+-- Safely extracts header text without corrupting UTF-8 byte sequences
 local function extract_header(body)
     local hdr
     hdr = body:match('header%s*=%s*"(.-)"')
@@ -81,7 +101,6 @@ local function extract_header(body)
     return nil, body
 end
 
--- Parses column rule directives into orthogonal, additive metadata
 local function parse_column_rule(line)
     local col_idx = tonumber(line:match("^col%a*%s+(%d+)"))
     if not col_idx then return nil end
@@ -219,18 +238,14 @@ function Para(p)
     return src and render_table(trim(src), "true", "15", "true", {}) or nil
 end
 
--- Optimized Div block parser using fast stringification
 function Div(el)
     if not el.classes:includes("dynamic-table") then return nil end
     local src = el.attributes["src"]
     local searchable, per_page, sortable = "true", "15", "true"
     local columns_meta = {}
 
-    -- Fast single-pass string conversion instead of traversing AST inline nodes
-    local block_text = pandoc.utils.stringify(el)
-    for line in block_text:gmatch("[^\r\n]+") do
-        line = trim(line)
-        if line ~= "" and not line:match("^#") then
+    for _, line in ipairs(extract_lines_from_div(el)) do
+        if not line:match("^#") then
             local key, val = line:match("^([%w_%-]+):%s*(.*)$")
             if key and val then
                 key = key:lower(); val = trim(val)
