@@ -35,11 +35,7 @@ local CLIENT_ASSETS_HTML = [[
 
         if (col.type === "number") {
           rule.type = "number";
-          // Custom cell renderer & sort value parser for scientific notation and empty cells
-          rule.render = (data, cell, rowIndex, cellIndex) => {
-            if (data === null || data === undefined) return "";
-            return data;
-          };
+          rule.numeric = true;
         } else if (col.type) {
           rule.type = col.type;
         }
@@ -63,7 +59,7 @@ local CLIENT_ASSETS_HTML = [[
             if (h) updateHandlers.push(h);
           }
           if (col.units) {
-            const h = setupUnitConverter(table, col);
+            const h = setupUnitConverter(table, col, dt);
             if (h) updateHandlers.push(h);
           }
         });
@@ -115,7 +111,7 @@ local CLIENT_ASSETS_HTML = [[
     return applyFilter;
   }
 
-  function setupUnitConverter(table, col) {
+  function setupUnitConverter(table, col, dt) {
     const th = table.querySelectorAll("thead th")[col.index];
     if (!th || !col.units || !col.map) return null;
 
@@ -144,6 +140,11 @@ local CLIENT_ASSETS_HTML = [[
           }
         }
       });
+
+      // Synchronize changes with simple-datatables cache
+      if (dt && typeof dt.update === "function") {
+        dt.update();
+      }
     };
 
     wrap.addEventListener("click", (e) => e.stopPropagation());
@@ -288,7 +289,7 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
                 local num = tonumber(cell_trimmed)
                 local display_txt = html_escape(cell_trimmed)
                 if num then
-                    -- Set data-order for simple-datatables to sort standard float numbers
+                    -- Express numbers in float format for data-order
                     table.insert(html, string.format('        <td data-order="%s" data-base-order="%s">%s</td>', tostring(num), tostring(num), display_txt))
                 else
                     table.insert(html, string.format('        <td>%s</td>', display_txt))
