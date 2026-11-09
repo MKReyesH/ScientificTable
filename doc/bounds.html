@@ -185,7 +185,7 @@ window.Quarto = {
 
 
 <div class="dynamic-table-wrapper">
-  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:2,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;units&quot;,&quot;units&quot;:[&quot;eV&quot;,&quot;GeV&quot;]},{&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;units&quot;,&quot;units&quot;:[&quot;eV&quot;,&quot;GeV&quot;]}]">
+  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:2,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]},{&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]}]">
     <thead><tr>
         <th>Messengers</th>
         <th>Luminality</th>
@@ -308,10 +308,15 @@ window.Quarto = {
 
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
-<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
 <style>
   table.dynamic-table-target th { vertical-align: top !important; }
+  .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; }
+  .dynamic-table-ctrl-select {
+    display: block; width: 100%; max-width: 120px; font-size: 0.8em;
+    padding: 2px 4px; border-radius: 4px; border: 1px solid #ced4da; background: #fff; cursor: pointer;
+  }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("table.dynamic-table-target").forEach((table) => {
@@ -320,16 +325,22 @@ window.Quarto = {
         try { customColumns = JSON.parse(table.dataset.columns); } catch (e) {}
       }
 
+      const globalSortable = table.dataset.sortable !== "false";
+
       const columnRules = customColumns.map(col => {
         const rule = { select: col.index };
-        if (col.sortable === false) rule.sortable = false;
-        if (col.type && col.type !== "units") rule.type = col.type;
+        if (col.sortable !== undefined) {
+          rule.sortable = col.sortable;
+        } else if (!globalSortable) {
+          rule.sortable = false;
+        }
+        if (col.type) rule.type = col.type;
         return rule;
       });
 
       const dt = new simpleDatatables.DataTable(table, {
         searchable: table.dataset.searchable !== "false",
-        sortable: table.dataset.sortable !== "false",
+        sortable: true,
         perPage: parseInt(table.dataset.perPage || "15", 10),
         ignorePunctuation: false,
         columns: columnRules.length > 0 ? columnRules : undefined,
@@ -337,17 +348,30 @@ window.Quarto = {
       });
 
       dt.on("datatable.init", () => {
+        const updateHandlers = [];
         customColumns.forEach(col => {
-          if (col.dropdown) setupDropdownFilter(table, col.index);
-          if (col.type === "units") setupUnitConverter(table, col);
+          if (col.dropdown) {
+            const h = setupDropdownFilter(table, col.index);
+            if (h) updateHandlers.push(h);
+          }
+          if (col.units) {
+            const h = setupUnitConverter(table, col);
+            if (h) updateHandlers.push(h);
+          }
         });
+
+        // Re-apply active filters/conversions when table paginates or sorts
+        const reapply = () => updateHandlers.forEach(fn => fn());
+        dt.on("datatable.page", reapply);
+        dt.on("datatable.sort", reapply);
+        dt.on("datatable.perpage", reapply);
       });
     });
   });
 
   function setupDropdownFilter(table, colIndex) {
     const th = table.querySelectorAll("thead th")[colIndex];
-    if (!th) return;
+    if (!th) return null;
 
     const uniqueVals = new Set();
     table.querySelectorAll("tbody tr").forEach(tr => {
@@ -364,10 +388,8 @@ window.Quarto = {
     select.className = "dynamic-table-ctrl-select";
     select.innerHTML = '<option value="">All</option>' + Array.from(uniqueVals).sort().map(v => `<option value="${v}">${v}</option>`).join("");
 
-    wrap.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("change", (e) => {
-      const filterVal = e.target.value.trim();
+    const applyFilter = () => {
+      const filterVal = select.value.trim();
       table.querySelectorAll("tbody tr").forEach(tr => {
         const cell = tr.children[colIndex];
         if (cell) {
@@ -375,15 +397,20 @@ window.Quarto = {
           tr.style.display = (filterVal === "" || cellVal === filterVal) ? "" : "none";
         }
       });
-    });
+    };
+
+    wrap.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("change", applyFilter);
 
     wrap.appendChild(select);
     th.appendChild(wrap);
+    return applyFilter;
   }
 
   function setupUnitConverter(table, col) {
     const th = table.querySelectorAll("thead th")[col.index];
-    if (!th || !col.units || !col.map) return;
+    if (!th || !col.units || !col.map) return null;
 
     const wrap = document.createElement("div");
     wrap.className = "dynamic-table-ctrl-wrap";
@@ -391,10 +418,8 @@ window.Quarto = {
     select.className = "dynamic-table-ctrl-select";
     select.innerHTML = col.units.map(u => `<option value="${u}">${u}</option>`).join("");
 
-    wrap.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("change", (e) => {
-      const factor = col.map[e.target.value];
+    const applyConversion = () => {
+      const factor = col.map[select.value];
       if (factor === undefined) return;
       table.querySelectorAll("tbody tr").forEach(tr => {
         const cell = tr.children[col.index];
@@ -406,10 +431,15 @@ window.Quarto = {
           }
         }
       });
-    });
+    };
+
+    wrap.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("change", applyConversion);
 
     wrap.appendChild(select);
     th.appendChild(wrap);
+    return applyConversion;
   }
 </script>
 
