@@ -185,7 +185,7 @@ window.Quarto = {
 
 
 <div class="dynamic-table-wrapper">
-  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="{&quot;0&quot;:{&quot;dropdown&quot;:true,&quot;index&quot;:0},&quot;1&quot;:{&quot;dropdown&quot;:true,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},&quot;2&quot;:{&quot;dropdown&quot;:true,&quot;index&quot;:2,&quot;type&quot;:&quot;latexnum&quot;},&quot;4&quot;:{&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;latexnum&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]},&quot;5&quot;:{&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;latexnum&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]}}">
+  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;index&quot;:0},{&quot;dropdown&quot;:true,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:2,&quot;type&quot;:&quot;latexnum&quot;},{&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;latexnum&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]},{&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;latexnum&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]}]">
     <thead><tr>
         <th>Messengers</th>
         <th>Luminality</th>
@@ -307,6 +307,189 @@ window.Quarto = {
 
 
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
+<style>
+  table.dynamic-table-target th { vertical-align: top !important; }
+  .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; }
+  .dynamic-table-ctrl-select {
+    display: block; width: 100%; max-width: 120px; font-size: 0.8em;
+    padding: 2px 4px; border-radius: 4px; border: 1px solid #ced4da; background: #fff; cursor: pointer;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("table.dynamic-table-target").forEach((table) => {
+      let customColumns = [];
+      if (table.dataset.columns) {
+        try { customColumns = JSON.parse(table.dataset.columns); } catch (e) {}
+      }
+
+      const globalSortable = table.dataset.sortable !== "false";
+
+      const columnRules = customColumns.map(col => {
+        const rule = { select: col.index };
+        if (col.sortable !== undefined) rule.sortable = col.sortable;
+        else if (!globalSortable) rule.sortable = false;
+        if (col.type === "string" || col.type === "number") rule.type = col.type;
+        return rule;
+      });
+
+      const dt = new simpleDatatables.DataTable(table, {
+        searchable: table.dataset.searchable !== "false",
+        sortable: true,
+        perPage: parseInt(table.dataset.perPage || "15", 10),
+        ignorePunctuation: false,
+        columns: columnRules.length > 0 ? columnRules : undefined,
+        labels: { placeholder: "Search table...", perPage: "entries per page", noRows: "No entries found", info: "Showing {start} to {end} of {rows} entries" }
+      });
+
+      dt.on("datatable.init", () => {
+        const updateHandlers = [];
+
+        customColumns.forEach(col => {
+          Object.values(FEATURE_MODULES).forEach(module => {
+            if (module.isApplicable(col)) {
+              const handler = module.init(table, col);
+              if (handler) updateHandlers.push(handler);
+            }
+          });
+        });
+
+        const refreshTable = () => {
+          updateHandlers.forEach(fn => fn());
+          if (window.Quarto && typeof window.Quarto.typesetMath === "function") {
+            window.Quarto.typesetMath(table);
+          }
+        };
+
+        refreshTable();
+        dt.on("datatable.page", refreshTable);
+        dt.on("datatable.sort", refreshTable);
+        dt.on("datatable.perpage", refreshTable);
+      });
+    });
+  });
+
+  // ===========================================================================
+  // CENTRALIZED FORMATTING UTILITIES
+  // ===========================================================================
+
+  function formatLatexNumber(val) {
+    if (val === 0) return "$0$";
+    const abs = Math.abs(val);
+    if (abs >= 1e-3 && abs < 1e4) return `$${Number(val.toFixed(4))}$`;
+    const parts = val.toExponential(2).split("e");
+    return `$${parts[0]} \\times 10^{${parseInt(parts[1], 10)}}$`;
+  }
+
+  function formatStandardNumber(val) {
+    const abs = Math.abs(val);
+    return (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? val.toExponential(2) : Number(val.toFixed(4)).toString();
+  }
+
+  function renderColumnCells(table, col, factor) {
+    table.querySelectorAll("tbody tr").forEach(tr => {
+      const cell = tr.children[col.index];
+      if (cell && cell.dataset.order !== undefined) {
+        const rawNum = parseFloat(cell.dataset.order);
+        if (!isNaN(rawNum)) {
+          const val = rawNum * factor;
+          if (col.type === "latexnum") {
+            cell.innerHTML = formatLatexNumber(val);
+          } else {
+            cell.textContent = formatStandardNumber(val);
+          }
+        }
+      }
+    });
+  }
+
+  // ===========================================================================
+  // FEATURE MODULE REGISTRY (Add new cell/column features here)
+  // ===========================================================================
+
+  const FEATURE_MODULES = {
+
+    // FEATURE 1: Category Dropdown Filter
+    dropdown: {
+      isApplicable: (col) => col.dropdown === true,
+      init: (table, col) => {
+        const th = table.querySelectorAll("thead th")[col.index];
+        if (!th) return null;
+
+        const uniqueVals = new Set();
+        table.querySelectorAll("tbody tr").forEach(tr => {
+          const cell = tr.children[col.index];
+          if (cell && cell.textContent.trim() !== "") {
+            uniqueVals.add(cell.textContent.trim());
+          }
+        });
+
+        const wrap = document.createElement("div");
+        wrap.className = "dynamic-table-ctrl-wrap";
+        const select = document.createElement("select");
+        select.className = "dynamic-table-ctrl-select";
+        select.innerHTML = '<option value="">All</option>' + Array.from(uniqueVals).sort().map(v => `<option value="${v}">${v}</option>`).join("");
+
+        const applyFilter = () => {
+          const filterVal = select.value.trim();
+          table.querySelectorAll("tbody tr").forEach(tr => {
+            const cell = tr.children[col.index];
+            if (cell) {
+              const cellVal = cell.textContent.trim();
+              tr.style.display = (filterVal === "" || cellVal === filterVal) ? "" : "none";
+            }
+          });
+        };
+
+        wrap.addEventListener("click", e => e.stopPropagation());
+        select.addEventListener("click", e => e.stopPropagation());
+        select.addEventListener("change", applyFilter);
+        wrap.appendChild(select);
+        th.appendChild(wrap);
+
+        return applyFilter;
+      }
+    },
+
+    // FEATURE 2: Unit Converter Dropdown
+    units: {
+      isApplicable: (col) => col.units && col.map,
+      init: (table, col) => {
+        const th = table.querySelectorAll("thead th")[col.index];
+        if (!th) return null;
+
+        const wrap = document.createElement("div");
+        wrap.className = "dynamic-table-ctrl-wrap";
+        const select = document.createElement("select");
+        select.className = "dynamic-table-ctrl-select";
+        select.innerHTML = col.units.map(u => `<option value="${u}">${u}</option>`).join("");
+
+        const applyUnits = () => {
+          const factor = col.map[select.value] !== undefined ? col.map[select.value] : 1;
+          renderColumnCells(table, col, factor);
+        };
+
+        wrap.addEventListener("click", e => e.stopPropagation());
+        select.addEventListener("click", e => e.stopPropagation());
+        select.addEventListener("change", applyUnits);
+        wrap.appendChild(select);
+        th.appendChild(wrap);
+
+        return applyUnits;
+      }
+    },
+
+    // FEATURE 3: Static LaTeX Scientific Numbers (Active when no unit converter is present)
+    latexnum: {
+      isApplicable: (col) => col.type === "latexnum" && !col.units,
+      init: (table, col) => {
+        return () => renderColumnCells(table, col, 1);
+      }
+    }
+  };
+</script>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
