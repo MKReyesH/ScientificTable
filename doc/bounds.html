@@ -190,9 +190,9 @@ window.Quarto = {
         <th>Messengers</th>
         <th>Luminality</th>
         <th>Effects</th>
-        <th></th>
-        <th></th>
-        <th></th>
+        <th>��</th>
+        <th>��</th>
+        <th>��</th>
         <th>InspireID</th>
     </tr></thead><tbody>
       <tr>
@@ -331,11 +331,13 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
       const globalSortable = table.dataset.sortable !== "false";
 
+      // Build DataTable column rules (type: number enforces numeric sorting via data-order)
       const columnRules = customColumns.map(col => {
         const rule = { select: col.index };
         if (col.sortable !== undefined) rule.sortable = col.sortable;
         else if (!globalSortable) rule.sortable = false;
-        if (col.type === "string" || col.type === "number") rule.type = col.type;
+        if (col.type === "string") rule.type = "string";
+        else if (col.type === "number" || col.type === "latexnum") rule.type = "number";
         return rule;
       });
 
@@ -351,9 +353,13 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
       dt.on("datatable.init", () => {
         const updateHandlers = [];
 
-        // Hydrate independent feature modules
+        // 1. Assign default scaleFactor and renderer pipeline per column
         customColumns.forEach(col => {
-          Object.values(FEATURE_MODULES).forEach(module => {
+          col.scaleFactor = 1.0;
+          col.formatter = CELL_FORMATTERS[col.type] || CELL_FORMATTERS.default;
+
+          // 2. Hydrate UI control modules (units dropdown, category filter)
+          Object.values(UI_MODULES).forEach(module => {
             if (module.isApplicable(col)) {
               const handler = module.init(table, col);
               if (handler) updateHandlers.push(handler);
@@ -361,7 +367,17 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
           });
         });
 
+        // 3. Render all active dynamic cell values
+        const renderAllCells = () => {
+          customColumns.forEach(col => {
+            if (col.units || col.type === "latexnum") {
+              renderColumnCells(table, col);
+            }
+          });
+        };
+
         const refreshTable = () => {
+          renderAllCells();
           updateHandlers.forEach(fn => fn());
           if (window.Quarto && typeof window.Quarto.typesetMath === "function") {
             window.Quarto.typesetMath(table);
@@ -377,14 +393,18 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
   });
 
   // ===========================================================================
-  // CENTRALIZED CELL FORMATTERS & UPDATERS
+  // 1. DECOUPLED CELL FORMATTERS (Value -> Output String)
   // ===========================================================================
 
-  function formatCellValue(rawNum, scaleFactor, colType) {
-    const val = rawNum * (scaleFactor !== undefined ? scaleFactor : 1);
-    if (isNaN(val) || val === null) return "";
+  const CELL_FORMATTERS = {
+    // Standard numerical formatting (plain text display)
+    default: (val) => {
+      const abs = Math.abs(val);
+      return (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? val.toExponential(2) : Number(val.toFixed(4)).toString();
+    },
 
-    if (colType === "latexnum") {
+    // Scientific notation formatted into LaTeX math inline spans
+    latexnum: (val) => {
       if (val === 0) return '<span class="math inline">\\(0\\)</span>';
       const abs = Math.abs(val);
       if (abs >= 1e-3 && abs < 1e4) {
@@ -393,23 +413,21 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
       const parts = val.toExponential(2).split("e");
       return `<span class="math inline">\\(${parts[0]} \\times 10^{${parseInt(parts[1], 10)}}\\)</span>`;
     }
+  };
 
-    const abs = Math.abs(val);
-    return (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? val.toExponential(2) : Number(val.toFixed(4)).toString();
-  }
-
-  function updateColumnDisplay(table, col) {
-    const factor = col.activeFactor !== undefined ? col.activeFactor : 1;
+  // Generic cell render runner
+  function renderColumnCells(table, col) {
     table.querySelectorAll("tbody tr").forEach(tr => {
       const cell = tr.children[col.index];
       if (cell && cell.dataset.order !== undefined) {
         const rawNum = parseFloat(cell.dataset.order);
         if (!isNaN(rawNum)) {
-          const content = formatCellValue(rawNum, factor, col.type);
+          const scaledValue = rawNum * (col.scaleFactor || 1.0);
+          const outputHtml = col.formatter(scaledValue);
           if (col.type === "latexnum") {
-            cell.innerHTML = content;
+            cell.innerHTML = outputHtml;
           } else {
-            cell.textContent = content;
+            cell.textContent = outputHtml;
           }
         }
       }
@@ -417,12 +435,12 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
   }
 
   // ===========================================================================
-  // FEATURE MODULE REGISTRY (Add or extend custom column features here)
+  // 2. INDEPENDENT UI MODULES (Header Controls & Category Filters)
   // ===========================================================================
 
-  const FEATURE_MODULES = {
+  const UI_MODULES = {
 
-    // FEATURE 1: Category Dropdown Filter
+    // MODULE A: Category Dropdown Filter
     dropdown: {
       isApplicable: (col) => col.dropdown === true,
       init: (table, col) => {
@@ -464,14 +482,14 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
       }
     },
 
-    // FEATURE 2: Dynamic Unit Converter (Manages scale multiplier state)
+    // MODULE B: Dynamic Unit Converter (Updates col.scaleFactor multiplier)
     units: {
       isApplicable: (col) => col.units && col.map,
       init: (table, col) => {
         const th = table.querySelectorAll("thead th")[col.index];
         if (!th) return null;
 
-        col.activeFactor = col.map[col.units[0]] !== undefined ? col.map[col.units[0]] : 1;
+        col.scaleFactor = col.map[col.units[0]] !== undefined ? col.map[col.units[0]] : 1.0;
 
         const wrap = document.createElement("div");
         wrap.className = "dynamic-table-ctrl-wrap";
@@ -480,8 +498,11 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
         select.innerHTML = col.units.map(u => `<option value="${u}">${u}</option>`).join("");
 
         const applyUnits = () => {
-          col.activeFactor = col.map[select.value] !== undefined ? col.map[select.value] : 1;
-          updateColumnDisplay(table, col);
+          col.scaleFactor = col.map[select.value] !== undefined ? col.map[select.value] : 1.0;
+          renderColumnCells(table, col);
+          if (window.Quarto && typeof window.Quarto.typesetMath === "function") {
+            window.Quarto.typesetMath(table);
+          }
         };
 
         wrap.addEventListener("click", e => e.stopPropagation());
@@ -490,15 +511,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
         wrap.appendChild(select);
         th.appendChild(wrap);
 
-        return applyUnits;
-      }
-    },
-
-    // FEATURE 3: Cell Numeric Formatting (LaTeX scientific notation or standard floats)
-    numericFormatting: {
-      isApplicable: (col) => col.type === "latexnum" || col.type === "number",
-      init: (table, col) => {
-        return () => updateColumnDisplay(table, col);
+        return null;
       }
     }
   };
