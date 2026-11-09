@@ -23,6 +23,22 @@ local function html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
 end
 
+local function strip_quotes(s)
+    if not s then return "" end
+    s = trim(s)
+    -- ASCII double or single quotes
+    if (s:sub(1,1) == '"' and s:sub(-1) == '"') or (s:sub(1,1) == "'" and s:sub(-1) == "'") then
+        s = s:sub(2, -2)
+    -- UTF-8 Smart double quotes: “ (\226\128\156) and ” (\226\128\157)
+    elseif s:sub(1,3) == "\226\128\156" and s:sub(-3) == "\226\128\157" then
+        s = s:sub(4, -4)
+    -- UTF-8 Smart single quotes: ‘ (\226\128\152) and ’ (\226\128\153)
+    elseif s:sub(1,3) == "\226\128\152" and s:sub(-3) == "\226\128\153" then
+        s = s:sub(4, -4)
+    end
+    return trim(s)
+end
+
 local function parse_csv_line(line)
     local res, pos, len = {}, 1, #line
     while pos <= len do
@@ -76,28 +92,28 @@ local function extract_lines_from_div(el)
     return lines
 end
 
--- Safely extracts header content without corrupting UTF-8 byte sequences
+-- Safely extracts headers without corrupting UTF-8 byte sequences
 local function extract_header(body)
     local hdr
     -- 1. ASCII Double Quotes
     hdr = body:match('header%s*=%s*"(.-)"')
-    if hdr then return trim(hdr), (body:gsub('header%s*=%s*".-"', "")) end
+    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*".-"', "")) end
 
     -- 2. ASCII Single Quotes
     hdr = body:match("header%s*=%s*'(.-)'")
-    if hdr then return trim(hdr), (body:gsub("header%s*=%s*'.-'", "")) end
+    if hdr then return strip_quotes(hdr), (body:gsub("header%s*=%s*'.-'", "")) end
 
     -- 3. UTF-8 Smart Double Quotes “...” (\226\128\156 ... \226\128\157)
     hdr = body:match('header%s*=%s*\226\128\156(.-)\226\128\157')
-    if hdr then return trim(hdr), (body:gsub('header%s*=%s*\226\128\156.-\226\128\157', "")) end
+    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*\226\128\156.-\226\128\157', "")) end
 
     -- 4. UTF-8 Smart Single Quotes ‘...’ (\226\128\152 ... \226\128\153)
     hdr = body:match('header%s*=%s*\226\128\152(.-)\226\128\153')
-    if hdr then return trim(hdr), (body:gsub('header%s*=%s*\226\128\152.-\226\128\153', "")) end
+    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*\226\128\152.-\226\128\153', "")) end
 
     -- 5. Unquoted header up to next comma or end of string
     hdr = body:match('header%s*=%s*([^,]+)')
-    if hdr then return trim(hdr), (body:gsub('header%s*=%s*[^,]+', "")) end
+    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*[^,]+', "")) end
 
     return nil, body
 end
@@ -144,7 +160,7 @@ end
 
 local function format_header_html(hdr)
     if not hdr then return nil end
-    hdr = trim(hdr)
+    hdr = strip_quotes(hdr)
 
     -- Explicit math delimiters: $...$ or \(...\)
     local math_content = hdr:match("^%$(.*)%$") or hdr:match("^\\%((.*)\\%)$")
