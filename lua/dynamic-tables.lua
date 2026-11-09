@@ -10,7 +10,6 @@ local function html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
 end
 
--- Strips ASCII quotes (" and ') and UTF-8 smart quotes (“ ” ‘ ’) safely
 local function strip_quotes(s)
     if not s then return "" end
     s = trim(s)
@@ -24,7 +23,6 @@ local function strip_quotes(s)
     return trim(s)
 end
 
--- CSV row line parser
 local function parse_csv_line(line)
     local res, pos, len = {}, 1, #line
     while pos <= len do
@@ -59,7 +57,6 @@ local function open_csv_file(src)
     return nil
 end
 
--- Extracts lines preserving soft and hard linebreaks from Pandoc Div AST
 local function extract_lines_from_div(el)
     local lines = {}
     for _, block in ipairs(el.content) do
@@ -70,9 +67,7 @@ local function extract_lines_from_div(el)
                     local l = trim(table.concat(current))
                     if l ~= "" then table.insert(lines, l) end
                     current = {}
-                else
-                    table.insert(current, pandoc.utils.stringify(inline))
-                end
+                else table.insert(current, pandoc.utils.stringify(inline)) end
             end
             local final = trim(table.concat(current))
             if final ~= "" then table.insert(lines, final) end
@@ -81,7 +76,6 @@ local function extract_lines_from_div(el)
     return lines
 end
 
--- Safely extracts header strings without breaking multi-byte UTF-8 sequences
 local function extract_header(body)
     local hdr
     hdr = body:match('header%s*=%s*"(.-)"')
@@ -102,7 +96,6 @@ local function extract_header(body)
     return nil, body
 end
 
--- Parses column rule directives into orthogonal metadata properties
 local function parse_column_rule(line)
     local col_idx = tonumber(line:match("^col%a*%s+(%d+)"))
     if not col_idx then return nil end
@@ -134,10 +127,7 @@ local function parse_column_rule(line)
         elseif tag == "dropdown" then rule.dropdown = true
         elseif tag == "string" or tag == "text" then rule.type = "string"
         elseif tag == "number" or tag == "numeric" then rule.type = "number"
-        elseif tag == "latexnum" or tag == "latex-number" or tag == "latex_number" then 
-            rule.latexnum = true
-            if not rule.type then rule.type = "number" end
-        end
+        elseif tag == "latexnum" or tag == "latex-number" or tag == "latex_number" then rule.type = "latexnum" end
     end
 
     return rule
@@ -204,10 +194,11 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
             else
                 local num = tonumber(cell_trimmed)
                 local display_txt = html_escape(cell_trimmed)
-                if num then 
-                    table.insert(html, string.format('        <td data-order="%s">%s</td>', tostring(num), display_txt))
-                else 
-                    table.insert(html, string.format('        <td>%s</td>', display_txt)) 
+                if num then
+                    -- Format numeric data-order attribute with double precision (%.17g)
+                    table.insert(html, string.format('        <td data-order="%.17g">%s</td>', num, display_txt))
+                else
+                    table.insert(html, string.format('        <td>%s</td>', display_txt))
                 end
             end
         end
