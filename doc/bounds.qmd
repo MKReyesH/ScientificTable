@@ -9,6 +9,6 @@ searchable: true
 column 0: dropdown
 column 1: dropdown, string
 column 2: dropdown
-column 4: units(Eₚₗ: 1, eV: 1.22e28, GeV: 1.22e19)
-column 5: units(Eₚₗ: 1, eV: 1.22e28, GeV: 1.22e19)
+column 4: units(E_PL: 1, eV: 1.22e28, GeV: 1.22e19)
+column 5: units(E_Pl: 1, eV: 1.22e28, GeV: 1.22e19)
 :::
