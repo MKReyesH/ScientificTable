@@ -354,14 +354,23 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
           rule.type = "number";
         }
 
-        // Native Simple-DataTables render callback: handles units scaling & TeX math display
+        // Native Simple-DataTables render callback: handles units scaling & formatting
         if (col.formatter || col.units || col.type === "number") {
           rule.render = (data, td, rowIndex, cellIndex) => {
             if (data === null || data === undefined || String(data).trim() === "") return "";
             const num = parseFloat(data);
             if (isNaN(num)) return data;
             const scaledVal = num * (col.scaleFactor || 1.0);
-            return col.activeFormatter(scaledVal);
+            
+            // Return actual DOM nodes if the formatter provided them, otherwise return text
+            const formatted = col.activeFormatter(scaledVal);
+            if (formatted instanceof Node) {
+                // Clear the cell and append the node to bypass HTML string escaping
+                td.innerHTML = "";
+                td.appendChild(formatted);
+                return td; // Returning the modified td signals simple-datatables to use it
+            }
+            return formatted;
           };
         }
 
@@ -390,8 +399,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
         const triggerMathTypeset = () => {
           if (window.Quarto && typeof window.Quarto.typesetMath === "function") {
-            // ONLY typeset the header to prevent DOM mutation in the table body, 
-            // which causes diffDOM to scramble rows during sorts.
+            // ONLY typeset the header to prevent DOM mutation in the table body
             const thead = table.querySelector("thead");
             if (thead) window.Quarto.typesetMath(thead);
           }
@@ -414,16 +422,27 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
       return (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? val.toExponential(2) : Number(val.toFixed(4)).toString();
     },
 
-    // TeX atomic group {...} formatting
+    // TeX atomic group {...} formatting using pure DOM Nodes to bypass string escaping
     latexnum: (val) => {
       if (val === 0) return '0';
       const abs = Math.abs(val);
       if (abs >= 1e-3 && abs < 1e4) {
         return Number(val.toFixed(4)).toString();
       }
+      
       const parts = val.toExponential(2).split("e");
-      // Standard HTML styling matches LaTeX output visually but prevents KaTeX from wrapping the DOM
-      return `${parts[0]} &times; 10<sup>${parseInt(parts[1], 10)}</sup>`;
+      
+      // Construct: 1.39 × 10^5 as DOM elements
+      const frag = document.createDocumentFragment();
+      
+      const mantissa = document.createTextNode(parts[0] + " \u00D7 10"); // \u00D7 is the multiplication sign (×)
+      frag.appendChild(mantissa);
+      
+      const sup = document.createElement("sup");
+      sup.textContent = parseInt(parts[1], 10).toString();
+      frag.appendChild(sup);
+      
+      return frag;
     }
   };
 
@@ -431,7 +450,6 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
   // EXTENSIBLE UI FEATURE MODULES REGISTRY
   // ===========================================================================
   const UI_MODULES = {
-
     // Category Dropdown Filter
     dropdown: {
       isApplicable: (col) => col.dropdown === true,
@@ -454,7 +472,6 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
         const applyFilter = () => {
           const filterVal = select.value.trim();
-          // Use native dt.search() instead of manual DOM 'display:none' to prevent sort/pagination conflicts
           dt.search(filterVal);
         };
 
