@@ -315,6 +315,8 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
   table.dynamic-table-target th { vertical-align: top !important; }
   table.dynamic-table-target td,
   table.dynamic-table-target th,
+  table.dynamic-table-target td *,
+  table.dynamic-table-target th *,
   table.dynamic-table-target .math,
   table.dynamic-table-target mjx-container,
   table.dynamic-table-target .katex {
@@ -408,7 +410,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
       return (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? val.toExponential(2) : Number(val.toFixed(4)).toString();
     },
 
-    // Indivisible TeX scientific notation wrapped in a grouped TeX atom {...}
+    // Scientific notation wrapped in an indivisible TeX atom {...}
     latexnum: (val) => {
       if (val === 0) return '<span class="math inline">\\({0}\\)</span>';
       const abs = Math.abs(val);
