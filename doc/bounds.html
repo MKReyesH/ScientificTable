@@ -185,14 +185,14 @@ window.Quarto = {
 
 
 <div class="dynamic-table-wrapper">
-  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:2,&quot;type&quot;:&quot;string&quot;},{&quot;formatter&quot;:&quot;latexnum&quot;,&quot;header&quot;:&quot;\\delta^{(0)}&quot;,&quot;index&quot;:3,&quot;type&quot;:&quot;number&quot;},{&quot;formatter&quot;:&quot;latexnum&quot;,&quot;header&quot;:&quot;E_\\text{Pl}^{(1)}&quot;,&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]},{&quot;formatter&quot;:&quot;latexnum&quot;,&quot;header&quot;:&quot;E_\\text{Pl}^{(2)}&quot;,&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]}]">
+  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:2,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]},{&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]}]">
     <thead><tr>
         <th>Messengers</th>
         <th>Luminality</th>
         <th>Effects</th>
-        <th><span class="math inline">\(\delta^{(0)}\)</span></th>
-        <th><span class="math inline">\(E_\text{Pl}^{(1)}\)</span></th>
-        <th><span class="math inline">\(E_\text{Pl}^{(2)}\)</span></th>
+        <th>delta(0)</th>
+        <th>ELIV(1)</th>
+        <th>ELIV(2)</th>
         <th>InspireID</th>
     </tr></thead><tbody>
       <tr>
@@ -200,45 +200,45 @@ window.Quarto = {
         <td></td>
         <td>Birefrigence</td>
         <td></td>
-        <td>1e-16</td>
+        <td data-order="1e-16">1e-16</td>
         <td></td>
-        <td>1311435</td>
+        <td data-order="1311435">1311435</td>
       </tr>
       <tr>
         <td>Gamma rays</td>
         <td>+</td>
         <td>Time delays</td>
         <td></td>
-        <td>9.02</td>
-        <td>5.74e-8</td>
-        <td>2756998</td>
+        <td data-order="9.02">9.02</td>
+        <td data-order="5.74e-08">5.74e-8</td>
+        <td data-order="2756998">2756998</td>
       </tr>
       <tr>
         <td>Gamma rays</td>
         <td>-</td>
         <td>Time delays</td>
         <td></td>
-        <td>8.20</td>
-        <td>5.66e-8</td>
-        <td>2756998</td>
+        <td data-order="8.2">8.20</td>
+        <td data-order="5.66e-08">5.66e-8</td>
+        <td data-order="2756998">2756998</td>
       </tr>
       <tr>
         <td>Gamma rays</td>
         <td>+</td>
         <td>Pair decay</td>
         <td></td>
-        <td>1.39e5</td>
-        <td>1.17e-4</td>
-        <td>1863649</td>
+        <td data-order="139000.0">1.39e5</td>
+        <td data-order="0.000117">1.17e-4</td>
+        <td data-order="1863649">1863649</td>
       </tr>
       <tr>
         <td>Gamma rays</td>
         <td>+</td>
         <td>Pair decay</td>
         <td></td>
-        <td>1.16e5</td>
-        <td>1.04e-4</td>
-        <td>1869962</td>
+        <td data-order="116000.0">1.16e5</td>
+        <td data-order="0.000104">1.04e-4</td>
+        <td data-order="1869962">1869962</td>
       </tr>
       <tr>
         <td>Gamma rays</td>
@@ -246,17 +246,17 @@ window.Quarto = {
         <td>Splitting</td>
         <td></td>
         <td></td>
-        <td>1.81e-3</td>
-        <td>1869962</td>
+        <td data-order="0.00181">1.81e-3</td>
+        <td data-order="1869962">1869962</td>
       </tr>
       <tr>
         <td>Gamma rays</td>
         <td>-</td>
         <td>Breit-Wheeler</td>
         <td></td>
-        <td>4.70</td>
-        <td>1.17e-7</td>
-        <td>1701232</td>
+        <td data-order="4.7">4.70</td>
+        <td data-order="1.17e-07">1.17e-7</td>
+        <td data-order="1701232">1701232</td>
       </tr>
       <tr>
         <td>Gamma rays</td>
@@ -264,64 +264,52 @@ window.Quarto = {
         <td>Bethe-Heitler</td>
         <td></td>
         <td></td>
-        <td>1.72e-8</td>
-        <td>1500959</td>
+        <td data-order="1.72e-08">1.72e-8</td>
+        <td data-order="1500959">1500959</td>
       </tr>
       <tr>
         <td>Neutrinos</td>
         <td></td>
         <td>Oscillations</td>
-        <td>2.8e-27</td>
+        <td data-order="2.8e-27">2.8e-27</td>
         <td></td>
         <td></td>
-        <td>930440</td>
+        <td data-order="930440">930440</td>
       </tr>
       <tr>
         <td>Neutrinos</td>
         <td>-</td>
         <td>Time delays</td>
-        <td>2.5e-18</td>
-        <td>1.23e2</td>
-        <td>3.44e-7</td>
-        <td>1434280</td>
+        <td data-order="2.5e-18">2.5e-18</td>
+        <td data-order="123.0">1.23e2</td>
+        <td data-order="3.44e-07">3.44e-7</td>
+        <td data-order="1434280">1434280</td>
       </tr>
       <tr>
         <td>Neutrinos</td>
         <td>+</td>
         <td>Pair emission</td>
-        <td>1.8e-21</td>
+        <td data-order="1.8e-21">1.8e-21</td>
         <td></td>
         <td></td>
-        <td>2890924</td>
+        <td data-order="2890924">2890924</td>
       </tr>
       <tr>
         <td>Neutrinos</td>
         <td>+</td>
         <td>Splitting</td>
         <td></td>
-        <td>4.34e10</td>
-        <td>0.9</td>
-        <td>2879713</td>
+        <td data-order="43400000000.0">4.34e10</td>
+        <td data-order="0.9">0.9</td>
+        <td data-order="2879713">2879713</td>
       </tr>
     </tbody></table></div>
 
 
 
-<!-- =============================================================================
-DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
-============================================================================= -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
 <style>
   table.dynamic-table-target th { vertical-align: top !important; }
-  table.dynamic-table-target td,
-  table.dynamic-table-target th,
-  table.dynamic-table-target td *,
-  table.dynamic-table-target th *,
-  table.dynamic-table-target .math,
-  table.dynamic-table-target mjx-container,
-  table.dynamic-table-target .katex {
-    white-space: nowrap !important;
-  }
   .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; }
   .dynamic-table-ctrl-select {
     display: block; width: 100%; max-width: 120px; font-size: 0.8em;
@@ -339,45 +327,17 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
       const globalSortable = table.dataset.sortable !== "false";
 
-      // 1. Build Simple-DataTables column configurations using native render callbacks
       const columnRules = customColumns.map(col => {
-        col.scaleFactor = 1.0;
-        col.activeFormatter = FORMATTERS[col.formatter] || FORMATTERS[col.type] || FORMATTERS.default;
-
         const rule = { select: col.index };
-        if (col.sortable !== undefined) rule.sortable = col.sortable;
-        else if (!globalSortable) rule.sortable = false;
-
-        if (col.type === "string") {
-          rule.type = "string";
-        } else if (col.type === "number") {
-          rule.type = "number";
+        if (col.sortable !== undefined) {
+          rule.sortable = col.sortable;
+        } else if (!globalSortable) {
+          rule.sortable = false;
         }
-
-        // Native Simple-DataTables render callback: handles units scaling & formatting
-        if (col.formatter || col.units || col.type === "number") {
-          rule.render = (data, td, rowIndex, cellIndex) => {
-            if (data === null || data === undefined || String(data).trim() === "") return "";
-            const num = parseFloat(data);
-            if (isNaN(num)) return data;
-            const scaledVal = num * (col.scaleFactor || 1.0);
-            
-            // Return actual DOM nodes if the formatter provided them, otherwise return text
-            const formatted = col.activeFormatter(scaledVal);
-            if (formatted instanceof Node) {
-                // Clear the cell and append the node to bypass HTML string escaping
-                td.innerHTML = "";
-                td.appendChild(formatted);
-                return td; // Returning the modified td signals simple-datatables to use it
-            }
-            return formatted;
-          };
-        }
-
+        if (col.type) rule.type = col.type;
         return rule;
       });
 
-      // 2. Initialize Simple-DataTables
       const dt = new simpleDatatables.DataTable(table, {
         searchable: table.dataset.searchable !== "false",
         sortable: true,
@@ -387,130 +347,100 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
         labels: { placeholder: "Search table...", perPage: "entries per page", noRows: "No entries found", info: "Showing {start} to {end} of {rows} entries" }
       });
 
-      // 3. Mount UI controls (dropdown filters, unit selectors) post-init
       dt.on("datatable.init", () => {
+        const updateHandlers = [];
         customColumns.forEach(col => {
-          Object.values(UI_MODULES).forEach(module => {
-            if (module.isApplicable(col)) {
-              module.init(table, col, dt);
-            }
-          });
+          if (col.dropdown) {
+            const h = setupDropdownFilter(table, col.index);
+            if (h) updateHandlers.push(h);
+          }
+          if (col.units) {
+            const h = setupUnitConverter(table, col);
+            if (h) updateHandlers.push(h);
+          }
         });
 
-        const triggerMathTypeset = () => {
-          if (window.Quarto && typeof window.Quarto.typesetMath === "function") {
-            // ONLY typeset the header to prevent DOM mutation in the table body
-            const thead = table.querySelector("thead");
-            if (thead) window.Quarto.typesetMath(thead);
-          }
-        };
-
-        triggerMathTypeset();
-        dt.on("datatable.page", triggerMathTypeset);
-        dt.on("datatable.sort", triggerMathTypeset);
-        dt.on("datatable.perpage", triggerMathTypeset);
+        // Re-apply active filters/conversions when table paginates or sorts
+        const reapply = () => updateHandlers.forEach(fn => fn());
+        dt.on("datatable.page", reapply);
+        dt.on("datatable.sort", reapply);
+        dt.on("datatable.perpage", reapply);
       });
     });
   });
 
-  // ===========================================================================
-  // EXTENSIBLE CELL FORMATTERS REGISTRY
-  // ===========================================================================
-  const FORMATTERS = {
-    default: (val) => {
-      const abs = Math.abs(val);
-      return (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? val.toExponential(2) : Number(val.toFixed(4)).toString();
-    },
+  function setupDropdownFilter(table, colIndex) {
+    const th = table.querySelectorAll("thead th")[colIndex];
+    if (!th) return null;
 
-    // TeX atomic group {...} formatting using pure DOM Nodes to bypass string escaping
-    latexnum: (val) => {
-      if (val === 0) return '0';
-      const abs = Math.abs(val);
-      if (abs >= 1e-3 && abs < 1e4) {
-        return Number(val.toFixed(4)).toString();
+    const uniqueVals = new Set();
+    table.querySelectorAll("tbody tr").forEach(tr => {
+      const cell = tr.children[colIndex];
+      if (cell) {
+        const val = cell.textContent.trim();
+        if (val !== "") uniqueVals.add(val);
       }
-      
-      const parts = val.toExponential(2).split("e");
-      
-      // Construct: 1.39 × 10^5 as DOM elements
-      const frag = document.createDocumentFragment();
-      
-      const mantissa = document.createTextNode(parts[0] + " \u00D7 10"); // \u00D7 is the multiplication sign (×)
-      frag.appendChild(mantissa);
-      
-      const sup = document.createElement("sup");
-      sup.textContent = parseInt(parts[1], 10).toString();
-      frag.appendChild(sup);
-      
-      return frag;
-    }
-  };
+    });
 
-  // ===========================================================================
-  // EXTENSIBLE UI FEATURE MODULES REGISTRY
-  // ===========================================================================
-  const UI_MODULES = {
-    // Category Dropdown Filter
-    dropdown: {
-      isApplicable: (col) => col.dropdown === true,
-      init: (table, col, dt) => {
-        const th = table.querySelectorAll("thead th")[col.index];
-        if (!th) return;
+    const wrap = document.createElement("div");
+    wrap.className = "dynamic-table-ctrl-wrap";
+    const select = document.createElement("select");
+    select.className = "dynamic-table-ctrl-select";
+    select.innerHTML = '<option value="">All</option>' + Array.from(uniqueVals).sort().map(v => `<option value="${v}">${v}</option>`).join("");
 
-        const uniqueVals = new Set();
-        // Read from dt.data instead of the DOM to ensure we capture paginated rows
-        dt.data.data.forEach(row => {
-          const cellData = row[col.index].text || row[col.index].data || "";
-          if (cellData.trim() !== "") uniqueVals.add(cellData.trim());
-        });
+    const applyFilter = () => {
+      const filterVal = select.value.trim();
+      table.querySelectorAll("tbody tr").forEach(tr => {
+        const cell = tr.children[colIndex];
+        if (cell) {
+          const cellVal = cell.textContent.trim();
+          tr.style.display = (filterVal === "" || cellVal === filterVal) ? "" : "none";
+        }
+      });
+    };
 
-        const wrap = document.createElement("div");
-        wrap.className = "dynamic-table-ctrl-wrap";
-        const select = document.createElement("select");
-        select.className = "dynamic-table-ctrl-select";
-        select.innerHTML = '<option value="">All</option>' + Array.from(uniqueVals).sort().map(v => `<option value="${v}">${v}</option>`).join("");
+    wrap.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("change", applyFilter);
 
-        const applyFilter = () => {
-          const filterVal = select.value.trim();
-          dt.search(filterVal);
-        };
+    wrap.appendChild(select);
+    th.appendChild(wrap);
+    return applyFilter;
+  }
 
-        wrap.addEventListener("click", e => e.stopPropagation());
-        select.addEventListener("click", e => e.stopPropagation());
-        select.addEventListener("change", applyFilter);
-        wrap.appendChild(select);
-        th.appendChild(wrap);
-      }
-    },
+  function setupUnitConverter(table, col) {
+    const th = table.querySelectorAll("thead th")[col.index];
+    if (!th || !col.units || !col.map) return null;
 
-    // Dynamic Unit Converter
-    units: {
-      isApplicable: (col) => col.units && col.map,
-      init: (table, col, dt) => {
-        const th = table.querySelectorAll("thead th")[col.index];
-        if (!th) return;
+    const wrap = document.createElement("div");
+    wrap.className = "dynamic-table-ctrl-wrap";
+    const select = document.createElement("select");
+    select.className = "dynamic-table-ctrl-select";
+    select.innerHTML = col.units.map(u => `<option value="${u}">${u}</option>`).join("");
 
-        col.scaleFactor = col.map[col.units[0]] !== undefined ? col.map[col.units[0]] : 1.0;
+    const applyConversion = () => {
+      const factor = col.map[select.value];
+      if (factor === undefined) return;
+      table.querySelectorAll("tbody tr").forEach(tr => {
+        const cell = tr.children[col.index];
+        if (cell && cell.dataset.order !== undefined) {
+          const num = parseFloat(cell.dataset.order);
+          if (!isNaN(num)) {
+            const abs = Math.abs(num * factor);
+            cell.textContent = (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? (num * factor).toExponential(2) : Number((num * factor).toFixed(4)).toString();
+          }
+        }
+      });
+    };
 
-        const wrap = document.createElement("div");
-        wrap.className = "dynamic-table-ctrl-wrap";
-        const select = document.createElement("select");
-        select.className = "dynamic-table-ctrl-select";
-        select.innerHTML = col.units.map(u => `<option value="${u}">${u}</option>`).join("");
+    wrap.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("change", applyConversion);
 
-        const applyUnits = () => {
-          col.scaleFactor = col.map[select.value] !== undefined ? col.map[select.value] : 1.0;
-          dt.update();
-        };
-
-        wrap.addEventListener("click", e => e.stopPropagation());
-        select.addEventListener("click", e => e.stopPropagation());
-        select.addEventListener("change", applyUnits);
-        wrap.appendChild(select);
-        th.appendChild(wrap);
-      }
-    }
-  };
+    wrap.appendChild(select);
+    th.appendChild(wrap);
+    return applyConversion;
+  }
 </script>
 
 </main> <!-- /main -->
