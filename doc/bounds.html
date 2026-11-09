@@ -339,14 +339,30 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
       const globalSortable = table.dataset.sortable !== "false";
 
-      // Register column sorting behavior
+      // Initialize state and formatters for each column
+      customColumns.forEach(col => {
+        col.scaleFactor = 1.0;
+        col.formatter = CELL_FORMATTERS[col.type] || CELL_FORMATTERS.default;
+      });
+
+      // Construct native Simple-DataTables column rules with decoupled renderers
       const columnRules = customColumns.map(col => {
         const rule = { select: col.index };
         if (col.sortable !== undefined) rule.sortable = col.sortable;
         else if (!globalSortable) rule.sortable = false;
-        
-        if (col.type === "string") rule.type = "string";
-        else if (col.type === "number" || col.type === "latexnum") rule.type = "number";
+
+        if (col.type === "string") {
+          rule.type = "string";
+        } else if (col.type === "number" || col.type === "latexnum") {
+          rule.type = "number";
+          // Custom render hook: data holds raw float for sorting, returns HTML for display
+          rule.render = (data, cell, rowIndex, cellIndex) => {
+            const rawVal = parseFloat(cell.dataset.order || data);
+            if (isNaN(rawVal)) return data;
+            const scaledVal = rawVal * (col.scaleFactor || 1.0);
+            return col.formatter(scaledVal);
+          };
+        }
         return rule;
       });
 
@@ -362,41 +378,27 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
       dt.on("datatable.init", () => {
         const updateHandlers = [];
 
-        // 1. Configure scale factors and formatters
+        // Attach UI controllers (dropdown filters, unit selectors)
         customColumns.forEach(col => {
-          col.scaleFactor = 1.0;
-          col.formatter = CELL_FORMATTERS[col.type] || CELL_FORMATTERS.default;
-
-          // 2. Hydrate UI control modules (units, dropdown filters)
           Object.values(UI_MODULES).forEach(module => {
             if (module.isApplicable(col)) {
-              const handler = module.init(table, col);
+              const handler = module.init(table, col, dt);
               if (handler) updateHandlers.push(handler);
             }
           });
         });
 
-        // 3. Perform initial cell rendering and data-order sync
-        const renderAllCells = () => {
-          customColumns.forEach(col => {
-            if (col.units || col.type === "latexnum" || col.type === "number") {
-              renderColumnCells(table, col);
-            }
-          });
-        };
-
-        const refreshTable = () => {
-          renderAllCells();
+        const refreshMath = () => {
           updateHandlers.forEach(fn => fn());
           if (window.Quarto && typeof window.Quarto.typesetMath === "function") {
             window.Quarto.typesetMath(table);
           }
         };
 
-        refreshTable();
-        dt.on("datatable.page", refreshTable);
-        dt.on("datatable.sort", refreshTable);
-        dt.on("datatable.perpage", refreshTable);
+        refreshMath();
+        dt.on("datatable.page", refreshMath);
+        dt.on("datatable.sort", refreshMath);
+        dt.on("datatable.perpage", refreshMath);
       });
     });
   });
@@ -422,39 +424,16 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
     }
   };
 
-  // Synchronizes cell HTML and updates numeric data-order attribute
-  function renderColumnCells(table, col) {
-    table.querySelectorAll("tbody tr").forEach(tr => {
-      const cell = tr.children[col.index];
-      if (cell && cell.dataset.order !== undefined) {
-        const rawNum = parseFloat(cell.dataset.order);
-        if (!isNaN(rawNum)) {
-          const scaledValue = rawNum * (col.scaleFactor || 1.0);
-          
-          // Dynamically update dataset order so simple-datatables sorts numerically on scaled values
-          cell.setAttribute("data-order", scaledValue.toString());
-          cell.dataset.order = scaledValue.toString();
-
-          const outputHtml = col.formatter(scaledValue);
-          if (col.type === "latexnum") {
-            cell.innerHTML = outputHtml;
-          } else {
-            cell.textContent = outputHtml;
-          }
-        }
-      }
-    });
-  }
-
   // ===========================================================================
   // 2. INDEPENDENT UI MODULES
   // ===========================================================================
 
   const UI_MODULES = {
 
+    // MODULE A: Category Dropdown Filter
     dropdown: {
       isApplicable: (col) => col.dropdown === true,
-      init: (table, col) => {
+      init: (table, col, dt) => {
         const th = table.querySelectorAll("thead th")[col.index];
         if (!th) return null;
 
@@ -493,9 +472,10 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
       }
     },
 
+    // MODULE B: Dynamic Unit Converter (Updates scale factor and triggers DataTable refresh)
     units: {
       isApplicable: (col) => col.units && col.map,
-      init: (table, col) => {
+      init: (table, col, dt) => {
         const th = table.querySelectorAll("thead th")[col.index];
         if (!th) return null;
 
@@ -509,7 +489,8 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
         const applyUnits = () => {
           col.scaleFactor = col.map[select.value] !== undefined ? col.map[select.value] : 1.0;
-          renderColumnCells(table, col);
+          // Trigger internal DataTable re-render so custom render() receives the new scale factor
+          dt.update();
           if (window.Quarto && typeof window.Quarto.typesetMath === "function") {
             window.Quarto.typesetMath(table);
           }
