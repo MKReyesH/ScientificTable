@@ -10,17 +10,18 @@ local function html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
 end
 
+-- Safely strips quotes without breaking UTF-8 byte sequences
 local function strip_quotes(s)
     if not s then return "" end
     s = trim(s)
     if (s:sub(1,1) == '"' and s:sub(-1) == '"') or (s:sub(1,1) == "'" and s:sub(-1) == "'") then
-        s = s:sub(2, -2)
+        return trim(s:sub(2, -2))
     elseif s:sub(1,3) == "\226\128\156" and s:sub(-3) == "\226\128\157" then
-        s = s:sub(4, -4)
+        return trim(s:sub(4, -4))
     elseif s:sub(1,3) == "\226\128\152" and s:sub(-3) == "\226\128\153" then
-        s = s:sub(4, -4)
+        return trim(s:sub(4, -4))
     end
-    return trim(s)
+    return s
 end
 
 local function parse_csv_line(line)
@@ -96,18 +97,21 @@ local function extract_header(body)
     return nil, body
 end
 
+-- Additive left-to-right tag parser
 local function parse_column_rule(line)
     local col_idx = tonumber(line:match("^col%a*%s+(%d+)"))
     if not col_idx then return nil end
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
+    -- Extract Header
     local hdr, clean_body = extract_header(body)
     if hdr then
         rule.header = hdr
         body = clean_body
     end
 
+    -- Extract units(...)
     local units_str = body:match("units%((.-)%)")
     if units_str then
         local map, units = {}, {}
@@ -120,14 +124,17 @@ local function parse_column_rule(line)
         body = body:gsub("units%((.-)%)", "")
     end
 
+    -- Additive Tag Evaluation (Left to Right)
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag:lower())
-        if tag == "unsortable" then rule.sortable = false
-        elseif tag == "sortable" then rule.sortable = true
-        elseif tag == "dropdown" then rule.dropdown = true
+        if tag == "sortable" then rule.sortable = true
+        elseif tag == "unsortable" then rule.sortable = false
         elseif tag == "string" or tag == "text" then rule.type = "string"
         elseif tag == "number" or tag == "numeric" then rule.type = "number"
-        elseif tag == "latexnum" or tag == "latex-number" or tag == "latex_number" then rule.type = "latexnum" end
+        elseif tag == "latexnum" or tag == "latex-number" or tag == "latex_number" then
+            rule.type = "number"
+            rule.formatter = "latexnum"
+        elseif tag == "dropdown" then rule.dropdown = true end
     end
 
     return rule
@@ -195,8 +202,8 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
                 local num = tonumber(cell_trimmed)
                 local display_txt = html_escape(cell_trimmed)
                 if num then
-                    -- Format numeric data-order attribute with double precision (%.17g)
-                    table.insert(html, string.format('        <td data-order="%.17g">%s</td>', num, display_txt))
+                    -- Preserve raw double precision for native JS numeric sorting
+                    table.insert(html, string.format('        <td data-order="%.17g" data-raw="%.17g">%s</td>', num, num, display_txt))
                 else
                     table.insert(html, string.format('        <td>%s</td>', display_txt))
                 end
@@ -213,9 +220,7 @@ local function load_client_assets()
     local script_dir = PANDOC_SCRIPT_DIR or "."
     local target_path = script_dir .. "/../include/dynamic-tables.html"
     local file = io.open(target_path, "r")
-    if not file then
-        file = io.open("include/dynamic-tables.html", "r")
-    end
+    if not file then file = io.open("include/dynamic-tables.html", "r") end
     if file then
         local content = file:read("*a")
         file:close()
@@ -259,9 +264,7 @@ end
 function Pandoc(doc)
     if has_dynamic_table then
         local assets_html = load_client_assets()
-        if assets_html ~= "" then
-            table.insert(doc.blocks, pandoc.RawBlock('html', assets_html))
-        end
+        if assets_html ~= "" then table.insert(doc.blocks, pandoc.RawBlock('html', assets_html)) end
         has_dynamic_table = false
     end
     return doc

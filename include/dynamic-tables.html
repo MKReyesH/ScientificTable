@@ -30,7 +30,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
       const globalSortable = table.dataset.sortable !== "false";
 
-      // Configure numeric sorting rules for Simple-DataTables
+      // 1. Map metadata to native Simple-DataTables column rules
       const columnRules = customColumns.map(col => {
         const rule = { select: col.index };
         if (col.sortable !== undefined) rule.sortable = col.sortable;
@@ -38,12 +38,13 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
         if (col.type === "string") {
           rule.type = "string";
-        } else if (col.type === "number" || col.type === "latexnum") {
-          rule.type = "number"; // Enforces floating-point numerical sorting on data-order
+        } else if (col.type === "number") {
+          rule.type = "number"; // Simple-DataTables sorts on raw numeric data-order
         }
         return rule;
       });
 
+      // 2. Instantiate Simple-DataTables
       const dt = new simpleDatatables.DataTable(table, {
         searchable: table.dataset.searchable !== "false",
         sortable: true,
@@ -56,24 +57,23 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
       dt.on("datatable.init", () => {
         const updateHandlers = [];
 
-        // 1. Initialize column formatters and scale multipliers
+        // Attach formatters and hydrate UI modules
         customColumns.forEach(col => {
           col.scaleFactor = 1.0;
-          col.formatter = CELL_FORMATTERS[col.type] || CELL_FORMATTERS.default;
+          col.activeFormatter = FORMATTERS[col.formatter] || FORMATTERS[col.type] || FORMATTERS.default;
 
-          // 2. Attach UI controllers (dropdown filters, unit selectors)
           Object.values(UI_MODULES).forEach(module => {
             if (module.isApplicable(col)) {
-              const handler = module.init(table, col);
+              const handler = module.init(table, col, dt);
               if (handler) updateHandlers.push(handler);
             }
           });
         });
 
-        // 3. Render visible table cells
+        // Cell display rendering pipeline
         const renderAllCells = () => {
           customColumns.forEach(col => {
-            if (col.units || col.type === "latexnum") {
+            if (col.units || col.formatter || col.type === "number") {
               renderColumnCells(table, col);
             }
           });
@@ -96,15 +96,16 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
   });
 
   // ===========================================================================
-  // 1. DECOUPLED CELL FORMATTERS
+  // 1. EXTENSIBLE CELL FORMATTERS REGISTRY
   // ===========================================================================
 
-  const CELL_FORMATTERS = {
+  const FORMATTERS = {
     default: (val) => {
       const abs = Math.abs(val);
       return (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? val.toExponential(2) : Number(val.toFixed(4)).toString();
     },
 
+    // Formats numbers as indivisible TeX atoms {...} for MathJax / KaTeX
     latexnum: (val) => {
       if (val === 0) return '<span class="math inline">\\({0}\\)</span>';
       const abs = Math.abs(val);
@@ -116,19 +117,26 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
     }
   };
 
-  // Safely renders formatted values into HTML cells without breaking DataTable sort structures
   function renderColumnCells(table, col) {
     table.querySelectorAll("tbody tr").forEach(tr => {
       const cell = tr.children[col.index];
-      if (cell && cell.dataset.order !== undefined) {
-        const rawNum = parseFloat(cell.dataset.order);
-        if (!isNaN(rawNum)) {
-          const scaledValue = rawNum * (col.scaleFactor || 1.0);
-          const outputHtml = col.formatter(scaledValue);
-          if (col.type === "latexnum") {
-            cell.innerHTML = outputHtml;
-          } else {
-            cell.textContent = outputHtml;
+      if (cell) {
+        const rawStr = cell.dataset.raw || cell.dataset.order;
+        if (rawStr !== undefined) {
+          const rawNum = parseFloat(rawStr);
+          if (!isNaN(rawNum)) {
+            const scaledValue = rawNum * (col.scaleFactor || 1.0);
+            const outputHtml = col.activeFormatter(scaledValue);
+            
+            // Keep numerical data-order synchronized with current unit scale factor
+            cell.setAttribute("data-order", scaledValue.toString());
+            cell.dataset.order = scaledValue.toString();
+
+            if (col.formatter === "latexnum") {
+              cell.innerHTML = outputHtml;
+            } else {
+              cell.textContent = outputHtml;
+            }
           }
         }
       }
@@ -136,7 +144,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
   }
 
   // ===========================================================================
-  // 2. INDEPENDENT UI MODULES
+  // 2. EXTENSIBLE UI MODULES REGISTRY
   // ===========================================================================
 
   const UI_MODULES = {
@@ -144,7 +152,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
     // MODULE A: Category Dropdown Filter
     dropdown: {
       isApplicable: (col) => col.dropdown === true,
-      init: (table, col) => {
+      init: (table, col, dt) => {
         const th = table.querySelectorAll("thead th")[col.index];
         if (!th) return null;
 
@@ -186,7 +194,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
     // MODULE B: Dynamic Unit Converter
     units: {
       isApplicable: (col) => col.units && col.map,
-      init: (table, col) => {
+      init: (table, col, dt) => {
         const th = table.querySelectorAll("thead th")[col.index];
         if (!th) return null;
 
