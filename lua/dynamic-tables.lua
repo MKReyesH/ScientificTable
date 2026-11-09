@@ -1,27 +1,168 @@
 -- =============================================================================
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
+--
+-- SYNTAX SPECIFICATION:
+-- 1. Quick Syntax:       !dynamic-table: path/to/data.csv
+-- 2. Customized Syntax:  ::: {.dynamic-table}
+--                        src: path/to/data.csv
+--                        per-page: 15
+--                        searchable: true|false
+--                        sortable: true|false
+--                        column 0: unsortable
+--                        column 1: dropdown, string
+--                        column 3: sortable, number
+--                        column 4: units(eV: 1, keV: 1e-3, MeV: 1e-6, GeV: 1e-9)
+--                        :::
 -- =============================================================================
 
 local has_dynamic_table = false
+
+local CLIENT_ASSETS_HTML = [[
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
+<style>
+  table.dynamic-table-target th { vertical-align: top !important; }
+  .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; }
+  .dynamic-table-ctrl-select {
+    display: block; width: 100%; max-width: 120px; font-size: 0.8em;
+    padding: 2px 4px; border-radius: 4px; border: 1px solid #ced4da; background: #fff; cursor: pointer;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("table.dynamic-table-target").forEach((table) => {
+      let customColumns = [];
+      if (table.dataset.columns) {
+        try { customColumns = JSON.parse(table.dataset.columns); } catch (e) {}
+      }
+
+      const globalSortable = table.dataset.sortable !== "false";
+
+      const columnRules = customColumns.map(col => {
+        const rule = { select: col.index };
+        if (col.sortable !== undefined) {
+          rule.sortable = col.sortable;
+        } else if (!globalSortable) {
+          rule.sortable = false;
+        }
+        if (col.type) rule.type = col.type;
+        return rule;
+      });
+
+      const dt = new simpleDatatables.DataTable(table, {
+        searchable: table.dataset.searchable !== "false",
+        sortable: true,
+        perPage: parseInt(table.dataset.perPage || "15", 10),
+        ignorePunctuation: false,
+        columns: columnRules.length > 0 ? columnRules : undefined,
+        labels: { placeholder: "Search table...", perPage: "entries per page", noRows: "No entries found", info: "Showing {start} to {end} of {rows} entries" }
+      });
+
+      dt.on("datatable.init", () => {
+        const updateHandlers = [];
+        customColumns.forEach(col => {
+          if (col.dropdown) {
+            const h = setupDropdownFilter(table, col.index);
+            if (h) updateHandlers.push(h);
+          }
+          if (col.units) {
+            const h = setupUnitConverter(table, col);
+            if (h) updateHandlers.push(h);
+          }
+        });
+
+        // Re-apply active filters/conversions when table paginates or sorts
+        const reapply = () => updateHandlers.forEach(fn => fn());
+        dt.on("datatable.page", reapply);
+        dt.on("datatable.sort", reapply);
+        dt.on("datatable.perpage", reapply);
+      });
+    });
+  });
+
+  function setupDropdownFilter(table, colIndex) {
+    const th = table.querySelectorAll("thead th")[colIndex];
+    if (!th) return null;
+
+    const uniqueVals = new Set();
+    table.querySelectorAll("tbody tr").forEach(tr => {
+      const cell = tr.children[colIndex];
+      if (cell) {
+        const val = cell.textContent.trim();
+        if (val !== "") uniqueVals.add(val);
+      }
+    });
+
+    const wrap = document.createElement("div");
+    wrap.className = "dynamic-table-ctrl-wrap";
+    const select = document.createElement("select");
+    select.className = "dynamic-table-ctrl-select";
+    select.innerHTML = '<option value="">All</option>' + Array.from(uniqueVals).sort().map(v => `<option value="${v}">${v}</option>`).join("");
+
+    const applyFilter = () => {
+      const filterVal = select.value.trim();
+      table.querySelectorAll("tbody tr").forEach(tr => {
+        const cell = tr.children[colIndex];
+        if (cell) {
+          const cellVal = cell.textContent.trim();
+          tr.style.display = (filterVal === "" || cellVal === filterVal) ? "" : "none";
+        }
+      });
+    };
+
+    wrap.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("change", applyFilter);
+
+    wrap.appendChild(select);
+    th.appendChild(wrap);
+    return applyFilter;
+  }
+
+  function setupUnitConverter(table, col) {
+    const th = table.querySelectorAll("thead th")[col.index];
+    if (!th || !col.units || !col.map) return null;
+
+    const wrap = document.createElement("div");
+    wrap.className = "dynamic-table-ctrl-wrap";
+    const select = document.createElement("select");
+    select.className = "dynamic-table-ctrl-select";
+    select.innerHTML = col.units.map(u => `<option value="${u}">${u}</option>`).join("");
+
+    const applyConversion = () => {
+      const factor = col.map[select.value];
+      if (factor === undefined) return;
+      table.querySelectorAll("tbody tr").forEach(tr => {
+        const cell = tr.children[col.index];
+        if (cell && cell.dataset.order !== undefined) {
+          const num = parseFloat(cell.dataset.order);
+          if (!isNaN(num)) {
+            const abs = Math.abs(num * factor);
+            cell.textContent = (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? (num * factor).toExponential(2) : Number((num * factor).toFixed(4)).toString();
+          }
+        }
+      });
+    };
+
+    wrap.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("change", applyConversion);
+
+    wrap.appendChild(select);
+    th.appendChild(wrap);
+    return applyConversion;
+  }
+</script>
+]]
+
+-- -----------------------------------------------------------------------------
+-- LUA HELPERS & PARSERS
+-- -----------------------------------------------------------------------------
 
 local function trim(s) return s and s:match("^%s*(.-)%s*$") or "" end
 
 local function html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
-end
-
--- Safely strips quotes without breaking UTF-8 byte sequences
-local function strip_quotes(s)
-    if not s then return "" end
-    s = trim(s)
-    if (s:sub(1,1) == '"' and s:sub(-1) == '"') or (s:sub(1,1) == "'" and s:sub(-1) == "'") then
-        return trim(s:sub(2, -2))
-    elseif s:sub(1,3) == "\226\128\156" and s:sub(-3) == "\226\128\157" then
-        return trim(s:sub(4, -4))
-    elseif s:sub(1,3) == "\226\128\152" and s:sub(-3) == "\226\128\153" then
-        return trim(s:sub(4, -4))
-    end
-    return s
 end
 
 local function parse_csv_line(line)
@@ -77,41 +218,12 @@ local function extract_lines_from_div(el)
     return lines
 end
 
-local function extract_header(body)
-    local hdr
-    hdr = body:match('header%s*=%s*"(.-)"')
-    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*".-"', "")) end
-
-    hdr = body:match("header%s*=%s*'([^']+)'")
-    if hdr then return strip_quotes(hdr), (body:gsub("header%s*=%s*'.-'", "")) end
-
-    hdr = body:match('header%s*=%s*\226\128\156(.-)\226\128\157')
-    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*\226\128\156.-\226\128\157', "")) end
-
-    hdr = body:match('header%s*=%s*\226\128\152(.-)\226\128\153')
-    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*\226\128\152.-\226\128\153', "")) end
-
-    hdr = body:match('header%s*=%s*([^,]+)')
-    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*[^,]+', "")) end
-
-    return nil, body
-end
-
--- Additive left-to-right tag parser
 local function parse_column_rule(line)
     local col_idx = tonumber(line:match("^col%a*%s+(%d+)"))
     if not col_idx then return nil end
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    -- Extract Header
-    local hdr, clean_body = extract_header(body)
-    if hdr then
-        rule.header = hdr
-        body = clean_body
-    end
-
-    -- Extract units(...)
     local units_str = body:match("units%((.-)%)")
     if units_str then
         local map, units = {}, {}
@@ -124,37 +236,21 @@ local function parse_column_rule(line)
         body = body:gsub("units%((.-)%)", "")
     end
 
-    -- Additive Tag Evaluation (Left to Right)
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag:lower())
-        if tag == "sortable" then rule.sortable = true
-        elseif tag == "unsortable" then rule.sortable = false
+        if tag == "unsortable" then rule.sortable = false
+        elseif tag == "sortable" then rule.sortable = true
+        elseif tag == "dropdown" then rule.dropdown = true
         elseif tag == "string" or tag == "text" then rule.type = "string"
-        elseif tag == "number" or tag == "numeric" then rule.type = "number"
-        elseif tag == "latexnum" or tag == "latex-number" or tag == "latex_number" then
-            rule.type = "number"
-            rule.formatter = "latexnum"
-        elseif tag == "dropdown" then rule.dropdown = true end
+        elseif tag == "number" or tag == "numeric" then rule.type = "number" end
     end
 
     return rule
 end
 
-local function format_header_html(hdr)
-    if not hdr then return nil end
-    hdr = strip_quotes(hdr)
-
-    local math_content = hdr:match("^%$(.*)%$") or hdr:match("^\\%((.*)\\%)$")
-    if math_content then
-        return string.format('<span class="math inline">\\(%s\\)</span>', math_content)
-    end
-
-    if hdr:match("\\[%a]+") or hdr:match("[_%^]") then
-        return string.format('<span class="math inline">\\(%s\\)</span>', hdr)
-    end
-
-    return html_escape(hdr)
-end
+-- -----------------------------------------------------------------------------
+-- TABLE RENDERER & HOOKS
+-- -----------------------------------------------------------------------------
 
 local function render_table(src, searchable, per_page, sortable, columns_meta)
     local file = open_csv_file(src)
@@ -176,19 +272,7 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         html_escape(searchable or "true"), html_escape(per_page or "15"), html_escape(sortable or "true"), html_escape(pandoc.json.encode(columns_meta or {}))
     ))
     table.insert(html, '    <thead><tr>')
-    for j, h in ipairs(headers) do
-        local col_override = nil
-        if columns_meta then
-            for _, col in ipairs(columns_meta) do
-                if col.index == (j - 1) and col.header then
-                    col_override = format_header_html(col.header)
-                    break
-                end
-            end
-        end
-        local header_content = col_override or html_escape(trim(h))
-        table.insert(html, '        <th>' .. header_content .. '</th>')
-    end
+    for _, h in ipairs(headers) do table.insert(html, '        <th>' .. html_escape(trim(h)) .. '</th>') end
     table.insert(html, '    </tr></thead><tbody>')
 
     for i = 2, #lines do
@@ -201,12 +285,8 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
             else
                 local num = tonumber(cell_trimmed)
                 local display_txt = html_escape(cell_trimmed)
-                if num then
-                    -- Preserve raw double precision for native JS numeric sorting
-                    table.insert(html, string.format('        <td data-order="%.17g" data-raw="%.17g">%s</td>', num, num, display_txt))
-                else
-                    table.insert(html, string.format('        <td>%s</td>', display_txt))
-                end
+                if num then table.insert(html, string.format('        <td data-order="%s">%s</td>', tostring(num), display_txt))
+                else table.insert(html, string.format('        <td>%s</td>', display_txt)) end
             end
         end
         table.insert(html, '      </tr>')
@@ -214,20 +294,6 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
 
     table.insert(html, '    </tbody></table></div>')
     return pandoc.RawBlock('html', table.concat(html, "\n"))
-end
-
-local function load_client_assets()
-    local script_dir = PANDOC_SCRIPT_DIR or "."
-    local target_path = script_dir .. "/../include/dynamic-tables.html"
-    local file = io.open(target_path, "r")
-    if not file then file = io.open("include/dynamic-tables.html", "r") end
-    if file then
-        local content = file:read("*a")
-        file:close()
-        return content
-    end
-    io.stderr:write("[dynamic-tables] Error: Could not locate include/dynamic-tables.html\n")
-    return ""
 end
 
 function Para(p)
@@ -263,8 +329,7 @@ end
 
 function Pandoc(doc)
     if has_dynamic_table then
-        local assets_html = load_client_assets()
-        if assets_html ~= "" then table.insert(doc.blocks, pandoc.RawBlock('html', assets_html)) end
+        table.insert(doc.blocks, pandoc.RawBlock('html', CLIENT_ASSETS_HTML))
         has_dynamic_table = false
     end
     return doc
