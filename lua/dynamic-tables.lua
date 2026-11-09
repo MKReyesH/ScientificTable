@@ -2,17 +2,18 @@
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
 --
 -- SYNTAX SPECIFICATION:
--- 1. Quick Syntax:       !dynamic-table: path/to/data.csv
--- 2. Customized Syntax:  ::: {.dynamic-table}
---                        src: path/to/data.csv
---                        per-page: 15
---                        searchable: true|false
---                        sortable: true|false
---                        column 0: unsortable
---                        column 1: dropdown, string
---                        column 3: sortable, number
---                        column 4: units(eV: 1, keV: 1e-3, MeV: 1e-6, GeV: 1e-9)
---                        :::
+-- ::: {.dynamic-table}
+-- src: ../data/bounds.csv
+-- per-page: 15
+-- searchable: true
+-- sortable: true
+-- column 0: string, dropdown
+-- column 1: string, dropdown
+-- column 2: string, dropdown
+-- column 3: number, latexnum, header="$\delta^{(0)}$"
+-- column 4: number, latexnum, units(Planck units: 1, eV: 1.22e28, GeV: 1.22e19), header="$E_\text{Pl}^{(1)}$"
+-- column 5: number, latexnum, units(Planck units: 1, eV: 1.22e28, GeV: 1.22e19), header="$E_\text{Pl}^{(2)}$"
+-- :::
 -- =============================================================================
 
 local has_dynamic_table = false
@@ -21,6 +22,15 @@ local CLIENT_ASSETS_HTML = [[
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
 <style>
   table.dynamic-table-target th { vertical-align: top !important; }
+  table.dynamic-table-target td,
+  table.dynamic-table-target th,
+  table.dynamic-table-target td *,
+  table.dynamic-table-target th *,
+  table.dynamic-table-target .math,
+  table.dynamic-table-target mjx-container,
+  table.dynamic-table-target .katex {
+    white-space: nowrap !important;
+  }
   .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; }
   .dynamic-table-ctrl-select {
     display: block; width: 100%; max-width: 120px; font-size: 0.8em;
@@ -38,17 +48,38 @@ local CLIENT_ASSETS_HTML = [[
 
       const globalSortable = table.dataset.sortable !== "false";
 
+      // 1. Initialize scale factors per column
+      customColumns.forEach(col => {
+        col.scaleFactor = 1.0;
+      });
+
+      // 2. Build column rules using native Simple-DataTables `render` hooks
+      // Keeps raw numeric floats in memory for sorting, returns LaTeX math HTML for display
       const columnRules = customColumns.map(col => {
         const rule = { select: col.index };
-        if (col.sortable !== undefined) {
-          rule.sortable = col.sortable;
-        } else if (!globalSortable) {
-          rule.sortable = false;
+        if (col.sortable !== undefined) rule.sortable = col.sortable;
+        else if (!globalSortable) rule.sortable = false;
+
+        if (col.type === "number" || col.latexnum) {
+          rule.type = "number";
+          rule.render = (data, cell, rowIndex, cellIndex) => {
+            if (data === null || data === undefined || data === "") return "";
+            const rawNum = parseFloat(data);
+            if (isNaN(rawNum)) return data;
+
+            const scaledVal = rawNum * (col.scaleFactor || 1.0);
+            if (col.latexnum) {
+              return formatLatexNumber(scaledVal);
+            }
+            return formatStandardNumber(scaledVal);
+          };
+        } else if (col.type === "string") {
+          rule.type = "string";
         }
-        if (col.type) rule.type = col.type;
         return rule;
       });
 
+      // 3. Instantiate Simple-DataTables
       const dt = new simpleDatatables.DataTable(table, {
         searchable: table.dataset.searchable !== "false",
         sortable: true,
@@ -59,99 +90,115 @@ local CLIENT_ASSETS_HTML = [[
       });
 
       dt.on("datatable.init", () => {
-        const updateHandlers = [];
+        // 4. Hydrate UI control modules (units dropdowns, category filters)
         customColumns.forEach(col => {
-          if (col.dropdown) {
-            const h = setupDropdownFilter(table, col.index);
-            if (h) updateHandlers.push(h);
-          }
-          if (col.units) {
-            const h = setupUnitConverter(table, col);
-            if (h) updateHandlers.push(h);
-          }
+          Object.values(UI_MODULES).forEach(module => {
+            if (module.isApplicable(col)) {
+              module.init(table, col, dt);
+            }
+          });
         });
 
-        // Re-apply active filters/conversions when table paginates or sorts
-        const reapply = () => updateHandlers.forEach(fn => fn());
-        dt.on("datatable.page", reapply);
-        dt.on("datatable.sort", reapply);
-        dt.on("datatable.perpage", reapply);
+        typesetMath(table);
       });
+
+      dt.on("datatable.page", () => typesetMath(table));
+      dt.on("datatable.sort", () => typesetMath(table));
+      dt.on("datatable.perpage", () => typesetMath(table));
     });
   });
 
-  function setupDropdownFilter(table, colIndex) {
-    const th = table.querySelectorAll("thead th")[colIndex];
-    if (!th) return null;
-
-    const uniqueVals = new Set();
-    table.querySelectorAll("tbody tr").forEach(tr => {
-      const cell = tr.children[colIndex];
-      if (cell) {
-        const val = cell.textContent.trim();
-        if (val !== "") uniqueVals.add(val);
-      }
-    });
-
-    const wrap = document.createElement("div");
-    wrap.className = "dynamic-table-ctrl-wrap";
-    const select = document.createElement("select");
-    select.className = "dynamic-table-ctrl-select";
-    select.innerHTML = '<option value="">All</option>' + Array.from(uniqueVals).sort().map(v => `<option value="${v}">${v}</option>`).join("");
-
-    const applyFilter = () => {
-      const filterVal = select.value.trim();
-      table.querySelectorAll("tbody tr").forEach(tr => {
-        const cell = tr.children[colIndex];
-        if (cell) {
-          const cellVal = cell.textContent.trim();
-          tr.style.display = (filterVal === "" || cellVal === filterVal) ? "" : "none";
-        }
-      });
-    };
-
-    wrap.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("change", applyFilter);
-
-    wrap.appendChild(select);
-    th.appendChild(wrap);
-    return applyFilter;
+  // Cell Formatting Utilities
+  function formatLatexNumber(val) {
+    if (val === 0) return '<span class="math inline">\\({0}\\)</span>';
+    const abs = Math.abs(val);
+    if (abs >= 1e-3 && abs < 1e4) {
+      return `<span class="math inline">\\({${Number(val.toFixed(4))}}\\)</span>`;
+    }
+    const parts = val.toExponential(2).split("e");
+    return `<span class="math inline">\\({${parts[0]} \\times 10^{${parseInt(parts[1], 10)}}}\\)</span>`;
   }
 
-  function setupUnitConverter(table, col) {
-    const th = table.querySelectorAll("thead th")[col.index];
-    if (!th || !col.units || !col.map) return null;
+  function formatStandardNumber(val) {
+    const abs = Math.abs(val);
+    return (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? val.toExponential(2) : Number(val.toFixed(4)).toString();
+  }
 
-    const wrap = document.createElement("div");
-    wrap.className = "dynamic-table-ctrl-wrap";
-    const select = document.createElement("select");
-    select.className = "dynamic-table-ctrl-select";
-    select.innerHTML = col.units.map(u => `<option value="${u}">${u}</option>`).join("");
+  function typesetMath(element) {
+    if (window.Quarto && typeof window.Quarto.typesetMath === "function") {
+      window.Quarto.typesetMath(element);
+    }
+  }
 
-    const applyConversion = () => {
-      const factor = col.map[select.value];
-      if (factor === undefined) return;
-      table.querySelectorAll("tbody tr").forEach(tr => {
-        const cell = tr.children[col.index];
-        if (cell && cell.dataset.order !== undefined) {
-          const num = parseFloat(cell.dataset.order);
-          if (!isNaN(num)) {
-            const abs = Math.abs(num * factor);
-            cell.textContent = (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? (num * factor).toExponential(2) : Number((num * factor).toFixed(4)).toString();
+  // Feature Control Modules
+  const UI_MODULES = {
+    dropdown: {
+      isApplicable: (col) => col.dropdown === true,
+      init: (table, col, dt) => {
+        const th = table.querySelectorAll("thead th")[col.index];
+        if (!th || th.querySelector(".dynamic-table-ctrl-wrap")) return;
+
+        const uniqueVals = new Set();
+        table.querySelectorAll("tbody tr").forEach(tr => {
+          const cell = tr.children[col.index];
+          if (cell && cell.textContent.trim() !== "") {
+            uniqueVals.add(cell.textContent.trim());
           }
-        }
-      });
-    };
+        });
 
-    wrap.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("change", applyConversion);
+        const wrap = document.createElement("div");
+        wrap.className = "dynamic-table-ctrl-wrap";
+        const select = document.createElement("select");
+        select.className = "dynamic-table-ctrl-select";
+        select.innerHTML = '<option value="">All</option>' + Array.from(uniqueVals).sort().map(v => `<option value="${v}">${v}</option>`).join("");
 
-    wrap.appendChild(select);
-    th.appendChild(wrap);
-    return applyConversion;
-  }
+        const applyFilter = () => {
+          const filterVal = select.value.trim();
+          table.querySelectorAll("tbody tr").forEach(tr => {
+            const cell = tr.children[col.index];
+            if (cell) {
+              const cellVal = cell.textContent.trim();
+              tr.style.display = (filterVal === "" || cellVal === filterVal) ? "" : "none";
+            }
+          });
+        };
+
+        wrap.addEventListener("click", e => e.stopPropagation());
+        select.addEventListener("click", e => e.stopPropagation());
+        select.addEventListener("change", applyFilter);
+        wrap.appendChild(select);
+        th.appendChild(wrap);
+      }
+    },
+
+    units: {
+      isApplicable: (col) => col.units && col.map,
+      init: (table, col, dt) => {
+        const th = table.querySelectorAll("thead th")[col.index];
+        if (!th || th.querySelector(".dynamic-table-ctrl-wrap")) return;
+
+        col.scaleFactor = col.map[col.units[0]] !== undefined ? col.map[col.units[0]] : 1.0;
+
+        const wrap = document.createElement("div");
+        wrap.className = "dynamic-table-ctrl-wrap";
+        const select = document.createElement("select");
+        select.className = "dynamic-table-ctrl-select";
+        select.innerHTML = col.units.map(u => `<option value="${u}">${u}</option>`).join("");
+
+        const applyUnits = () => {
+          col.scaleFactor = col.map[select.value] !== undefined ? col.map[select.value] : 1.0;
+          dt.render();
+          typesetMath(table);
+        };
+
+        wrap.addEventListener("click", e => e.stopPropagation());
+        select.addEventListener("click", e => e.stopPropagation());
+        select.addEventListener("change", applyUnits);
+        wrap.appendChild(select);
+        th.appendChild(wrap);
+      }
+    }
+  };
 </script>
 ]]
 
@@ -163,6 +210,19 @@ local function trim(s) return s and s:match("^%s*(.-)%s*$") or "" end
 
 local function html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
+end
+
+local function strip_quotes(s)
+    if not s then return "" end
+    s = trim(s)
+    if (s:sub(1,1) == '"' and s:sub(-1) == '"') or (s:sub(1,1) == "'" and s:sub(-1) == "'") then
+        s = s:sub(2, -2)
+    elseif s:sub(1,3) == "\226\128\156" and s:sub(-3) == "\226\128\157" then
+        s = s:sub(4, -4)
+    elseif s:sub(1,3) == "\226\128\152" and s:sub(-3) == "\226\128\153" then
+        s = s:sub(4, -4)
+    end
+    return trim(s)
 end
 
 local function parse_csv_line(line)
@@ -218,11 +278,37 @@ local function extract_lines_from_div(el)
     return lines
 end
 
+local function extract_header(body)
+    local hdr
+    hdr = body:match('header%s*=%s*"(.-)"')
+    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*".-"', "")) end
+
+    hdr = body:match("header%s*=%s*'([^']+)'")
+    if hdr then return strip_quotes(hdr), (body:gsub("header%s*=%s*'.-'", "")) end
+
+    hdr = body:match('header%s*=%s*\226\128\156(.-)\226\128\157')
+    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*\226\128\156.-\226\128\157', "")) end
+
+    hdr = body:match('header%s*=%s*\226\128\152(.-)\226\128\153')
+    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*\226\128\152.-\226\128\153', "")) end
+
+    hdr = body:match('header%s*=%s*([^,]+)')
+    if hdr then return strip_quotes(hdr), (body:gsub('header%s*=%s*[^,]+', "")) end
+
+    return nil, body
+end
+
 local function parse_column_rule(line)
     local col_idx = tonumber(line:match("^col%a*%s+(%d+)"))
     if not col_idx then return nil end
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
+
+    local hdr, clean_body = extract_header(body)
+    if hdr then
+        rule.header = hdr
+        body = clean_body
+    end
 
     local units_str = body:match("units%((.-)%)")
     if units_str then
@@ -242,10 +328,30 @@ local function parse_column_rule(line)
         elseif tag == "sortable" then rule.sortable = true
         elseif tag == "dropdown" then rule.dropdown = true
         elseif tag == "string" or tag == "text" then rule.type = "string"
-        elseif tag == "number" or tag == "numeric" then rule.type = "number" end
+        elseif tag == "number" or tag == "numeric" then rule.type = "number"
+        elseif tag == "latexnum" or tag == "latex-number" or tag == "latex_number" then 
+            rule.latexnum = true
+            if not rule.type then rule.type = "number" end
+        end
     end
 
     return rule
+end
+
+local function format_header_html(hdr)
+    if not hdr then return nil end
+    hdr = strip_quotes(hdr)
+
+    local math_content = hdr:match("^%$(.*)%$") or hdr:match("^\\%((.*)\\%)$")
+    if math_content then
+        return string.format('<span class="math inline">\\(%s\\)</span>', math_content)
+    end
+
+    if hdr:match("\\[%a]+") or hdr:match("[_%^]") then
+        return string.format('<span class="math inline">\\(%s\\)</span>', hdr)
+    end
+
+    return html_escape(hdr)
 end
 
 -- -----------------------------------------------------------------------------
@@ -272,7 +378,19 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         html_escape(searchable or "true"), html_escape(per_page or "15"), html_escape(sortable or "true"), html_escape(pandoc.json.encode(columns_meta or {}))
     ))
     table.insert(html, '    <thead><tr>')
-    for _, h in ipairs(headers) do table.insert(html, '        <th>' .. html_escape(trim(h)) .. '</th>') end
+    for j, h in ipairs(headers) do
+        local col_override = nil
+        if columns_meta then
+            for _, col in ipairs(columns_meta) do
+                if col.index == (j - 1) and col.header then
+                    col_override = format_header_html(col.header)
+                    break
+                end
+            end
+        end
+        local header_content = col_override or html_escape(trim(h))
+        table.insert(html, '        <th>' .. header_content .. '</th>')
+    end
     table.insert(html, '    </tr></thead><tbody>')
 
     for i = 2, #lines do
