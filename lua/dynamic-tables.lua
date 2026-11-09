@@ -5,12 +5,11 @@
 -- 1. Quick Syntax:       !dynamic-table: path/to/data.csv
 -- 2. Customized Syntax:  ::: {.dynamic-table}
 --                        src: path/to/data.csv
---                        per-page: 15
 --                        searchable: true|false
+--                        per-page: 15
 --                        sortable: true|false
 --                        column 0: unsortable
---                        column 1: dropdown, string
---                        column 3: sortable, number
+--                        column 1: dropdown
 --                        column 4: units(eV: 1, keV: 1e-3, MeV: 1e-6, GeV: 1e-9)
 --                        :::
 -- =============================================================================
@@ -19,15 +18,10 @@ local has_dynamic_table = false
 
 local CLIENT_ASSETS_HTML = [[
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
+<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
 <style>
   table.dynamic-table-target th { vertical-align: top !important; }
-  .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; }
-  .dynamic-table-ctrl-select {
-    display: block; width: 100%; max-width: 120px; font-size: 0.8em;
-    padding: 2px 4px; border-radius: 4px; border: 1px solid #ced4da; background: #fff; cursor: pointer;
-  }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("table.dynamic-table-target").forEach((table) => {
@@ -36,22 +30,16 @@ local CLIENT_ASSETS_HTML = [[
         try { customColumns = JSON.parse(table.dataset.columns); } catch (e) {}
       }
 
-      const globalSortable = table.dataset.sortable !== "false";
-
       const columnRules = customColumns.map(col => {
         const rule = { select: col.index };
-        if (col.sortable !== undefined) {
-          rule.sortable = col.sortable;
-        } else if (!globalSortable) {
-          rule.sortable = false;
-        }
-        if (col.type) rule.type = col.type;
+        if (col.sortable === false) rule.sortable = false;
+        if (col.type && col.type !== "units") rule.type = col.type;
         return rule;
       });
 
       const dt = new simpleDatatables.DataTable(table, {
         searchable: table.dataset.searchable !== "false",
-        sortable: true,
+        sortable: table.dataset.sortable !== "false",
         perPage: parseInt(table.dataset.perPage || "15", 10),
         ignorePunctuation: false,
         columns: columnRules.length > 0 ? columnRules : undefined,
@@ -59,30 +47,17 @@ local CLIENT_ASSETS_HTML = [[
       });
 
       dt.on("datatable.init", () => {
-        const updateHandlers = [];
         customColumns.forEach(col => {
-          if (col.dropdown) {
-            const h = setupDropdownFilter(table, col.index);
-            if (h) updateHandlers.push(h);
-          }
-          if (col.units) {
-            const h = setupUnitConverter(table, col);
-            if (h) updateHandlers.push(h);
-          }
+          if (col.dropdown) setupDropdownFilter(table, col.index);
+          if (col.type === "units") setupUnitConverter(table, col);
         });
-
-        // Re-apply active filters/conversions when table paginates or sorts
-        const reapply = () => updateHandlers.forEach(fn => fn());
-        dt.on("datatable.page", reapply);
-        dt.on("datatable.sort", reapply);
-        dt.on("datatable.perpage", reapply);
       });
     });
   });
 
   function setupDropdownFilter(table, colIndex) {
     const th = table.querySelectorAll("thead th")[colIndex];
-    if (!th) return null;
+    if (!th) return;
 
     const uniqueVals = new Set();
     table.querySelectorAll("tbody tr").forEach(tr => {
@@ -99,8 +74,10 @@ local CLIENT_ASSETS_HTML = [[
     select.className = "dynamic-table-ctrl-select";
     select.innerHTML = '<option value="">All</option>' + Array.from(uniqueVals).sort().map(v => `<option value="${v}">${v}</option>`).join("");
 
-    const applyFilter = () => {
-      const filterVal = select.value.trim();
+    wrap.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("change", (e) => {
+      const filterVal = e.target.value.trim();
       table.querySelectorAll("tbody tr").forEach(tr => {
         const cell = tr.children[colIndex];
         if (cell) {
@@ -108,20 +85,15 @@ local CLIENT_ASSETS_HTML = [[
           tr.style.display = (filterVal === "" || cellVal === filterVal) ? "" : "none";
         }
       });
-    };
-
-    wrap.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("change", applyFilter);
+    });
 
     wrap.appendChild(select);
     th.appendChild(wrap);
-    return applyFilter;
   }
 
   function setupUnitConverter(table, col) {
     const th = table.querySelectorAll("thead th")[col.index];
-    if (!th || !col.units || !col.map) return null;
+    if (!th || !col.units || !col.map) return;
 
     const wrap = document.createElement("div");
     wrap.className = "dynamic-table-ctrl-wrap";
@@ -129,8 +101,10 @@ local CLIENT_ASSETS_HTML = [[
     select.className = "dynamic-table-ctrl-select";
     select.innerHTML = col.units.map(u => `<option value="${u}">${u}</option>`).join("");
 
-    const applyConversion = () => {
-      const factor = col.map[select.value];
+    wrap.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("click", (e) => e.stopPropagation());
+    select.addEventListener("change", (e) => {
+      const factor = col.map[e.target.value];
       if (factor === undefined) return;
       table.querySelectorAll("tbody tr").forEach(tr => {
         const cell = tr.children[col.index];
@@ -142,15 +116,10 @@ local CLIENT_ASSETS_HTML = [[
           }
         }
       });
-    };
-
-    wrap.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("change", applyConversion);
+    });
 
     wrap.appendChild(select);
     th.appendChild(wrap);
-    return applyConversion;
   }
 </script>
 ]]
@@ -224,22 +193,20 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    local units_str = body:match("units%((.-)%)")
-    if units_str then
+    if body:lower():match("units%((.-)%)") then
+        local args = body:match("units%((.-)%)")
         local map, units = {}, {}
-        for pair in units_str:gmatch("[^,]+") do
+        for pair in args:gmatch("[^,]+") do
             local u, f = pair:match("^%s*([%w_%-%%]+)%s*:%s*([%d%.eE%-%+]+)%s*$")
             if u and f then map[u] = tonumber(f); table.insert(units, u) end
         end
-        rule.units = units
-        rule.map = map
-        body = body:gsub("units%((.-)%)", "")
+        rule.type = "units"; rule.map = map; rule.units = units
+        return rule
     end
 
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag:lower())
         if tag == "unsortable" then rule.sortable = false
-        elseif tag == "sortable" then rule.sortable = true
         elseif tag == "dropdown" then rule.dropdown = true
         elseif tag == "string" or tag == "text" then rule.type = "string"
         elseif tag == "number" or tag == "numeric" then rule.type = "number" end
