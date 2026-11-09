@@ -11,7 +11,7 @@ website:
       - text: "Processes"
         href: "doc/processes.qmd"
       - text: "Backgrounds"
-        href: "doc/background.qmd"
+        href: "doc/backgrounds.qmd"
       - text: "GitHub Project"
         href: https://github.com/MKReyesH/ScientificTable
       - text: "About"

@@ -8,10 +8,10 @@
 --                        per-page: 15
 --                        searchable: true|false
 --                        sortable: true|false
---                        column 0: unsortable
---                        column 1: dropdown, string
+--                        column 0: header="ID", unsortable
+--                        column 1: header="Category", dropdown, string
 --                        column 3: sortable, number
---                        column 4: units(eV: 1, keV: 1e-3, MeV: 1e-6, GeV: 1e-9)
+--                        column 4: header=$E_{\text{LIV}}^{(1)}$, units(Planck units: 1, eV: 1.22e28), latexnum
 --                        :::
 -- =============================================================================
 
@@ -31,21 +31,18 @@ local CLIENT_ASSETS_HTML = [[
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll("table.dynamic-table-target").forEach((table) => {
-      let customColumns = [];
+      let rawCols = {};
       if (table.dataset.columns) {
-        try { customColumns = JSON.parse(table.dataset.columns); } catch (e) {}
+        try { rawCols = JSON.parse(table.dataset.columns); } catch (e) {}
       }
-
+      const customColumns = Array.isArray(rawCols) ? rawCols : Object.values(rawCols);
       const globalSortable = table.dataset.sortable !== "false";
 
       const columnRules = customColumns.map(col => {
         const rule = { select: col.index };
-        if (col.sortable !== undefined) {
-          rule.sortable = col.sortable;
-        } else if (!globalSortable) {
-          rule.sortable = false;
-        }
-        if (col.type) rule.type = col.type;
+        if (col.sortable !== undefined) rule.sortable = col.sortable;
+        else if (!globalSortable) rule.sortable = false;
+        if (col.type === "string" || col.type === "number") rule.type = col.type;
         return rule;
       });
 
@@ -68,17 +65,44 @@ local CLIENT_ASSETS_HTML = [[
           if (col.units) {
             const h = setupUnitConverter(table, col);
             if (h) updateHandlers.push(h);
+          } else if (col.type === "latexnum") {
+            const h = setupLatexNumFormatter(table, col);
+            if (h) updateHandlers.push(h);
           }
         });
 
-        // Re-apply active filters/conversions when table paginates or sorts
-        const reapply = () => updateHandlers.forEach(fn => fn());
-        dt.on("datatable.page", reapply);
-        dt.on("datatable.sort", reapply);
-        dt.on("datatable.perpage", reapply);
+        const refreshTable = () => {
+          updateHandlers.forEach(fn => fn());
+          if (window.Quarto && typeof window.Quarto.typesetMath === "function") {
+            window.Quarto.typesetMath(table);
+          }
+        };
+
+        refreshTable();
+        dt.on("datatable.page", refreshTable);
+        dt.on("datatable.sort", refreshTable);
+        dt.on("datatable.perpage", refreshTable);
       });
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // FORMATTING & UI SUB-MODULES
+  // ---------------------------------------------------------------------------
+
+  function formatValue(num, factor, isLatex) {
+    const val = num * (factor !== undefined ? factor : 1);
+    if (isNaN(val) || val === null) return "";
+    if (isLatex) {
+      if (val === 0) return "$0$";
+      const abs = Math.abs(val);
+      if (abs >= 1e-3 && abs < 1e4) return `$${Number(val.toFixed(4))}$`;
+      const parts = val.toExponential(2).split("e");
+      return `$${parts[0]} \\times 10^{${parseInt(parts[1], 10)}}$`;
+    }
+    const abs = Math.abs(val);
+    return (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? val.toExponential(2) : Number(val.toFixed(4)).toString();
+  }
 
   function setupDropdownFilter(table, colIndex) {
     const th = table.querySelectorAll("thead th")[colIndex];
@@ -137,8 +161,7 @@ local CLIENT_ASSETS_HTML = [[
         if (cell && cell.dataset.order !== undefined) {
           const num = parseFloat(cell.dataset.order);
           if (!isNaN(num)) {
-            const abs = Math.abs(num * factor);
-            cell.textContent = (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? (num * factor).toExponential(2) : Number((num * factor).toFixed(4)).toString();
+            cell.innerHTML = formatValue(num, factor, col.type === "latexnum");
           }
         }
       });
@@ -151,6 +174,20 @@ local CLIENT_ASSETS_HTML = [[
     wrap.appendChild(select);
     th.appendChild(wrap);
     return applyConversion;
+  }
+
+  function setupLatexNumFormatter(table, col) {
+    return () => {
+      table.querySelectorAll("tbody tr").forEach(tr => {
+        const cell = tr.children[col.index];
+        if (cell && cell.dataset.order !== undefined) {
+          const num = parseFloat(cell.dataset.order);
+          if (!isNaN(num)) {
+            cell.innerHTML = formatValue(num, 1, true);
+          }
+        }
+      });
+    };
   }
 </script>
 ]]
@@ -224,6 +261,20 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
+    -- 1. Extract header="..." or header='...' or header=...
+    local hdr = body:match('header=["\'](.-)["\']')
+    if hdr then
+        rule.header = hdr
+        body = body:gsub('header=["\'](.-)["\']', "")
+    else
+        hdr = body:match('header%s*=%s*([^,]+)')
+        if hdr then
+            rule.header = trim(hdr)
+            body = body:gsub('header%s*=%s*([^,]+)', "")
+        end
+    end
+
+    -- 2. Extract units(...)
     local units_str = body:match("units%((.-)%)")
     if units_str then
         local map, units = {}, {}
@@ -236,13 +287,15 @@ local function parse_column_rule(line)
         body = body:gsub("units%((.-)%)", "")
     end
 
+    -- 3. Parse remaining comma-separated tags
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag:lower())
         if tag == "unsortable" then rule.sortable = false
         elseif tag == "sortable" then rule.sortable = true
         elseif tag == "dropdown" then rule.dropdown = true
         elseif tag == "string" or tag == "text" then rule.type = "string"
-        elseif tag == "number" or tag == "numeric" then rule.type = "number" end
+        elseif tag == "number" or tag == "numeric" then rule.type = "number"
+        elseif tag == "latexnum" or tag == "latex-number" or tag == "latex_number" then rule.type = "latexnum" end
     end
 
     return rule
@@ -272,7 +325,11 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         html_escape(searchable or "true"), html_escape(per_page or "15"), html_escape(sortable or "true"), html_escape(pandoc.json.encode(columns_meta or {}))
     ))
     table.insert(html, '    <thead><tr>')
-    for _, h in ipairs(headers) do table.insert(html, '        <th>' .. html_escape(trim(h)) .. '</th>') end
+    for j, h in ipairs(headers) do
+        local col_rule = columns_meta[tostring(j - 1)]
+        local header_content = (col_rule and col_rule.header) or html_escape(trim(h))
+        table.insert(html, '        <th>' .. header_content .. '</th>')
+    end
     table.insert(html, '    </tr></thead><tbody>')
 
     for i = 2, #lines do
@@ -319,7 +376,7 @@ function Div(el)
                 elseif key == "sortable" then sortable = val end
             elseif line:lower():match("^col") then
                 local col_rule = parse_column_rule(line)
-                if col_rule then table.insert(columns_meta, col_rule) end
+                if col_rule then columns_meta[tostring(col_rule.index)] = col_rule end
             end
         end
     end
