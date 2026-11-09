@@ -185,14 +185,14 @@ window.Quarto = {
 
 
 <div class="dynamic-table-wrapper">
-  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;index&quot;:0},{&quot;dropdown&quot;:true,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:2},{&quot;header&quot;:&quot;“\\delta^{(0)}”&quot;,&quot;index&quot;:3,&quot;type&quot;:&quot;latexnum&quot;},{&quot;header&quot;:&quot;“E_\\text{Pl}^{(1)}”&quot;,&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;latexnum&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]},{&quot;header&quot;:&quot;“E_\\text{Pl}^{(2)}”&quot;,&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;latexnum&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]}]">
+  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;index&quot;:0},{&quot;dropdown&quot;:true,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:2},{&quot;header&quot;:&quot;��&quot;,&quot;index&quot;:3,&quot;type&quot;:&quot;latexnum&quot;},{&quot;header&quot;:&quot;��&quot;,&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;latexnum&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]},{&quot;header&quot;:&quot;��&quot;,&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;latexnum&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]}]">
     <thead><tr>
         <th>Messengers</th>
         <th>Luminality</th>
         <th>Effects</th>
-        <th>“\delta^{(0)}”</th>
-        <th>“E_\text{Pl}^{(1)}”</th>
-        <th>“E_\text{Pl}^{(2)}”</th>
+        <th>��</th>
+        <th>��</th>
+        <th>��</th>
         <th>InspireID</th>
     </tr></thead><tbody>
       <tr>
@@ -308,7 +308,7 @@ window.Quarto = {
 
 
 <!-- =============================================================================
-DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS)
+DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 ============================================================================= -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
 <style>
@@ -350,6 +350,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS)
       dt.on("datatable.init", () => {
         const updateHandlers = [];
 
+        // Hydrate features registered in FEATURE_MODULES
         customColumns.forEach(col => {
           Object.values(FEATURE_MODULES).forEach(module => {
             if (module.isApplicable(col)) {
@@ -375,7 +376,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS)
   });
 
   // ===========================================================================
-  // CENTRALIZED FORMATTING UTILITIES
+  // CENTRALIZED CELL FORMATTERS
   // ===========================================================================
 
   function formatLatexNumber(val) {
@@ -411,7 +412,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS)
   }
 
   // ===========================================================================
-  // FEATURE MODULE REGISTRY (Add new cell/column features here)
+  // FEATURE MODULE REGISTRY (Add or extend custom column features here)
   // ===========================================================================
 
   const FEATURE_MODULES = {
@@ -458,7 +459,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS)
       }
     },
 
-    // FEATURE 2: Unit Converter Dropdown
+    // FEATURE 2: Dynamic Unit Converter Dropdown
     units: {
       isApplicable: (col) => col.units && col.map,
       init: (table, col) => {
@@ -486,7 +487,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS)
       }
     },
 
-    // FEATURE 3: Static LaTeX Scientific Numbers (Active when no unit converter is present)
+    // FEATURE 3: Static LaTeX Scientific Numbers (Active when no unit dropdown is present)
     latexnum: {
       isApplicable: (col) => col.type === "latexnum" && !col.units,
       init: (table, col) => {
