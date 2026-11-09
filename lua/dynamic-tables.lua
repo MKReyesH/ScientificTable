@@ -127,8 +127,16 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
     ))
     table.insert(html, '    <thead><tr>')
     for j, h in ipairs(headers) do
-        local col_rule = columns_meta[tostring(j - 1)]
-        local header_content = (col_rule and col_rule.header) or html_escape(trim(h))
+        local col_override = nil
+        if columns_meta then
+            for _, col in ipairs(columns_meta) do
+                if col.index == (j - 1) and col.header then
+                    col_override = col.header
+                    break
+                end
+            end
+        end
+        local header_content = col_override or html_escape(trim(h))
         table.insert(html, '        <th>' .. header_content .. '</th>')
     end
     table.insert(html, '    </tr></thead><tbody>')
@@ -156,19 +164,19 @@ end
 
 local function load_client_assets()
     local script_dir = PANDOC_SCRIPT_DIR or "."
-    local asset_path = script_dir .. "/../includes/dynamic-tables.html"
-    local file = io.open(asset_path, "r")
+    -- Resolve relative path from lua/ to include/
+    local target_path = script_dir .. "/../include/dynamic-tables.html"
+    local file = io.open(target_path, "r")
+    if not file then
+        -- Fallback if executed directly from project root
+        file = io.open("include/dynamic-tables.html", "r")
+    end
     if file then
         local content = file:read("*a")
         file:close()
         return content
     end
-    file = io.open("includes/dynamic-tables.html", "r")
-    if file then
-        local content = file:read("*a")
-        file:close()
-        return content
-    end
+    io.stderr:write("[dynamic-tables] Error: Could not locate include/dynamic-tables.html\n")
     return ""
 end
 
@@ -195,7 +203,7 @@ function Div(el)
                 elseif key == "sortable" then sortable = val end
             elseif line:lower():match("^col") then
                 local col_rule = parse_column_rule(line)
-                if col_rule then columns_meta[tostring(col_rule.index)] = col_rule end
+                if col_rule then table.insert(columns_meta, col_rule) end
             end
         end
     end
