@@ -82,18 +82,20 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    local hdr = body:match('header=["\'](.-)["\']')
-    if hdr then
-        rule.header = hdr
-        body = body:gsub('header=["\'](.-)["\']', "")
+    -- Extract header=... (handles quoted, smart-quoted, or unquoted values)
+    local hdr_quoted = body:match('header%s*=%s*(["\'\226\128\156\226\128\158].-["\'\226\128\157\226\128\159])')
+    if hdr_quoted then
+        rule.header = hdr_quoted
+        body = body:gsub('header%s*=%s*["\'\226\128\156\226\128\158].-["\'\226\128\157\226\128\159]', "")
     else
-        hdr = body:match('header%s*=%s*([^,]+)')
-        if hdr then
-            rule.header = trim(hdr)
-            body = body:gsub('header%s*=%s*([^,]+)', "")
+        local hdr_unquoted = body:match('header%s*=%s*([^,]+)')
+        if hdr_unquoted then
+            rule.header = trim(hdr_unquoted)
+            body = body:gsub('header%s*=%s*[^,]+', "")
         end
     end
 
+    -- Extract units(...)
     local units_str = body:match("units%((.-)%)")
     if units_str then
         local map, units = {}, {}
@@ -106,6 +108,7 @@ local function parse_column_rule(line)
         body = body:gsub("units%((.-)%)", "")
     end
 
+    -- Extract column tags
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag:lower())
         if tag == "unsortable" then rule.sortable = false
@@ -121,11 +124,28 @@ end
 
 local function format_header_html(hdr)
     if not hdr then return nil end
-    local math_content = hdr:match("^%$(.*)%$")
+    hdr = trim(hdr)
+    
+    -- Strip ASCII quotes (" and ')
+    hdr = hdr:gsub('^["\']', ''):gsub('["\']$', '')
+    -- Strip UTF-8 smart double quotes (“ and ”)
+    hdr = hdr:gsub('^\226\128\156', ''):gsub('\226\128\157$', '')
+    -- Strip UTF-8 smart single quotes (‘ and ’)
+    hdr = hdr:gsub('^\226\128\158', ''):gsub('\226\128\159$', '')
+    hdr = trim(hdr)
+
+    -- Check if string is wrapped in $...$ or \(...\)
+    local math_content = hdr:match("^%$(.*)%$") or hdr:match("^\\%((.*)\\%)$")
     if math_content then
         return string.format('<span class="math inline">\\(%s\\)</span>', math_content)
     end
-    return hdr
+
+    -- If Pandoc stringify stripped $ delimiters, but string contains TeX syntax (\, _, ^)
+    if hdr:match("\\[%a]+") or hdr:match("[_%^]") then
+        return string.format('<span class="math inline">\\(%s\\)</span>', hdr)
+    end
+
+    return html_escape(hdr)
 end
 
 local function render_table(src, searchable, per_page, sortable, columns_meta)
