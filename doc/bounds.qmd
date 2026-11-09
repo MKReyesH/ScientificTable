@@ -7,9 +7,9 @@ src: ../data/bounds.csv
 per-page: 15
 searchable: true
 sortable: true
-column 0: dropdown, string
-column 1: dropdown, string
-column 2: dropdown, string
+column 0: string, dropdown
+column 1: string, dropdown
+column 2: string, dropdown
 column 3: number
 column 4: number, units(Planck units: 1, eV: 1.22e28, GeV: 1.22e19)
 column 5: number, units(Planck units: 1, eV: 1.22e28, GeV: 1.22e19)

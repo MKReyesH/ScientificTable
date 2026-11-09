@@ -1,18 +1,5 @@
 -- =============================================================================
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
---
--- SYNTAX SPECIFICATION:
--- 1. Quick Syntax:       !dynamic-table: path/to/data.csv
--- 2. Customized Syntax:  ::: {.dynamic-table}
---                        src: path/to/data.csv
---                        per-page: 15
---                        searchable: true|false
---                        sortable: true|false
---                        column 0: unsortable
---                        column 1: dropdown, string
---                        column 3: sortable, number
---                        column 4: units(eV: 1, keV: 1e-3, MeV: 1e-6, GeV: 1e-9)
---                        :::
 -- =============================================================================
 
 local has_dynamic_table = false
@@ -45,7 +32,12 @@ local CLIENT_ASSETS_HTML = [[
         } else if (!globalSortable) {
           rule.sortable = false;
         }
-        if (col.type) rule.type = col.type;
+        if (col.type) {
+          rule.type = col.type;
+          if (col.type === "number") {
+            rule.numeric = true;
+          }
+        }
         return rule;
       });
 
@@ -66,12 +58,11 @@ local CLIENT_ASSETS_HTML = [[
             if (h) updateHandlers.push(h);
           }
           if (col.units) {
-            const h = setupUnitConverter(table, col);
+            const h = setupUnitConverter(table, col, dt);
             if (h) updateHandlers.push(h);
           }
         });
 
-        // Re-apply active filters/conversions when table paginates or sorts
         const reapply = () => updateHandlers.forEach(fn => fn());
         dt.on("datatable.page", reapply);
         dt.on("datatable.sort", reapply);
@@ -119,7 +110,7 @@ local CLIENT_ASSETS_HTML = [[
     return applyFilter;
   }
 
-  function setupUnitConverter(table, col) {
+  function setupUnitConverter(table, col, dt) {
     const th = table.querySelectorAll("thead th")[col.index];
     if (!th || !col.units || !col.map) return null;
 
@@ -132,13 +123,20 @@ local CLIENT_ASSETS_HTML = [[
     const applyConversion = () => {
       const factor = col.map[select.value];
       if (factor === undefined) return;
+      
       table.querySelectorAll("tbody tr").forEach(tr => {
         const cell = tr.children[col.index];
-        if (cell && cell.dataset.order !== undefined) {
-          const num = parseFloat(cell.dataset.order);
-          if (!isNaN(num)) {
-            const abs = Math.abs(num * factor);
-            cell.textContent = (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? (num * factor).toExponential(2) : Number((num * factor).toFixed(4)).toString();
+        if (cell) {
+          const baseNum = parseFloat(cell.dataset.baseOrder || cell.dataset.order);
+          if (!isNaN(baseNum)) {
+            const convertedNum = baseNum * factor;
+            // Update numeric order attribute for simple-datatables sorting
+            cell.dataset.order = convertedNum.toString();
+            
+            const abs = Math.abs(convertedNum);
+            cell.textContent = (abs > 0 && (abs < 1e-3 || abs >= 1e4)) 
+              ? convertedNum.toExponential(2) 
+              : Number(convertedNum.toFixed(4)).toString();
           }
         }
       });
@@ -279,14 +277,19 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         local row = parse_csv_line(lines[i])
         table.insert(html, '      <tr>')
         for j = 1, #headers do
-            local cell_trimmed = trim(row[j])
+            local cell_trimmed = trim(row[j] or "")
             if cell_trimmed == "" then
-                table.insert(html, '        <td></td>')
+                -- Standardize empty cells so simple-datatables sorts them predictably
+                table.insert(html, '        <td data-order="-Infinity"></td>')
             else
                 local num = tonumber(cell_trimmed)
                 local display_txt = html_escape(cell_trimmed)
-                if num then table.insert(html, string.format('        <td data-order="%s">%s</td>', tostring(num), display_txt))
-                else table.insert(html, string.format('        <td>%s</td>', display_txt)) end
+                if num then
+                    -- Preserve raw unscaled number in data-base-order for unit conversions
+                    table.insert(html, string.format('        <td data-order="%s" data-base-order="%s">%s</td>', tostring(num), tostring(num), display_txt))
+                else
+                    table.insert(html, string.format('        <td>%s</td>', display_txt))
+                end
             end
         end
         table.insert(html, '      </tr>')
