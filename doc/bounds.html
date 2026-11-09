@@ -334,8 +334,16 @@ window.Quarto = {
         } else if (!globalSortable) {
           rule.sortable = false;
         }
-        if (col.type) {
-          rule.type = col.type; // Pass "number" or "string" directly to simple-datatables engine
+
+        if (col.type === "number") {
+          rule.type = "number";
+          // Custom cell renderer & sort value parser for scientific notation and empty cells
+          rule.render = (data, cell, rowIndex, cellIndex) => {
+            if (data === null || data === undefined) return "";
+            return data;
+          };
+        } else if (col.type) {
+          rule.type = col.type;
         }
         return rule;
       });
@@ -425,7 +433,6 @@ window.Quarto = {
       
       table.querySelectorAll("tbody tr").forEach(tr => {
         const cell = tr.children[col.index];
-        // Only target cells with valid numeric data-base-order; leave empty cells completely untouched
         if (cell && cell.dataset.baseOrder !== undefined) {
           const baseNum = parseFloat(cell.dataset.baseOrder);
           if (!isNaN(baseNum)) {
