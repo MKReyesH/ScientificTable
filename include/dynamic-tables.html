@@ -81,7 +81,10 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
         const triggerMathTypeset = () => {
           if (window.Quarto && typeof window.Quarto.typesetMath === "function") {
-            window.Quarto.typesetMath(table);
+            // ONLY typeset the header to prevent DOM mutation in the table body, 
+            // which causes diffDOM to scramble rows during sorts.
+            const thead = table.querySelector("thead");
+            if (thead) window.Quarto.typesetMath(thead);
           }
         };
 
@@ -104,13 +107,14 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
     // TeX atomic group {...} formatting
     latexnum: (val) => {
-      if (val === 0) return '<span class="math inline">\\({0}\\)</span>';
+      if (val === 0) return '0';
       const abs = Math.abs(val);
       if (abs >= 1e-3 && abs < 1e4) {
-        return `<span class="math inline">\\({${Number(val.toFixed(4))}}\\)</span>`;
+        return Number(val.toFixed(4)).toString();
       }
       const parts = val.toExponential(2).split("e");
-      return `<span class="math inline">\\({${parts[0]} \\times 10^{${parseInt(parts[1], 10)}}}\\)</span>`;
+      // Standard HTML styling matches LaTeX output visually but prevents KaTeX from wrapping the DOM
+      return `${parts[0]} &times; 10<sup>${parseInt(parts[1], 10)}</sup>`;
     }
   };
 
@@ -127,11 +131,10 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
         if (!th) return;
 
         const uniqueVals = new Set();
-        table.querySelectorAll("tbody tr").forEach(tr => {
-          const cell = tr.children[col.index];
-          if (cell && cell.textContent.trim() !== "") {
-            uniqueVals.add(cell.textContent.trim());
-          }
+        // Read from dt.data instead of the DOM to ensure we capture paginated rows
+        dt.data.data.forEach(row => {
+          const cellData = row[col.index].text || row[col.index].data || "";
+          if (cellData.trim() !== "") uniqueVals.add(cellData.trim());
         });
 
         const wrap = document.createElement("div");
@@ -142,13 +145,8 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
         const applyFilter = () => {
           const filterVal = select.value.trim();
-          table.querySelectorAll("tbody tr").forEach(tr => {
-            const cell = tr.children[col.index];
-            if (cell) {
-              const cellVal = cell.textContent.trim();
-              tr.style.display = (filterVal === "" || cellVal === filterVal) ? "" : "none";
-            }
-          });
+          // Use native dt.search() instead of manual DOM 'display:none' to prevent sort/pagination conflicts
+          dt.search(filterVal);
         };
 
         wrap.addEventListener("click", e => e.stopPropagation());
@@ -176,11 +174,7 @@ DYNAMIC CSV TABLE HYDRATOR ASSETS (Client-side JS & CSS Bundle)
 
         const applyUnits = () => {
           col.scaleFactor = col.map[select.value] !== undefined ? col.map[select.value] : 1.0;
-          // Trigger native Simple-DataTables refresh (invokes column.render)
           dt.update();
-          if (window.Quarto && typeof window.Quarto.typesetMath === "function") {
-            window.Quarto.typesetMath(table);
-          }
         };
 
         wrap.addEventListener("click", e => e.stopPropagation());
