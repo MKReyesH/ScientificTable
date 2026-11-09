@@ -1,5 +1,18 @@
 -- =============================================================================
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
+--
+-- SYNTAX SPECIFICATION:
+-- 1. Quick Syntax:       !dynamic-table: path/to/data.csv
+-- 2. Customized Syntax:  ::: {.dynamic-table}
+--                        src: path/to/data.csv
+--                        per-page: 15
+--                        searchable: true|false
+--                        sortable: true|false
+--                        column 0: header="ID", unsortable
+--                        column 1: header="Category", dropdown, string
+--                        column 3: sortable, number
+--                        column 4: header=$E_{\text{LIV}}^{(1)}$, units(Planck units: 1, eV: 1.22e28), latexnum
+--                        :::
 -- =============================================================================
 
 local has_dynamic_table = false
@@ -106,6 +119,15 @@ local function parse_column_rule(line)
     return rule
 end
 
+local function format_header_html(hdr)
+    if not hdr then return nil end
+    local math_content = hdr:match("^%$(.*)%$")
+    if math_content then
+        return string.format('<span class="math inline">\\(%s\\)</span>', math_content)
+    end
+    return hdr
+end
+
 local function render_table(src, searchable, per_page, sortable, columns_meta)
     local file = open_csv_file(src)
     if not file then return nil end
@@ -131,7 +153,7 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         if columns_meta then
             for _, col in ipairs(columns_meta) do
                 if col.index == (j - 1) and col.header then
-                    col_override = col.header
+                    col_override = format_header_html(col.header)
                     break
                 end
             end
@@ -164,11 +186,9 @@ end
 
 local function load_client_assets()
     local script_dir = PANDOC_SCRIPT_DIR or "."
-    -- Resolve relative path from lua/ to include/
     local target_path = script_dir .. "/../include/dynamic-tables.html"
     local file = io.open(target_path, "r")
     if not file then
-        -- Fallback if executed directly from project root
         file = io.open("include/dynamic-tables.html", "r")
     end
     if file then
