@@ -1,200 +1,8 @@
 -- =============================================================================
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
---
--- SYNTAX SPECIFICATION:
--- 1. Quick Syntax:       !dynamic-table: path/to/data.csv
--- 2. Customized Syntax:  ::: {.dynamic-table}
---                        src: path/to/data.csv
---                        per-page: 15
---                        searchable: true|false
---                        sortable: true|false
---                        column 0: header="ID", unsortable
---                        column 1: header="Category", dropdown, string
---                        column 3: sortable, number
---                        column 4: header=$E_{\text{LIV}}^{(1)}$, units(Planck units: 1, eV: 1.22e28), latexnum
---                        :::
 -- =============================================================================
 
 local has_dynamic_table = false
-
-local CLIENT_ASSETS_HTML = [[
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
-<style>
-  table.dynamic-table-target th { vertical-align: top !important; }
-  .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; }
-  .dynamic-table-ctrl-select {
-    display: block; width: 100%; max-width: 120px; font-size: 0.8em;
-    padding: 2px 4px; border-radius: 4px; border: 1px solid #ced4da; background: #fff; cursor: pointer;
-  }
-</style>
-<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("table.dynamic-table-target").forEach((table) => {
-      let rawCols = {};
-      if (table.dataset.columns) {
-        try { rawCols = JSON.parse(table.dataset.columns); } catch (e) {}
-      }
-      const customColumns = Array.isArray(rawCols) ? rawCols : Object.values(rawCols);
-      const globalSortable = table.dataset.sortable !== "false";
-
-      const columnRules = customColumns.map(col => {
-        const rule = { select: col.index };
-        if (col.sortable !== undefined) rule.sortable = col.sortable;
-        else if (!globalSortable) rule.sortable = false;
-        if (col.type === "string" || col.type === "number") rule.type = col.type;
-        return rule;
-      });
-
-      const dt = new simpleDatatables.DataTable(table, {
-        searchable: table.dataset.searchable !== "false",
-        sortable: true,
-        perPage: parseInt(table.dataset.perPage || "15", 10),
-        ignorePunctuation: false,
-        columns: columnRules.length > 0 ? columnRules : undefined,
-        labels: { placeholder: "Search table...", perPage: "entries per page", noRows: "No entries found", info: "Showing {start} to {end} of {rows} entries" }
-      });
-
-      dt.on("datatable.init", () => {
-        const updateHandlers = [];
-        customColumns.forEach(col => {
-          if (col.dropdown) {
-            const h = setupDropdownFilter(table, col.index);
-            if (h) updateHandlers.push(h);
-          }
-          if (col.units) {
-            const h = setupUnitConverter(table, col);
-            if (h) updateHandlers.push(h);
-          } else if (col.type === "latexnum") {
-            const h = setupLatexNumFormatter(table, col);
-            if (h) updateHandlers.push(h);
-          }
-        });
-
-        const refreshTable = () => {
-          updateHandlers.forEach(fn => fn());
-          if (window.Quarto && typeof window.Quarto.typesetMath === "function") {
-            window.Quarto.typesetMath(table);
-          }
-        };
-
-        refreshTable();
-        dt.on("datatable.page", refreshTable);
-        dt.on("datatable.sort", refreshTable);
-        dt.on("datatable.perpage", refreshTable);
-      });
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // FORMATTING & UI SUB-MODULES
-  // ---------------------------------------------------------------------------
-
-  function formatValue(num, factor, isLatex) {
-    const val = num * (factor !== undefined ? factor : 1);
-    if (isNaN(val) || val === null) return "";
-    if (isLatex) {
-      if (val === 0) return "$0$";
-      const abs = Math.abs(val);
-      if (abs >= 1e-3 && abs < 1e4) return `$${Number(val.toFixed(4))}$`;
-      const parts = val.toExponential(2).split("e");
-      return `$${parts[0]} \\times 10^{${parseInt(parts[1], 10)}}$`;
-    }
-    const abs = Math.abs(val);
-    return (abs > 0 && (abs < 1e-3 || abs >= 1e4)) ? val.toExponential(2) : Number(val.toFixed(4)).toString();
-  }
-
-  function setupDropdownFilter(table, colIndex) {
-    const th = table.querySelectorAll("thead th")[colIndex];
-    if (!th) return null;
-
-    const uniqueVals = new Set();
-    table.querySelectorAll("tbody tr").forEach(tr => {
-      const cell = tr.children[colIndex];
-      if (cell) {
-        const val = cell.textContent.trim();
-        if (val !== "") uniqueVals.add(val);
-      }
-    });
-
-    const wrap = document.createElement("div");
-    wrap.className = "dynamic-table-ctrl-wrap";
-    const select = document.createElement("select");
-    select.className = "dynamic-table-ctrl-select";
-    select.innerHTML = '<option value="">All</option>' + Array.from(uniqueVals).sort().map(v => `<option value="${v}">${v}</option>`).join("");
-
-    const applyFilter = () => {
-      const filterVal = select.value.trim();
-      table.querySelectorAll("tbody tr").forEach(tr => {
-        const cell = tr.children[colIndex];
-        if (cell) {
-          const cellVal = cell.textContent.trim();
-          tr.style.display = (filterVal === "" || cellVal === filterVal) ? "" : "none";
-        }
-      });
-    };
-
-    wrap.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("change", applyFilter);
-
-    wrap.appendChild(select);
-    th.appendChild(wrap);
-    return applyFilter;
-  }
-
-  function setupUnitConverter(table, col) {
-    const th = table.querySelectorAll("thead th")[col.index];
-    if (!th || !col.units || !col.map) return null;
-
-    const wrap = document.createElement("div");
-    wrap.className = "dynamic-table-ctrl-wrap";
-    const select = document.createElement("select");
-    select.className = "dynamic-table-ctrl-select";
-    select.innerHTML = col.units.map(u => `<option value="${u}">${u}</option>`).join("");
-
-    const applyConversion = () => {
-      const factor = col.map[select.value];
-      if (factor === undefined) return;
-      table.querySelectorAll("tbody tr").forEach(tr => {
-        const cell = tr.children[col.index];
-        if (cell && cell.dataset.order !== undefined) {
-          const num = parseFloat(cell.dataset.order);
-          if (!isNaN(num)) {
-            cell.innerHTML = formatValue(num, factor, col.type === "latexnum");
-          }
-        }
-      });
-    };
-
-    wrap.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("click", (e) => e.stopPropagation());
-    select.addEventListener("change", applyConversion);
-
-    wrap.appendChild(select);
-    th.appendChild(wrap);
-    return applyConversion;
-  }
-
-  function setupLatexNumFormatter(table, col) {
-    return () => {
-      table.querySelectorAll("tbody tr").forEach(tr => {
-        const cell = tr.children[col.index];
-        if (cell && cell.dataset.order !== undefined) {
-          const num = parseFloat(cell.dataset.order);
-          if (!isNaN(num)) {
-            cell.innerHTML = formatValue(num, 1, true);
-          }
-        }
-      });
-    };
-  }
-</script>
-]]
-
--- -----------------------------------------------------------------------------
--- LUA HELPERS & PARSERS
--- -----------------------------------------------------------------------------
 
 local function trim(s) return s and s:match("^%s*(.-)%s*$") or "" end
 
@@ -261,7 +69,6 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    -- 1. Extract header="..." or header='...' or header=...
     local hdr = body:match('header=["\'](.-)["\']')
     if hdr then
         rule.header = hdr
@@ -274,7 +81,6 @@ local function parse_column_rule(line)
         end
     end
 
-    -- 2. Extract units(...)
     local units_str = body:match("units%((.-)%)")
     if units_str then
         local map, units = {}, {}
@@ -287,7 +93,6 @@ local function parse_column_rule(line)
         body = body:gsub("units%((.-)%)", "")
     end
 
-    -- 3. Parse remaining comma-separated tags
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag:lower())
         if tag == "unsortable" then rule.sortable = false
@@ -300,10 +105,6 @@ local function parse_column_rule(line)
 
     return rule
 end
-
--- -----------------------------------------------------------------------------
--- TABLE RENDERER & HOOKS
--- -----------------------------------------------------------------------------
 
 local function render_table(src, searchable, per_page, sortable, columns_meta)
     local file = open_csv_file(src)
@@ -353,6 +154,24 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
     return pandoc.RawBlock('html', table.concat(html, "\n"))
 end
 
+local function load_client_assets()
+    local script_dir = PANDOC_SCRIPT_DIR or "."
+    local asset_path = script_dir .. "/../includes/dynamic-tables.html"
+    local file = io.open(asset_path, "r")
+    if file then
+        local content = file:read("*a")
+        file:close()
+        return content
+    end
+    file = io.open("includes/dynamic-tables.html", "r")
+    if file then
+        local content = file:read("*a")
+        file:close()
+        return content
+    end
+    return ""
+end
+
 function Para(p)
     local txt = trim(pandoc.utils.stringify(p))
     local src = txt:match("^%!dynamic%-table:%s*(.+)$")
@@ -386,7 +205,10 @@ end
 
 function Pandoc(doc)
     if has_dynamic_table then
-        table.insert(doc.blocks, pandoc.RawBlock('html', CLIENT_ASSETS_HTML))
+        local assets_html = load_client_assets()
+        if assets_html ~= "" then
+            table.insert(doc.blocks, pandoc.RawBlock('html', assets_html))
+        end
         has_dynamic_table = false
     end
     return doc
