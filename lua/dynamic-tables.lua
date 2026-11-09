@@ -1,5 +1,6 @@
 -- =============================================================================
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
+-- High-Performance, Modular, Non-Clashing Implementation
 -- =============================================================================
 
 local has_dynamic_table = false
@@ -10,6 +11,7 @@ local function html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
 end
 
+-- Safely strips ASCII quotes (" and ') and UTF-8 smart quotes (“ ” ‘ ’)
 local function strip_quotes(s)
     if not s then return "" end
     s = trim(s)
@@ -23,6 +25,7 @@ local function strip_quotes(s)
     return trim(s)
 end
 
+-- High-performance CSV line parser
 local function parse_csv_line(line)
     local res, pos, len = {}, 1, #line
     while pos <= len do
@@ -57,25 +60,7 @@ local function open_csv_file(src)
     return nil
 end
 
-local function extract_lines_from_div(el)
-    local lines = {}
-    for _, block in ipairs(el.content) do
-        if block.content then
-            local current = {}
-            for _, inline in ipairs(block.content) do
-                if inline.t == "SoftBreak" or inline.t == "LineBreak" then
-                    local l = trim(table.concat(current))
-                    if l ~= "" then table.insert(lines, l) end
-                    current = {}
-                else table.insert(current, pandoc.utils.stringify(inline)) end
-            end
-            local final = trim(table.concat(current))
-            if final ~= "" then table.insert(lines, final) end
-        end
-    end
-    return lines
-end
-
+-- Extract header text safely without corrupting UTF-8 byte sequences
 local function extract_header(body)
     local hdr
     hdr = body:match('header%s*=%s*"(.-)"')
@@ -96,6 +81,7 @@ local function extract_header(body)
     return nil, body
 end
 
+-- Parses column rule directives into orthogonal, additive metadata
 local function parse_column_rule(line)
     local col_idx = tonumber(line:match("^col%a*%s+(%d+)"))
     if not col_idx then return nil end
@@ -127,7 +113,10 @@ local function parse_column_rule(line)
         elseif tag == "dropdown" then rule.dropdown = true
         elseif tag == "string" or tag == "text" then rule.type = "string"
         elseif tag == "number" or tag == "numeric" then rule.type = "number"
-        elseif tag == "latexnum" or tag == "latex-number" or tag == "latex_number" then rule.type = "latexnum" end
+        elseif tag == "latexnum" or tag == "latex-number" or tag == "latex_number" then 
+            rule.latexnum = true
+            if not rule.type then rule.type = "number" end
+        end
     end
 
     return rule
@@ -194,8 +183,11 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
             else
                 local num = tonumber(cell_trimmed)
                 local display_txt = html_escape(cell_trimmed)
-                if num then table.insert(html, string.format('        <td data-order="%s">%s</td>', tostring(num), display_txt))
-                else table.insert(html, string.format('        <td>%s</td>', display_txt)) end
+                if num then 
+                    table.insert(html, string.format('        <td data-order="%s">%s</td>', tostring(num), display_txt))
+                else 
+                    table.insert(html, string.format('        <td>%s</td>', display_txt)) 
+                end
             end
         end
         table.insert(html, '      </tr>')
@@ -227,14 +219,18 @@ function Para(p)
     return src and render_table(trim(src), "true", "15", "true", {}) or nil
 end
 
+-- Optimized Div block parser using fast stringification
 function Div(el)
     if not el.classes:includes("dynamic-table") then return nil end
     local src = el.attributes["src"]
     local searchable, per_page, sortable = "true", "15", "true"
     local columns_meta = {}
 
-    for _, line in ipairs(extract_lines_from_div(el)) do
-        if not line:match("^#") then
+    -- Fast single-pass string conversion instead of traversing AST inline nodes
+    local block_text = pandoc.utils.stringify(el)
+    for line in block_text:gmatch("[^\r\n]+") do
+        line = trim(line)
+        if line ~= "" and not line:match("^#") then
             local key, val = line:match("^([%w_%-]+):%s*(.*)$")
             if key and val then
                 key = key:lower(); val = trim(val)
