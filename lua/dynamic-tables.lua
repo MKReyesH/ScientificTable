@@ -23,6 +23,22 @@ local function html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
 end
 
+local function strip_quotes(s)
+    if not s then return "" end
+    s = trim(s)
+    -- ASCII double / single quotes
+    if (s:sub(1,1) == '"' and s:sub(-1) == '"') or (s:sub(1,1) == "'" and s:sub(-1) == "'") then
+        s = s:sub(2, -2)
+    -- Smart double quotes: “ (\226\128\156) and ” (\226\128\157)
+    elseif s:sub(1,3) == "\226\128\156" and s:sub(-3) == "\226\128\157" then
+        s = s:sub(4, -4)
+    -- Smart single quotes: ‘ (\226\128\152) and ’ (\226\128\153)
+    elseif s:sub(1,3) == "\226\128\152" and s:sub(-3) == "\226\128\153" then
+        s = s:sub(4, -4)
+    end
+    return trim(s)
+end
+
 local function parse_csv_line(line)
     local res, pos, len = {}, 1, #line
     while pos <= len do
@@ -83,14 +99,14 @@ local function parse_column_rule(line)
     local rule = { index = col_idx }
 
     -- Extract header=... (handles quoted, smart-quoted, or unquoted values)
-    local hdr_quoted = body:match('header%s*=%s*(["\'“‘].-["\'”’])')
-    if hdr_quoted then
-        rule.header = hdr_quoted
-        body = body:gsub('header%s*=%s*["\'“‘].-["\'”’]', "")
+    local q_hdr = body:match('header%s*=%s*(["\'\226\128\156\226\128\152].-["\'\226\128\157\226\128\153])')
+    if q_hdr then
+        rule.header = strip_quotes(q_hdr)
+        body = body:gsub('header%s*=%s*["\'\226\128\156\226\128\152].-["\'\226\128\157\226\128\153]', "")
     else
-        local hdr_unquoted = body:match('header%s*=%s*([^,]+)')
-        if hdr_unquoted then
-            rule.header = trim(hdr_unquoted)
+        local unq_hdr = body:match('header%s*=%s*([^,]+)')
+        if unq_hdr then
+            rule.header = strip_quotes(unq_hdr)
             body = body:gsub('header%s*=%s*[^,]+', "")
         end
     end
@@ -124,19 +140,15 @@ end
 
 local function format_header_html(hdr)
     if not hdr then return nil end
-    hdr = trim(hdr)
-    
-    -- Strip ASCII quotes (" and ') and UTF-8 smart quotes (“ ” ‘ ’)
-    hdr = hdr:gsub('^["\'“‘%s]+', ''):gsub('["\'”’%s]+$', '')
-    hdr = trim(hdr)
+    hdr = strip_quotes(hdr)
 
-    -- If header contains TeX math delimiters ($...$ or \(...\)), preserve verbatim for client math typesetting
+    -- If math delimiters are explicitly present: $...$ or \(...\)
     local math_content = hdr:match("^%$(.*)%$") or hdr:match("^\\%((.*)\\%)$")
     if math_content then
         return string.format('<span class="math inline">\\(%s\\)</span>', math_content)
     end
 
-    -- If Pandoc stringify stripped $ delimiters but string contains TeX syntax (\, _, ^)
+    -- If Pandoc stringify stripped $ delimiters, but string contains TeX syntax (\, _, ^)
     if hdr:match("\\[%a]+") or hdr:match("[_%^]") then
         return string.format('<span class="math inline">\\(%s\\)</span>', hdr)
     end
