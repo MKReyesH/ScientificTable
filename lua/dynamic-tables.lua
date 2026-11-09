@@ -32,8 +32,16 @@ local CLIENT_ASSETS_HTML = [[
         } else if (!globalSortable) {
           rule.sortable = false;
         }
-        if (col.type) {
-          rule.type = col.type; // Pass "number" or "string" directly to simple-datatables engine
+
+        if (col.type === "number") {
+          rule.type = "number";
+          // Custom cell renderer & sort value parser for scientific notation and empty cells
+          rule.render = (data, cell, rowIndex, cellIndex) => {
+            if (data === null || data === undefined) return "";
+            return data;
+          };
+        } else if (col.type) {
+          rule.type = col.type;
         }
         return rule;
       });
@@ -123,7 +131,6 @@ local CLIENT_ASSETS_HTML = [[
       
       table.querySelectorAll("tbody tr").forEach(tr => {
         const cell = tr.children[col.index];
-        // Only target cells with valid numeric data-base-order; leave empty cells completely untouched
         if (cell && cell.dataset.baseOrder !== undefined) {
           const baseNum = parseFloat(cell.dataset.baseOrder);
           if (!isNaN(baseNum)) {
@@ -276,13 +283,12 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         for j = 1, #headers do
             local cell_trimmed = trim(row[j] or "")
             if cell_trimmed == "" then
-                -- Pure clean HTML element for empty cells
                 table.insert(html, '        <td></td>')
             else
                 local num = tonumber(cell_trimmed)
                 local display_txt = html_escape(cell_trimmed)
                 if num then
-                    -- Numeric cell with float order key and raw base value
+                    -- Set data-order for simple-datatables to sort standard float numbers
                     table.insert(html, string.format('        <td data-order="%s" data-base-order="%s">%s</td>', tostring(num), tostring(num), display_txt))
                 else
                     table.insert(html, string.format('        <td>%s</td>', display_txt))
