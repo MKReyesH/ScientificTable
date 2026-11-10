@@ -1,11 +1,12 @@
 -- =============================================================================
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
--- Option A Architecture: Native HTML5 data-order + Client-side UI Controller
+-- Option C Architecture: JSON Data Payload + Client-side Hydration
 -- =============================================================================
 
 local has_dynamic_table = false
+local table_counter = 0
 
--- Use [=[ ... ]=] long brackets to safely wrap JavaScript code without ]] conflicts
+-- Use [=[ ... ]=] long brackets to safely wrap JS string without ]] conflicts
 local CLIENT_ASSETS_HTML = [=[
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
 <style>
@@ -21,24 +22,55 @@ local CLIENT_ASSETS_HTML = [=[
   class DynamicTableController {
     constructor(tableEl) {
       this.table = tableEl;
-      this.config = JSON.parse(tableEl.dataset.columns || "[]");
+      this.payload = JSON.parse(tableEl.dataset.payload || "{}");
+      this.config = this.payload.columns || [];
       this.globalSortable = tableEl.dataset.sortable !== "false";
       this.unitFactors = {};   // colIndex -> activeMultiplier
       this.activeFilters = {}; // colIndex -> selectedFilterValue
       this.init();
     }
 
+    formatNumericValue(val, factor) {
+      if (val === null || val === undefined || val === "") return "";
+      const num = Number(val) * (factor || 1);
+      if (isNaN(num)) return String(val);
+      const abs = Math.abs(num);
+      return (abs > 0 && (abs < 1e-3 || abs >= 1e4))
+        ? num.toExponential(2)
+        : Number(num.toFixed(4)).toString();
+    }
+
     init() {
-      // Build simple-datatables column configuration (Native data-order sorting)
+      // Register unit default factors
+      this.config.forEach(col => {
+        if (col.units && col.map) {
+          const defaultUnit = col.units[0];
+          this.unitFactors[col.index] = col.map[defaultUnit] !== undefined ? col.map[defaultUnit] : 1;
+        }
+      });
+
+      // Build column definitions with dynamic unit-conversion renderers
       const columnRules = this.config.map(col => {
         const rule = { select: col.index };
         if (col.sortable !== undefined) rule.sortable = col.sortable;
         else if (!this.globalSortable) rule.sortable = false;
         if (col.type) rule.type = col.type;
+
+        // Custom display formatter for unit columns and numeric columns
+        if (col.units || col.type === "number") {
+          rule.render = (val, cell, rowIndex, cellIndex) => {
+            const factor = this.unitFactors[col.index] || 1;
+            return this.formatNumericValue(val, factor);
+          };
+        }
         return rule;
       });
 
       this.dt = new simpleDatatables.DataTable(this.table, {
+        data: {
+          headings: this.payload.headings || [],
+          data: this.payload.rows || []
+        },
         searchable: this.table.dataset.searchable !== "false",
         sortable: true,
         perPage: parseInt(this.table.dataset.perPage || "15", 10),
@@ -55,15 +87,14 @@ local CLIENT_ASSETS_HTML = [=[
         this.buildHeaderControls();
       });
 
-      // Synchronize DOM state across pagination, sorting, and per-page redraws
-      const syncUI = () => {
-        this.applyUnitConversions();
+      // Sync active multi-column filters on pagination or sorting
+      const syncFilters = () => {
         this.applyCombinedFilters();
       };
 
-      this.dt.on("datatable.page", syncUI);
-      this.dt.on("datatable.sort", syncUI);
-      this.dt.on("datatable.perpage", syncUI);
+      this.dt.on("datatable.page", syncFilters);
+      this.dt.on("datatable.sort", syncFilters);
+      this.dt.on("datatable.perpage", syncFilters);
     }
 
     buildHeaderControls() {
@@ -87,15 +118,15 @@ local CLIENT_ASSETS_HTML = [=[
 
         // Unit conversion dropdown construction
         if (col.units && col.map) {
-          const defaultUnit = col.units[0];
-          this.unitFactors[col.index] = col.map[defaultUnit] !== undefined ? col.map[defaultUnit] : 1;
           const select = this.createSelectElement(col.units);
           select.addEventListener("change", (e) => {
             const factor = col.map[e.target.value];
             if (factor !== undefined) {
               this.unitFactors[col.index] = factor;
-              this.applyUnitConversions();
-              if (this.dt && typeof this.dt.update === "function") {
+              // Re-render table cells with new scale factors without affecting raw numeric values
+              if (this.dt && typeof this.dt.render === "function") {
+                this.dt.render();
+              } else if (this.dt && typeof this.dt.update === "function") {
                 this.dt.update();
               }
             }
@@ -121,38 +152,13 @@ local CLIENT_ASSETS_HTML = [=[
 
     getUniqueColumnValues(colIndex) {
       const uniqueSet = new Set();
-      this.table.querySelectorAll("tbody tr").forEach(tr => {
-        const cell = tr.children[colIndex];
-        if (cell) {
-          const txt = cell.textContent.trim();
-          if (txt !== "") uniqueSet.add(txt);
+      (this.payload.rows || []).forEach(row => {
+        const val = row[colIndex];
+        if (val !== null && val !== undefined && val !== "") {
+          uniqueSet.add(String(val).trim());
         }
       });
       return Array.from(uniqueSet).sort();
-    }
-
-    applyUnitConversions() {
-      const colsToConvert = Object.keys(this.unitFactors);
-      if (colsToConvert.length === 0) return;
-
-      this.table.querySelectorAll("tbody tr").forEach(tr => {
-        colsToConvert.forEach(colIdx => {
-          const cell = tr.children[colIdx];
-          if (cell && cell.dataset.baseOrder !== undefined) {
-            const baseNum = parseFloat(cell.dataset.baseOrder);
-            if (!isNaN(baseNum)) {
-              const factor = this.unitFactors[colIdx];
-              const converted = baseNum * factor;
-              cell.dataset.order = converted.toString();
-
-              const abs = Math.abs(converted);
-              cell.textContent = (abs > 0 && (abs < 1e-3 || abs >= 1e4))
-                ? converted.toExponential(2)
-                : Number(converted.toFixed(4)).toString();
-            }
-          }
-        });
-      });
     }
 
     applyCombinedFilters() {
@@ -299,41 +305,51 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
     if #lines == 0 then return nil end
 
     has_dynamic_table = true
-    local headers = parse_csv_line(lines[1])
-    local html = { '<div class="dynamic-table-wrapper">' }
+    table_counter = table_counter + 1
 
-    table.insert(html, string.format(
-        '  <table class="dynamic-table-target table table-striped table-hover" data-searchable="%s" data-per-page="%s" data-sortable="%s" data-columns="%s">',
-        html_escape(searchable or "true"), html_escape(per_page or "15"), html_escape(sortable or "true"), html_escape(pandoc.json.encode(columns_meta or {}))
-    ))
-    table.insert(html, '    <thead><tr>')
-    for _, h in ipairs(headers) do table.insert(html, '        <th>' .. html_escape(trim(h)) .. '</th>') end
-    table.insert(html, '    </tr></thead><tbody>')
+    local raw_headers = parse_csv_line(lines[1])
+    local headers = {}
+    for _, h in ipairs(raw_headers) do
+        table.insert(headers, trim(h))
+    end
 
+    local rows = {}
     for i = 2, #lines do
-        local row = parse_csv_line(lines[i])
-        table.insert(html, '      <tr>')
+        local raw_row = parse_csv_line(lines[i])
+        local parsed_row = {}
         for j = 1, #headers do
-            local cell_trimmed = trim(row[j] or "")
+            local cell_trimmed = trim(raw_row[j] or "")
             if cell_trimmed == "" then
-                table.insert(html, '        <td></td>')
+                table.insert(parsed_row, pandoc.json.null)
             else
                 local num = tonumber(cell_trimmed)
-                local display_txt = html_escape(cell_trimmed)
                 if num then
-                    -- Output explicit float string into data-order for standard HTML5 sorting
-                    local order_val = string.format("%.14g", num)
-                    table.insert(html, string.format('        <td data-order="%s" data-base-order="%s">%s</td>', order_val, order_val, display_txt))
+                    table.insert(parsed_row, num)
                 else
-                    table.insert(html, string.format('        <td>%s</td>', display_txt))
+                    table.insert(parsed_row, cell_trimmed)
                 end
             end
         end
-        table.insert(html, '      </tr>')
+        table.insert(rows, parsed_row)
     end
 
-    table.insert(html, '    </tbody></table></div>')
-    return pandoc.RawBlock('html', table.concat(html, "\n"))
+    local payload = {
+        headings = headers,
+        rows = rows,
+        columns = columns_meta or {}
+    }
+
+    local table_id = "dynamic-table-target-" .. tostring(table_counter)
+    local html = string.format(
+        '<div class="dynamic-table-wrapper"><table id="%s" class="dynamic-table-target table table-striped table-hover" data-searchable="%s" data-per-page="%s" data-sortable="%s" data-payload="%s"></table></div>',
+        table_id,
+        html_escape(searchable or "true"),
+        html_escape(per_page or "15"),
+        html_escape(sortable or "true"),
+        html_escape(pandoc.json.encode(payload))
+    )
+
+    return pandoc.RawBlock('html', html)
 end
 
 function Para(p)
