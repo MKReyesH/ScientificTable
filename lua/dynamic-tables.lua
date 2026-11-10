@@ -139,10 +139,11 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    local header_str = body:match('header%s*=%s*"([^"]+)"')
-    if header_str then
-        rule.header = header_str
-        body = body:gsub('header%s*=%s*"([^"]+)"', "")
+    local raw_header = body:match('header%s*=%s*(.-)%s*,') or body:match('header%s*=%s*(.*)$')
+    if raw_header then
+        local clean_hdr = trim(raw_header):gsub('^["\'“]+', ''):gsub('["\'”]+$', '')
+        if clean_hdr ~= "" then rule.header = clean_hdr end
+        body = body:gsub('header%s*=%s*.-,', ''):gsub('header%s*=%s*.*$', '')
     end
 
     local units_str = body:match("units%((.-)%)")
@@ -279,7 +280,7 @@ function Pandoc(doc)
     if has_dynamic_table then
         local assets_html = load_assets_html()
         table.insert(doc.blocks, pandoc.RawBlock('html', assets_html))
-        table.insert(doc.blocks, pandoc.Para({ pandoc.Math("InlineMath", "") }))
+        table.insert(doc.blocks, pandoc.Para({ pandoc.Math("InlineMath", "x") }))
         has_dynamic_table = false
     end
     return doc
