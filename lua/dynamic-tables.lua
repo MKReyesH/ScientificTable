@@ -155,11 +155,14 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    -- Parse custom header label: header="..." or header='...'
-    local header_val = body:match('header%s*=%s*["\'](.-)["\']')
+    -- Normalize smart/curly quotes produced by Pandoc typography parsing
+    body = body:gsub("“", '"'):gsub("”", '"'):gsub("’", "'"):gsub("‘", "'")
+
+    -- Parse custom header label: header="..." or header='...' or unquoted
+    local header_val = body:match('header%s*=%s*["\'](.-)["\']') or body:match('header%s*=%s*([^,]+)')
     if header_val then
-        rule.header = header_val
-        body = body:gsub('header%s*=%s*["\'](.-)["\']', "")
+        rule.header = trim(header_val)
+        body = body:gsub('header%s*=%s*["\'](.-)["\']', ""):gsub('header%s*=%s*[^,]+', "")
     end
 
     local units_str = body:match("units%((.-)%)")
@@ -177,16 +180,18 @@ local function parse_column_rule(line)
 
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag)
-        if tag == "unsortable" then
-            rule.sortable = false
-        elseif tag == "sortable" then
-            rule.sortable = true
-        elseif tag == "dropdown" then
-            rule.dropdown = true
-        elseif tag == "string" then
-            rule.type = "string"
-        elseif tag == "number" then
-            rule.type = "number"
+        if tag ~= "" then
+            if tag == "unsortable" then
+                rule.sortable = false
+            elseif tag == "sortable" then
+                rule.sortable = true
+            elseif tag == "dropdown" then
+                rule.dropdown = true
+            elseif tag == "string" then
+                rule.type = "string"
+            elseif tag == "number" then
+                rule.type = "number"
+            end
         end
     end
 
