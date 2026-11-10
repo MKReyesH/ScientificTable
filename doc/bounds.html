@@ -194,7 +194,7 @@ window.Quarto = {
 
 <style>
   .tabulator-container-wrap { margin: 1.5rem 0; font-size: 0.9em; width: 100%; }
-  .tabulator { border: 1px solid #dee2e6; background-color: transparent !important; }
+  .tabulator { border: 1px solid #dee2e6; background-color: transparent !important; width: 100% !important; }
   
   /* Footer blending override */
   .tabulator-footer { 
@@ -278,19 +278,19 @@ const ColumnFeatures = {
     };
   },
 
-  // Multi-Column Dropdown Filter (Uses Unified Factory)
-  dropdown: (colDef) => {
-    colDef.headerFilter = function(cell, onRendered, success, cancel, editorParams) {
-      const field = cell.getColumn().getField();
-      const tableData = cell.getTable().getData();
-      
-      const rawValues = [...new Set(tableData.map(row => row[field]).filter(v => v !== null && v !== undefined && v !== ""))].sort();
-      
-      const options = [
-        { label: "All", value: "" },
-        ...rawValues.map(v => ({ label: v, value: v }))
-      ];
+  // Multi-Column Dropdown Filter (Pre-populated from dataset payload)
+  dropdown: (colDef, colCfg, ctx) => {
+    const field = "col_" + colCfg.index;
+    
+    // Extract unique non-empty options from stored row data
+    const rawValues = [...new Set((ctx.rows || []).map(r => r[field]).filter(v => v !== null && v !== undefined && v !== ""))].sort();
+    
+    const options = [
+      { label: "All", value: "" },
+      ...rawValues.map(v => ({ label: v, value: v }))
+    ];
 
+    colDef.headerFilter = function(cell, onRendered, success, cancel, editorParams) {
       return createSelectMenu(options, (val) => success(val));
     };
   },
@@ -359,6 +359,7 @@ class TabulatorTableController {
     scrollWrap.style.width = "100%";
 
     const tableDiv = document.createElement("div");
+    tableDiv.style.width = "100%";
     scrollWrap.appendChild(tableDiv);
 
     this.container.appendChild(topBar);
@@ -384,10 +385,11 @@ class TabulatorTableController {
       return colDef;
     });
 
+    // fitDataFill expands table to 100% container width cleanly
     this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
-      layout: "fitData",
+      layout: "fitDataFill",
       responsiveLayout: false,
       pagination: "local",
       paginationSize: this.perPage,
