@@ -1,0 +1,154 @@
+<!-- Tabulator Bootstrap 5 Assets -->
+<link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
+<script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
+
+<script>
+// =============================================================================
+// CENTRALIZED COLUMN FEATURE REGISTRY
+-- Add new column features here as standalone functions.
+// =============================================================================
+const ColumnFeatures = {
+  // Numeric & Scientific Notation Formatting
+  number: (colDef, colCfg, ctx) => {
+    colDef.formatter = (cell) => {
+      const val = cell.getValue();
+      if (val === null || val === undefined || val === "") return "";
+      const num = Number(val);
+      if (isNaN(num)) return String(val);
+
+      const factor = ctx.unitFactors[colCfg.index] || 1;
+      const converted = num * factor;
+      const abs = Math.abs(converted);
+
+      return (abs > 0 && (abs < 1e-3 || abs >= 1e4))
+        ? converted.toExponential(2)
+        : Number(converted.toFixed(4)).toString();
+    };
+  },
+
+  // Multi-Column Dropdown Filter
+  dropdown: (colDef) => {
+    colDef.headerFilter = "list";
+    colDef.headerFilterParams = {
+      valuesLookup: "all",
+      clearable: true,
+      elementAttributes: {
+        class: "form-select form-select-sm mt-1 py-0 px-1",
+        style: "font-size: 0.75rem;"
+      }
+    };
+  },
+
+  // Dynamic Unit Conversion Dropdown
+  units: (colDef, colCfg, ctx) => {
+    if (!colCfg.units || !colCfg.map) return;
+    
+    // Default factor setup
+    ctx.unitFactors[colCfg.index] = colCfg.map[colCfg.units[0]] || 1;
+
+    colDef.titleFormatter = () => {
+      const wrap = document.createElement("div");
+      wrap.className = "d-flex flex-column gap-1 w-100";
+
+      const label = document.createElement("span");
+      label.className = "fw-bold";
+      label.textContent = colCfg.name || "";
+      wrap.appendChild(label);
+
+      const select = document.createElement("select");
+      select.className = "form-select form-select-sm py-0 px-1";
+      select.style.fontSize = "0.75rem";
+      select.innerHTML = colCfg.units.map(u => `<option value="${u}">${u}</option>`).join("");
+      select.addEventListener("click", e => e.stopPropagation());
+      select.addEventListener("change", e => {
+        const factor = colCfg.map[e.target.value];
+        if (factor !== undefined) {
+          ctx.unitFactors[colCfg.index] = factor;
+          ctx.table.redraw(true); // Redraw formatters without altering sort state
+        }
+      });
+
+      wrap.appendChild(select);
+      return wrap;
+    };
+  }
+};
+
+class TabulatorTableController {
+  constructor(container) {
+    this.container = container;
+    this.headers = JSON.parse(container.dataset.headers || "[]");
+    this.rows = JSON.parse(container.dataset.rows || "[]");
+    this.config = JSON.parse(container.dataset.columns || "[]");
+    this.perPage = parseInt(container.dataset.perpage || "15", 10);
+    this.searchable = container.dataset.searchable !== "false";
+    this.sortable = container.dataset.sortable !== "false";
+    
+    this.unitFactors = {}; // colIdx -> scaleFactor
+    this.table = null;
+    this.init();
+  }
+
+  init() {
+    const tableElId = "tabulator-table-" + Math.random().toString(36).substring(2, 9);
+    this.container.innerHTML = `
+      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        ${this.searchable ? '<input type="text" class="form-control form-control-sm tabulator-search-input" style="width:220px;" placeholder="Search table...">' : '<div></div>'}
+      </div>
+      <div id="${tableElId}"></div>
+    `;
+
+    // Construct column definitions using the Feature Registry
+    const columns = this.headers.map((h, idx) => {
+      const colCfg = this.config.find(c => c.index === idx) || { index: idx };
+      colCfg.name = h;
+
+      const colDef = {
+        title: h,
+        field: "col_" + idx,
+        headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
+        sorter: colCfg.type === "number" ? "number" : "string",
+        // Universal symmetry: align empty values to the bottom for ALL columns
+        sorterParams: { alignEmptyValues: "bottom" },
+        headerHozAlign: "left"
+      };
+
+      // Apply features from centralized registry
+      if (colCfg.type === "number") ColumnFeatures.number(colDef, colCfg, this);
+      if (colCfg.dropdown) ColumnFeatures.dropdown(colDef, colCfg, this);
+      if (colCfg.units) ColumnFeatures.units(colDef, colCfg, this);
+
+      return colDef;
+    });
+
+    this.table = new Tabulator("#" + tableElId, {
+      data: this.rows,
+      columns: columns,
+      layout: "fitColumns",
+      responsiveLayout: "collapse",
+      pagination: "local",
+      paginationSize: this.perPage,
+      paginationSizeSelector: [10, 15, 25, 50],
+      movableColumns: false
+    });
+
+    if (this.searchable) {
+      const searchInput = this.container.querySelector(".tabulator-search-input");
+      searchInput.addEventListener("keyup", (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (query === "") {
+          this.table.clearFilter();
+        } else {
+          this.table.setFilter((data) => {
+            return Object.values(data).some(val => String(val || "").toLowerCase().includes(query));
+          });
+        }
+      });
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".tabulator-container-wrap").forEach(el => new TabulatorTableController(el));
+});
+</script>
