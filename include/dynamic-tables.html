@@ -195,11 +195,11 @@ class TabulatorTableController {
       return colDef;
     });
 
-    // fitDataFill expands table to 100% container width cleanly
+    // fitColumns stretches all columns proportionally across 100% container width
     this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
-      layout: "fitDataFill",
+      layout: "fitColumns",
       responsiveLayout: false,
       pagination: "local",
       paginationSize: this.perPage,

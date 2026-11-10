@@ -216,8 +216,9 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         table.insert(final_columns_meta, col_rule)
     end
 
+    -- Enforces Quarto column-page class to expand table to full page layout width
     local html = string.format(
-        '<div class="tabulator-container-wrap" data-headers="%s" data-rows="%s" data-columns="%s" data-searchable="%s" data-perpage="%s" data-sortable="%s"></div>',
+        '<div class="tabulator-container-wrap column-page" data-headers="%s" data-rows="%s" data-columns="%s" data-searchable="%s" data-perpage="%s" data-sortable="%s"></div>',
         html_escape(pandoc.json.encode(headers)),
         html_escape(pandoc.json.encode(rows)),
         html_escape(pandoc.json.encode(final_columns_meta)),
