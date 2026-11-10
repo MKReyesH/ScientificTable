@@ -1,191 +1,155 @@
 -- =============================================================================
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
--- Option C Architecture: JSON Data Payload + Client-side Hydration
+-- Strategy A: Tabulator.js Integration (Scientific Notation & Dynamic Units)
 -- =============================================================================
 
 local has_dynamic_table = false
 local table_counter = 0
 
--- Use [=[ ... ]=] long brackets to safely wrap JS string without ]] conflicts
+-- Use [=[ ... ]=] long bracket syntax to prevent JS brackets from terminating Lua strings
 local CLIENT_ASSETS_HTML = [=[
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
+<link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
 <style>
-  table.dynamic-table-target th { vertical-align: top !important; }
-  .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; font-weight: normal; }
-  .dynamic-table-ctrl-select {
-    display: block; width: 100%; max-width: 120px; font-size: 0.8em;
-    padding: 2px 4px; border-radius: 4px; border: 1px solid #ced4da; background: #fff; cursor: pointer;
-  }
+  .tabulator-container-wrap { margin: 1.5rem 0; font-family: system-ui, -apple-system, sans-serif; }
+  .tabulator-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 8px; }
+  .tabulator-search-input { padding: 4px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.9em; width: 220px; }
+  .tabulator-title-wrap { display: flex; flex-direction: column; gap: 4px; }
+  .tabulator-unit-select { font-size: 0.8em; padding: 1px 4px; border-radius: 4px; border: 1px solid #ced4da; background: #fff; cursor: pointer; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
+<script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
 <script>
-  class DynamicTableController {
-    constructor(tableEl) {
-      this.table = tableEl;
-      this.payload = JSON.parse(tableEl.dataset.payload || "{}");
-      this.config = this.payload.columns || [];
-      this.globalSortable = tableEl.dataset.sortable !== "false";
-      this.unitFactors = {};   // colIndex -> activeMultiplier
-      this.activeFilters = {}; // colIndex -> selectedFilterValue
-      this.init();
-    }
+class TabulatorTableController {
+  constructor(container) {
+    this.container = container;
+    this.headers = JSON.parse(container.dataset.headers || "[]");
+    this.rows = JSON.parse(container.dataset.rows || "[]");
+    this.config = JSON.parse(container.dataset.columns || "[]");
+    this.perPage = parseInt(container.dataset.perpage || "15", 10);
+    this.searchable = container.dataset.searchable !== "false";
+    this.sortable = container.dataset.sortable !== "false";
+    
+    this.unitFactors = {}; // colIdx -> multiplier
+    this.table = null;
+    this.init();
+  }
 
-    formatNumericValue(val, factor) {
-      if (val === null || val === undefined || val === "") return "";
-      const num = Number(val) * (factor || 1);
-      if (isNaN(num)) return String(val);
-      const abs = Math.abs(num);
-      return (abs > 0 && (abs < 1e-3 || abs >= 1e4))
-        ? num.toExponential(2)
-        : Number(num.toFixed(4)).toString();
-    }
+  init() {
+    // 1. Register unit factor defaults
+    this.config.forEach(col => {
+      if (col.units && col.map) {
+        const defaultUnit = col.units[0];
+        this.unitFactors[col.index] = col.map[defaultUnit] !== undefined ? col.map[defaultUnit] : 1;
+      }
+    });
 
-    init() {
-      // Register unit default factors
-      this.config.forEach(col => {
-        if (col.units && col.map) {
-          const defaultUnit = col.units[0];
-          this.unitFactors[col.index] = col.map[defaultUnit] !== undefined ? col.map[defaultUnit] : 1;
-        }
-      });
+    // 2. Build HTML layout container
+    const tableElId = "tabulator-table-" + Math.random().toString(36).substring(2, 9);
+    this.container.innerHTML = `
+      <div class="tabulator-top-bar">
+        ${this.searchable ? '<input type="text" class="tabulator-search-input" placeholder="Search table...">' : '<div></div>'}
+      </div>
+      <div id="${tableElId}"></div>
+    `;
 
-      // Build column definitions with dynamic unit-conversion renderers
-      const columnRules = this.config.map(col => {
-        const rule = { select: col.index };
-        if (col.sortable !== undefined) rule.sortable = col.sortable;
-        else if (!this.globalSortable) rule.sortable = false;
-        if (col.type) rule.type = col.type;
+    // 3. Build Column Definitions
+    const columns = this.headers.map((h, idx) => {
+      const colCfg = this.config.find(c => c.index === idx) || {};
+      const isNum = colCfg.type === "number" || colCfg.units !== undefined;
 
-        // Custom display formatter for unit columns and numeric columns
-        if (col.units || col.type === "number") {
-          rule.render = (val, cell, rowIndex, cellIndex) => {
-            const factor = this.unitFactors[col.index] || 1;
-            return this.formatNumericValue(val, factor);
-          };
-        }
-        return rule;
-      });
+      const colDef = {
+        titleFormatter: () => {
+          const titleWrap = document.createElement("div");
+          titleWrap.className = "tabulator-title-wrap";
+          
+          const label = document.createElement("span");
+          label.textContent = h;
+          titleWrap.appendChild(label);
 
-      this.dt = new simpleDatatables.DataTable(this.table, {
-        data: {
-          headings: this.payload.headings || [],
-          data: this.payload.rows || []
+          if (colCfg.units && colCfg.map) {
+            const select = document.createElement("select");
+            select.className = "tabulator-unit-select";
+            select.innerHTML = colCfg.units.map(u => `<option value="${u}">${u}</option>`).join("");
+            select.addEventListener("click", e => e.stopPropagation());
+            select.addEventListener("change", e => {
+              const factor = colCfg.map[e.target.value];
+              if (factor !== undefined) {
+                this.unitFactors[idx] = factor;
+                this.table.redraw(true); // Re-apply visual formatters across cells
+              }
+            });
+            titleWrap.appendChild(select);
+          }
+          return titleWrap;
         },
-        searchable: this.table.dataset.searchable !== "false",
-        sortable: true,
-        perPage: parseInt(this.table.dataset.perPage || "15", 10),
-        columns: columnRules.length > 0 ? columnRules : undefined,
-        labels: { 
-          placeholder: "Search table...", 
-          perPage: "entries per page", 
-          noRows: "No entries found", 
-          info: "Showing {start} to {end} of {rows} entries" 
-        }
-      });
-
-      this.dt.on("datatable.init", () => {
-        this.buildHeaderControls();
-      });
-
-      // Sync active multi-column filters on pagination or sorting
-      const syncFilters = () => {
-        this.applyCombinedFilters();
+        field: "col_" + idx,
+        headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
+        headerHozAlign: "left"
       };
 
-      this.dt.on("datatable.page", syncFilters);
-      this.dt.on("datatable.sort", syncFilters);
-      this.dt.on("datatable.perpage", syncFilters);
-    }
+      // Scientific Number Sorter & Dynamic Unit Formatter
+      if (isNum) {
+        colDef.sorter = "number";
+        colDef.sorterParams = { alignEmptyValues: "bottom" };
+        colDef.formatter = (cell) => {
+          const val = cell.getValue();
+          if (val === null || val === undefined || val === "") return "";
+          const num = Number(val);
+          if (isNaN(num)) return String(val);
+          
+          const factor = this.unitFactors[idx] || 1;
+          const converted = num * factor;
+          const abs = Math.abs(converted);
+          
+          return (abs > 0 && (abs < 1e-3 || abs >= 1e4))
+            ? converted.toExponential(2)
+            : Number(converted.toFixed(4)).toString();
+        };
+      }
 
-    buildHeaderControls() {
-      this.config.forEach(col => {
-        const th = this.table.querySelectorAll("thead th")[col.index];
-        if (!th) return;
+      // Native Multi-Column Dropdown Filter
+      if (colCfg.dropdown) {
+        colDef.headerFilter = "list";
+        colDef.headerFilterParams = {
+          valuesLookup: "all",
+          clearable: true
+        };
+      }
 
-        const wrap = document.createElement("div");
-        wrap.className = "dynamic-table-ctrl-wrap";
+      return colDef;
+    });
 
-        // Multi-column dropdown filter construction
-        if (col.dropdown) {
-          const uniqueVals = this.getUniqueColumnValues(col.index);
-          const select = this.createSelectElement(uniqueVals, "All");
-          select.addEventListener("change", (e) => {
-            this.activeFilters[col.index] = e.target.value.trim();
-            this.applyCombinedFilters();
+    // 4. Initialize Tabulator Instance
+    this.table = new Tabulator("#" + tableElId, {
+      data: this.rows,
+      columns: columns,
+      layout: "fitColumns",
+      responsiveLayout: "collapse",
+      pagination: "local",
+      paginationSize: this.perPage,
+      paginationSizeSelector: [10, 15, 25, 50],
+      movableColumns: false
+    });
+
+    // 5. Global Search Binding
+    if (this.searchable) {
+      const searchInput = this.container.querySelector(".tabulator-search-input");
+      searchInput.addEventListener("keyup", (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (query === "") {
+          this.table.clearFilter();
+        } else {
+          this.table.setFilter((data) => {
+            return Object.values(data).some(val => String(val || "").toLowerCase().includes(query));
           });
-          wrap.appendChild(select);
         }
-
-        // Unit conversion dropdown construction
-        if (col.units && col.map) {
-          const select = this.createSelectElement(col.units);
-          select.addEventListener("change", (e) => {
-            const factor = col.map[e.target.value];
-            if (factor !== undefined) {
-              this.unitFactors[col.index] = factor;
-              // Re-render table cells with new scale factors without affecting raw numeric values
-              if (this.dt && typeof this.dt.render === "function") {
-                this.dt.render();
-              } else if (this.dt && typeof this.dt.update === "function") {
-                this.dt.update();
-              }
-            }
-          });
-          wrap.appendChild(select);
-        }
-
-        if (wrap.children.length > 0) {
-          wrap.addEventListener("click", (e) => e.stopPropagation());
-          th.appendChild(wrap);
-        }
-      });
-    }
-
-    createSelectElement(options, defaultLabel) {
-      const select = document.createElement("select");
-      select.className = "dynamic-table-ctrl-select";
-      let html = defaultLabel ? `<option value="">${defaultLabel}</option>` : "";
-      options.forEach(opt => { html += `<option value="${opt}">${opt}</option>`; });
-      select.innerHTML = html;
-      return select;
-    }
-
-    getUniqueColumnValues(colIndex) {
-      const uniqueSet = new Set();
-      (this.payload.rows || []).forEach(row => {
-        const val = row[colIndex];
-        if (val !== null && val !== undefined && val !== "") {
-          uniqueSet.add(String(val).trim());
-        }
-      });
-      return Array.from(uniqueSet).sort();
-    }
-
-    applyCombinedFilters() {
-      const filterIndices = Object.keys(this.activeFilters);
-      this.table.querySelectorAll("tbody tr").forEach(tr => {
-        let isVisible = true;
-        for (const colIdx of filterIndices) {
-          const targetVal = this.activeFilters[colIdx];
-          if (targetVal !== "") {
-            const cell = tr.children[colIdx];
-            const cellVal = cell ? cell.textContent.trim() : "";
-            if (cellVal !== targetVal) {
-              isVisible = false;
-              break;
-            }
-          }
-        }
-        tr.style.display = isVisible ? "" : "none";
       });
     }
   }
+}
 
-  document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll("table.dynamic-table-target").forEach(table => {
-      new DynamicTableController(table);
-    });
-  });
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".tabulator-container-wrap").forEach(el => new TabulatorTableController(el));
+});
 </script>
 ]=]
 
@@ -305,7 +269,6 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
     if #lines == 0 then return nil end
 
     has_dynamic_table = true
-    table_counter = table_counter + 1
 
     local raw_headers = parse_csv_line(lines[1])
     local headers = {}
@@ -316,37 +279,22 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
     local rows = {}
     for i = 2, #lines do
         local raw_row = parse_csv_line(lines[i])
-        local parsed_row = {}
+        local row_obj = {}
         for j = 1, #headers do
-            local cell_trimmed = trim(raw_row[j] or "")
-            if cell_trimmed == "" then
-                table.insert(parsed_row, pandoc.json.null)
-            else
-                local num = tonumber(cell_trimmed)
-                if num then
-                    table.insert(parsed_row, num)
-                else
-                    table.insert(parsed_row, cell_trimmed)
-                end
-            end
+            local cell_val = trim(raw_row[j] or "")
+            row_obj["col_" .. tostring(j - 1)] = cell_val
         end
-        table.insert(rows, parsed_row)
+        table.insert(rows, row_obj)
     end
 
-    local payload = {
-        headings = headers,
-        rows = rows,
-        columns = columns_meta or {}
-    }
-
-    local table_id = "dynamic-table-target-" .. tostring(table_counter)
     local html = string.format(
-        '<div class="dynamic-table-wrapper"><table id="%s" class="dynamic-table-target table table-striped table-hover" data-searchable="%s" data-per-page="%s" data-sortable="%s" data-payload="%s"></table></div>',
-        table_id,
+        '<div class="tabulator-container-wrap" data-headers="%s" data-rows="%s" data-columns="%s" data-searchable="%s" data-perpage="%s" data-sortable="%s"></div>',
+        html_escape(pandoc.json.encode(headers)),
+        html_escape(pandoc.json.encode(rows)),
+        html_escape(pandoc.json.encode(columns_meta or {})),
         html_escape(searchable or "true"),
         html_escape(per_page or "15"),
-        html_escape(sortable or "true"),
-        html_escape(pandoc.json.encode(payload))
+        html_escape(sortable or "true")
     )
 
     return pandoc.RawBlock('html', html)
