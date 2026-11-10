@@ -270,4 +270,4 @@ function Pandoc(doc)
         has_dynamic_table = false
     end
     return doc
-end
+end 
