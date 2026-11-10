@@ -244,36 +244,89 @@ window.Quarto = {
 
 <script>
 
-// Robust MathJax / KaTeX typesetting helper with async loading handling
+// Fallback MathJax Loader if page does not load a math renderer
+function loadMathJaxFallback(container) {
+  if (window.mathJaxFallbackLoading) {
+    const checkInterval = setInterval(() => {
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        clearInterval(checkInterval);
+        window.MathJax.typesetPromise([container]).catch(() => {});
+      }
+    }, 100);
+    return;
+  }
+  window.mathJaxFallbackLoading = true;
+
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    },
+    svg: { fontCache: 'global' }
+  };
+
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
+  script.async = true;
+  script.onload = () => {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise([container]).catch(() => {});
+    }
+  };
+  document.head.appendChild(script);
+}
+
+// Universal MathJax / KaTeX typesetting helper
 function renderMathInContainer(container) {
   if (!container) return;
 
-  const trigger = () => {
+  const tryRender = () => {
+    // MathJax v3 / v2
     if (window.MathJax) {
+      if (typeof window.MathJax.typesetClear === "function") {
+        try { window.MathJax.typesetClear([container]); } catch(e) {}
+      }
       if (typeof window.MathJax.typesetPromise === "function") {
         window.MathJax.typesetPromise([container]).catch(() => {});
+        return true;
       } else if (window.MathJax.startup && window.MathJax.startup.promise) {
         window.MathJax.startup.promise.then(() => {
           window.MathJax.typesetPromise([container]).catch(() => {});
         });
+        return true;
       } else if (window.MathJax.Hub) {
         window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, container]);
+        return true;
       }
-    } else if (typeof window.renderMathInElement === "function") {
-      window.renderMathInElement(container);
     }
+
+    // KaTeX auto-render (must explicitly include single $ delimiters)
+    if (typeof window.renderMathInElement === "function") {
+      window.renderMathInElement(container, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", inline: true },
+          { left: "\\(", right: "\\)", inline: false },
+          { left: "\\[", right: "\\]", display: true }
+        ],
+        throwOnError: false
+      });
+      return true;
+    }
+
+    return false;
   };
 
-  trigger();
+  if (tryRender()) return;
 
   let attempts = 0;
   const timer = setInterval(() => {
     attempts++;
-    if ((window.MathJax && (window.MathJax.typesetPromise || window.MathJax.Hub)) || typeof window.renderMathInElement === "function") {
+    if (tryRender()) {
       clearInterval(timer);
-      trigger();
-    } else if (attempts >= 50) {
+    } else if (attempts >= 25) {
       clearInterval(timer);
+      loadMathJaxFallback(container);
     }
   }, 100);
 }
