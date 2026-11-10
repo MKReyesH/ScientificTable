@@ -2,7 +2,6 @@
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
 -- =============================================================================
 
--- Global configuration defaults
 local DEFAULTS = {
     searchable = true,
     sortable   = true,
@@ -10,7 +9,6 @@ local DEFAULTS = {
     auto_type  = true
 }
 
--- Centralized project path structure
 local PATHS = {
     filter_rel   = "lua/dynamic%-tables%.lua",
     template_rel = "include/dynamic-tables.html"
@@ -21,7 +19,6 @@ local cached_assets_html = nil
 
 local SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
 
--- Resolves template location dynamically using centralized PATHS
 local function load_assets_html()
     if cached_assets_html then return cached_assets_html end
     
@@ -77,7 +74,6 @@ local function parse_csv_line(line)
     return res
 end
 
--- Opens CSV cleanly whether invoked from root or document subdirectories
 local function open_csv_file(src)
     local file = io.open(src, "r")
     if file then return file end

@@ -2,6 +2,26 @@
 <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
 <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
 
+<style>
+  .tabulator-container-wrap { margin: 1.5rem 0; font-size: 0.9em; }
+  .tabulator { border: 1px solid #dee2e6; background-color: transparent !important; }
+  
+  /* Footer blending override */
+  .tabulator-footer { 
+    background-color: transparent !important; 
+    border-top: 1px solid #dee2e6 !important; 
+  }
+  
+  /* Column title & unit dropdown styling */
+  .tabulator-title-wrap { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+  .tabulator-unit-select {
+    font-size: 0.75rem !important;
+    padding: 1px 1.5rem 1px 0.35rem !important; /* Space for dropdown arrow */
+    width: auto !important;
+    max-width: 100px;
+  }
+</style>
+
 <script>
 // =============================================================================
 // CENTRALIZED COLUMN FEATURE REGISTRY
@@ -25,14 +45,14 @@ const ColumnFeatures = {
     };
   },
 
-  // Multi-Column Dropdown Filter
+  // Standard Native Dropdown Filter
   dropdown: (colDef) => {
-    colDef.headerFilter = "list";
+    colDef.headerFilter = "select";
     colDef.headerFilterParams = {
       valuesLookup: "all",
       clearable: true,
       elementAttributes: {
-        class: "form-select form-select-sm mt-1 py-0 px-1",
+        class: "form-select form-select-sm mt-1 py-0 px-2",
         style: "font-size: 0.75rem;"
       }
     };
@@ -46,7 +66,7 @@ const ColumnFeatures = {
 
     colDef.titleFormatter = () => {
       const wrap = document.createElement("div");
-      wrap.className = "d-flex flex-column gap-1 w-100";
+      wrap.className = "tabulator-title-wrap";
 
       const label = document.createElement("span");
       label.className = "fw-bold";
@@ -54,8 +74,7 @@ const ColumnFeatures = {
       wrap.appendChild(label);
 
       const select = document.createElement("select");
-      select.className = "form-select form-select-sm py-0 px-1";
-      select.style.fontSize = "0.75rem";
+      select.className = "form-select form-select-sm tabulator-unit-select mt-1";
       select.innerHTML = colCfg.units.map(u => `<option value="${u}">${u}</option>`).join("");
       select.addEventListener("click", e => e.stopPropagation());
       select.addEventListener("change", e => {
@@ -123,11 +142,11 @@ class TabulatorTableController {
       return colDef;
     });
 
-    // Pass DOM node directly to guarantee immediate instantiation
+    // Content-aware column sizing (fitDataFill preventing text truncation)
     this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
-      layout: "fitColumns",
+      layout: "fitDataFill",
       responsiveLayout: "collapse",
       pagination: "local",
       paginationSize: this.perPage,
@@ -162,7 +181,6 @@ function initDynamicTables() {
   });
 }
 
-// Check readyState to prevent missing initialization if DOMContentLoaded already fired
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initDynamicTables);
 } else {
