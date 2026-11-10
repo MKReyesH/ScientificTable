@@ -194,7 +194,16 @@ window.Quarto = {
 
 <!-- Custom styles -->
 <style>
-  .tabulator-container-wrap { margin: 1.5rem 0; font-size: 0.9em; width: 100%; }
+  .tabulator-container-wrap { 
+    margin: 1.5rem 0; 
+    font-size: 0.9em; 
+    width: 100%; 
+    opacity: 0; 
+    transition: opacity 0.2s ease-in-out; 
+  }
+  .tabulator-container-wrap.is-ready { 
+    opacity: 1; 
+  }
   .tabulator { border: 1px solid #dee2e6; background-color: transparent !important; width: 100% !important; }
   .tabulator-footer { background-color: transparent !important; border-top: 1px solid #dee2e6 !important; }
   .tabulator-col, .tabulator-col-content { overflow: visible !important; }
@@ -246,7 +255,10 @@ function retriggerMath(container, onComplete) {
       }
       window.MathJax.typesetPromise([container])
         .then(() => { if (typeof onComplete === "function") onComplete(); })
-        .catch(err => console.error("MathJax error:", err));
+        .catch(err => {
+          console.error("MathJax error:", err);
+          if (typeof onComplete === "function") onComplete();
+        });
     } else if (typeof renderMathInElement === "function") {
       const latexElements = Array.from(container.querySelectorAll(".tabulator-latex-col"));
       latexElements.forEach(el => {
@@ -259,6 +271,8 @@ function retriggerMath(container, onComplete) {
           throwOnError: false
         });
       });
+      if (typeof onComplete === "function") onComplete();
+    } else {
       if (typeof onComplete === "function") onComplete();
     }
   };
@@ -276,6 +290,7 @@ function retriggerMath(container, onComplete) {
         doTypeset();
       } else if (attempts > 60) {
         clearInterval(interval);
+        if (typeof onComplete === "function") onComplete();
       }
     }, 50);
   }
@@ -402,6 +417,7 @@ class TabulatorTableController {
     
     this.unitFactors = {};
     this.table = null;
+    this.isAdjustingLayout = false;
     this.init();
   }
 
@@ -462,13 +478,14 @@ class TabulatorTableController {
       movableColumns: false
     });
 
-    this.initialMathRendered = false;
     this.table.on("renderComplete", () => {
+      if (this.isAdjustingLayout) return;
+
       retriggerMath(this.container, () => {
-        if (!this.initialMathRendered) {
-          this.initialMathRendered = true;
-          this.table.redraw();
-        }
+        this.isAdjustingLayout = true;
+        this.table.redraw(false);
+        this.isAdjustingLayout = false;
+        this.container.classList.add("is-ready");
       });
     });
 
