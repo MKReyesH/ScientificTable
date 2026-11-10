@@ -425,14 +425,21 @@ class TabulatorTableController {
     });
 
     this.table.on("renderComplete", () => {
-      const latexNodes = this.container.querySelectorAll(".tabulator-latex-field");
-      if (latexNodes.length > 0) {
+      requestAnimationFrame(() => {
+        const nodes = Array.from(this.container.querySelectorAll(".tabulator-latex-field"));
+        if (nodes.length === 0) return;
+
         if (window.MathJax && window.MathJax.typesetPromise) {
-          MathJax.typesetPromise(latexNodes);
-        } else if (window.renderMathInElement) {
-          renderMathInElement(this.container);
+          window.MathJax.typesetPromise(nodes).catch(err => console.error(err));
+        } else if (typeof renderMathInElement === "function") {
+          renderMathInElement(this.container, {
+            delimiters: [
+              {left: "$$", right: "$$", display: true},
+              {left: "$", right: "$", display: false}
+            ]
+          });
         }
-      }
+      });
     });
 
     if (this.searchable) {
