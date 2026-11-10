@@ -195,7 +195,6 @@ window.Quarto = {
 <script>
 // =============================================================================
 // CENTRALIZED COLUMN FEATURE REGISTRY
--- Add new column features here as standalone functions.
 // =============================================================================
 const ColumnFeatures = {
   // Numeric & Scientific Notation Formatting
@@ -233,7 +232,6 @@ const ColumnFeatures = {
   units: (colDef, colCfg, ctx) => {
     if (!colCfg.units || !colCfg.map) return;
     
-    // Default factor setup
     ctx.unitFactors[colCfg.index] = colCfg.map[colCfg.units[0]] || 1;
 
     colDef.titleFormatter = () => {
@@ -254,7 +252,7 @@ const ColumnFeatures = {
         const factor = colCfg.map[e.target.value];
         if (factor !== undefined) {
           ctx.unitFactors[colCfg.index] = factor;
-          ctx.table.redraw(true); // Redraw formatters without altering sort state
+          ctx.table.redraw(true);
         }
       });
 
@@ -274,21 +272,27 @@ class TabulatorTableController {
     this.searchable = container.dataset.searchable !== "false";
     this.sortable = container.dataset.sortable !== "false";
     
-    this.unitFactors = {}; // colIdx -> scaleFactor
+    this.unitFactors = {};
     this.table = null;
     this.init();
   }
 
   init() {
-    const tableElId = "tabulator-table-" + Math.random().toString(36).substring(2, 9);
-    this.container.innerHTML = `
-      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-        ${this.searchable ? '<input type="text" class="form-control form-control-sm tabulator-search-input" style="width:220px;" placeholder="Search table...">' : '<div></div>'}
-      </div>
-      <div id="${tableElId}"></div>
-    `;
+    this.container.innerHTML = "";
+    
+    const topBar = document.createElement("div");
+    topBar.className = "d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2";
+    if (this.searchable) {
+      topBar.innerHTML = '<input type="text" class="form-control form-control-sm tabulator-search-input" style="width:220px;" placeholder="Search table...">';
+    } else {
+      topBar.innerHTML = '<div></div>';
+    }
 
-    // Construct column definitions using the Feature Registry
+    const tableDiv = document.createElement("div");
+
+    this.container.appendChild(topBar);
+    this.container.appendChild(tableDiv);
+
     const columns = this.headers.map((h, idx) => {
       const colCfg = this.config.find(c => c.index === idx) || { index: idx };
       colCfg.name = h;
@@ -298,12 +302,10 @@ class TabulatorTableController {
         field: "col_" + idx,
         headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
         sorter: colCfg.type === "number" ? "number" : "string",
-        // Universal symmetry: align empty values to the bottom for ALL columns
         sorterParams: { alignEmptyValues: "bottom" },
         headerHozAlign: "left"
       };
 
-      // Apply features from centralized registry
       if (colCfg.type === "number") ColumnFeatures.number(colDef, colCfg, this);
       if (colCfg.dropdown) ColumnFeatures.dropdown(colDef, colCfg, this);
       if (colCfg.units) ColumnFeatures.units(colDef, colCfg, this);
@@ -311,7 +313,8 @@ class TabulatorTableController {
       return colDef;
     });
 
-    this.table = new Tabulator("#" + tableElId, {
+    // Pass DOM node directly to guarantee immediate instantiation
+    this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
       layout: "fitColumns",
@@ -323,24 +326,38 @@ class TabulatorTableController {
     });
 
     if (this.searchable) {
-      const searchInput = this.container.querySelector(".tabulator-search-input");
-      searchInput.addEventListener("keyup", (e) => {
-        const query = e.target.value.toLowerCase().trim();
-        if (query === "") {
-          this.table.clearFilter();
-        } else {
-          this.table.setFilter((data) => {
-            return Object.values(data).some(val => String(val || "").toLowerCase().includes(query));
-          });
-        }
-      });
+      const searchInput = topBar.querySelector(".tabulator-search-input");
+      if (searchInput) {
+        searchInput.addEventListener("keyup", (e) => {
+          const query = e.target.value.toLowerCase().trim();
+          if (query === "") {
+            this.table.clearFilter();
+          } else {
+            this.table.setFilter((data) => {
+              return Object.values(data).some(val => String(val || "").toLowerCase().includes(query));
+            });
+          }
+        });
+      }
     }
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll(".tabulator-container-wrap").forEach(el => new TabulatorTableController(el));
-});
+function initDynamicTables() {
+  document.querySelectorAll(".tabulator-container-wrap").forEach(el => {
+    if (!el.dataset.initialized) {
+      el.dataset.initialized = "true";
+      new TabulatorTableController(el);
+    }
+  });
+}
+
+// Check readyState to prevent missing initialization if DOMContentLoaded already fired
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDynamicTables);
+} else {
+  initDynamicTables();
+}
 </script>
 
 </main> <!-- /main -->
