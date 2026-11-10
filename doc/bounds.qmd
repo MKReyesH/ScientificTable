@@ -10,8 +10,8 @@ sortable: true
 column 0: string, dropdown
 column 1: string, dropdown
 column 2: string, dropdown
-column 3: latex, header="$n=0$"
-column 4: latexnum, header="$n=1$", units(Planck units: 1, eV: 1.22e28, GeV: 1.22e19)
-column 5: latexnum, header="$n=2$", units(Planck units: 1, eV: 1.22e28, GeV: 1.22e19)
+column 3: latexnum, header="$\delta^{(0)}$"
+column 4: latexnum, header="$E_\text{Pl}^{(1)}$", units(Planck units: 1, eV: 1.22e28, GeV: 1.22e19)
+column 5: latexnum, header="$E_\text{Pl}^{(2)}$", units(Planck units: 1, eV: 1.22e28, GeV: 1.22e19)
 column 6: string
 :::

@@ -228,7 +228,7 @@ end
 -- Main table renderer
 local function render_table(src, searchable, per_page, sortable, columns_meta)
     local file = open_csv_file(src)
-    if not file then
+    if not file me
         error("[dynamic-tables.lua] Error: Cannot open CSV file at '" .. src .. "'. Check file path.")
     end
 
@@ -322,7 +322,6 @@ function Pandoc(doc)
     if has_dynamic_table then
         local assets_html = load_assets_html()
         table.insert(doc.blocks, pandoc.RawBlock('html', assets_html))
-        table.insert(doc.blocks, pandoc.Para({ pandoc.Math("InlineMath", "x") }))
         has_dynamic_table = false
     end
     return doc

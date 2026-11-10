@@ -269,26 +269,27 @@ class TabulatorTableController {
       movableColumns: false
     });
 
+    // Single event listener for render completion
     this.table.on("renderComplete", () => {
-      retriggerMath(this.container);
-    });
-
-    this.table.on("tableBuilt", () => {
       retriggerMath(this.container);
     });
 
     if (this.searchable) {
       const searchInput = topBar.querySelector(".tabulator-search-input");
       if (searchInput) {
-        searchInput.addEventListener("keyup", (e) => {
+        let searchTimer = null;
+        searchInput.addEventListener("input", (e) => {
+          clearTimeout(searchTimer);
           const query = e.target.value.toLowerCase().trim();
-          if (query === "") {
-            this.table.clearFilter();
-          } else {
-            this.table.setFilter((data) => {
-              return Object.values(data).some(val => String(val || "").toLowerCase().includes(query));
-            });
-          }
+          searchTimer = setTimeout(() => {
+            if (query === "") {
+              this.table.clearFilter();
+            } else {
+              this.table.setFilter((data) => {
+                return Object.values(data).some(val => String(val || "").toLowerCase().includes(query));
+              });
+            }
+          }, 150);
         });
       }
     }
