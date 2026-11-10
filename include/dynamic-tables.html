@@ -15,12 +15,31 @@
   /* Header Title Wrap */
   .tabulator-title-wrap { display: flex; flex-direction: column; gap: 4px; width: 100%; }
   
-  /* Unified Select Override */
+  /* UNIFIED NATIVE DROPDOWN STYLING ACROSS ALL HEADER SELECTS */
+  .tabulator-header select,
+  .tabulator-header-filter select,
   .tabulator-unified-select {
-    padding-top: 0.15rem !important;
-    padding-bottom: 0.15rem !important;
-    margin-top: 0.25rem !important;
+    display: block !important;
+    width: 100% !important;
+    font-size: 0.75rem !important;
+    padding: 0.2rem 1.4rem 0.2rem 0.4rem !important;
+    line-height: 1.2 !important;
+    color: #212529 !important;
+    background-color: #ffffff !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.35rem center !important;
+    background-size: 9px 9px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 0.2rem !important;
+    box-sizing: border-box !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    cursor: pointer !important;
   }
+
+  .tabulator-header-filter { margin-top: 4px !important; }
 </style>
 
 <script>
@@ -75,7 +94,6 @@ const ColumnFeatures = {
       const field = cell.getColumn().getField();
       const tableData = cell.getTable().getData();
       
-      // Extract unique non-empty options from table data
       const rawValues = [...new Set(tableData.map(row => row[field]).filter(v => v !== null && v !== undefined && v !== ""))].sort();
       
       const options = [
@@ -146,7 +164,6 @@ class TabulatorTableController {
       topBar.innerHTML = '<div></div>';
     }
 
-    // Scrollable wrapper container keeping all columns on 1 top header row
     const scrollWrap = document.createElement("div");
     scrollWrap.style.overflowX = "auto";
     scrollWrap.style.width = "100%";
@@ -177,7 +194,6 @@ class TabulatorTableController {
       return colDef;
     });
 
-    // Content-aware column sizing (fitData + responsiveLayout: false prevents header collapse)
     this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
