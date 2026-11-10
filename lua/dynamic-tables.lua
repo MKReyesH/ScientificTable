@@ -228,7 +228,7 @@ end
 -- Main table renderer
 local function render_table(src, searchable, per_page, sortable, columns_meta)
     local file = open_csv_file(src)
-    if not file me
+    if not file then
         error("[dynamic-tables.lua] Error: Cannot open CSV file at '" .. src .. "'. Check file path.")
     end
 
