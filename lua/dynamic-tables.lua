@@ -110,7 +110,23 @@ local function auto_detect_column_type(rows, col_index)
     return has_numeric and "number" or "string"
 end
 
--- AST text extraction
+-- AST text extraction preserving Math elements ($...$)
+local function stringify_inline_with_math(inline)
+    if inline.t == "Math" then
+        if inline.mathtype == "DisplayMath" or inline.mathtype == pandoc.DisplayMath then
+            return "$$" .. inline.text .. "$$"
+        else
+            return "$" .. inline.text .. "$"
+        end
+    elseif inline.t == "Space" then
+        return " "
+    elseif inline.t == "SoftBreak" or inline.t == "LineBreak" then
+        return "\n"
+    else
+        return pandoc.utils.stringify(inline)
+    end
+end
+
 local function extract_lines_from_div(el)
     local lines = {}
     for _, block in ipairs(el.content) do
@@ -121,7 +137,9 @@ local function extract_lines_from_div(el)
                     local l = trim(table.concat(current))
                     if l ~= "" then table.insert(lines, l) end
                     current = {}
-                else table.insert(current, pandoc.utils.stringify(inline)) end
+                else
+                    table.insert(current, stringify_inline_with_math(inline))
+                end
             end
             local final = trim(table.concat(current))
             if final ~= "" then table.insert(lines, final) end
@@ -137,11 +155,11 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    local raw_header = body:match('header%s*=%s*(.-)%s*,') or body:match('header%s*=%s*(.*)$')
-    if raw_header then
-        local clean_hdr = trim(raw_header):gsub('^["\'“]+', ''):gsub('["\'”]+$', '')
-        if clean_hdr ~= "" then rule.header = clean_hdr end
-        body = body:gsub('header%s*=%s*.-,', ''):gsub('header%s*=%s*.*$', '')
+    -- Parse custom header label: header="..." or header='...'
+    local header_val = body:match('header%s*=%s*["\'](.-)["\']')
+    if header_val then
+        rule.header = header_val
+        body = body:gsub('header%s*=%s*["\'](.-)["\']', "")
     end
 
     local units_str = body:match("units%((.-)%)")

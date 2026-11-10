@@ -54,6 +54,17 @@
 
 <script>
 
+// MathJax / KaTeX typesetting helper
+function renderMathInContainer(container) {
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    window.MathJax.typesetPromise([container]).catch(() => {});
+  } else if (window.MathJax && window.MathJax.Hub) {
+    window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, container]);
+  } else if (window.renderMathInElement) {
+    window.renderMathInElement(container);
+  }
+}
+
 // Select dropdown component factory
 function createSelectMenu(options, onChange, selectedValue = "") {
   const select = document.createElement("select");
@@ -133,6 +144,7 @@ const ColumnFeatures = {
           if (factor !== undefined) {
             ctx.unitFactors[colCfg.index] = factor;
             ctx.table.redraw(true);
+            renderMathInContainer(ctx.container);
           }
         }, 
         colCfg.units[0]
@@ -186,10 +198,11 @@ class TabulatorTableController {
 
     const columns = this.headers.map((h, idx) => {
       const colCfg = this.config.find(c => c.index === idx) || { index: idx };
-      colCfg.name = colCfg.header || h;
+      const titleText = colCfg.header || colCfg.title || colCfg.name || h;
+      colCfg.name = titleText;
 
       const colDef = {
-        title: colCfg.name,
+        title: titleText,
         field: "col_" + idx,
         headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
         sorter: colCfg.type === "number" ? "number" : "string",
@@ -214,6 +227,10 @@ class TabulatorTableController {
       paginationSize: this.perPage,
       paginationSizeSelector: [10, 15, 25, 50],
       movableColumns: false
+    });
+
+    this.table.on("tableBuilt", () => {
+      renderMathInContainer(this.container);
     });
 
     if (this.searchable) {
