@@ -462,13 +462,13 @@ class TabulatorTableController {
       movableColumns: false
     });
 
-    this.isRedrawingMath = false;
+    this.initialMathRendered = false;
     this.table.on("renderComplete", () => {
-      if (this.isRedrawingMath) return;
-      this.isRedrawingMath = true;
       retriggerMath(this.container, () => {
-        this.table.redraw(true);
-        setTimeout(() => { this.isRedrawingMath = false; }, 50);
+        if (!this.initialMathRendered) {
+          this.initialMathRendered = true;
+          this.table.redraw();
+        }
       });
     });
 
