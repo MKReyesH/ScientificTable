@@ -252,7 +252,7 @@ function retriggerMath(container) {
     const latexElements = Array.from(container.querySelectorAll(".tabulator-latex-col"));
     if (latexElements.length === 0) return;
 
-    if (window.MathJax && window.MathJax.typesetPromise) {
+    if (window.MathJax && typeof window.MathJax.typesetPromise === "function") {
       window.MathJax.typesetPromise(latexElements).catch(err => console.error("MathJax error:", err));
     } else if (typeof renderMathInElement === "function") {
       latexElements.forEach(el => {
@@ -267,10 +267,21 @@ function retriggerMath(container) {
     }
   };
 
-  if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+  if (window.MathJax && typeof window.MathJax.typesetPromise === "function") {
+    doTypeset();
+  } else if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
     window.MathJax.startup.promise.then(doTypeset);
   } else {
-    doTypeset();
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      if ((window.MathJax && typeof window.MathJax.typesetPromise === "function") || typeof renderMathInElement === "function") {
+        clearInterval(interval);
+        doTypeset();
+      } else if (attempts > 60) {
+        clearInterval(interval);
+      }
+    }, 50);
   }
 }
 
