@@ -54,50 +54,6 @@
 
 <script>
 
-// LaTeX re-typesetting helper for tabulator-latex-col
-function retriggerMath(container) {
-  if (!container) return;
-
-  const doTypeset = () => {
-    const latexElements = Array.from(container.querySelectorAll(".tabulator-latex-col"));
-    if (latexElements.length === 0) return;
-
-    if (window.MathJax && typeof window.MathJax.typesetPromise === "function") {
-      if (typeof window.MathJax.typesetClear === "function") {
-        window.MathJax.typesetClear(latexElements);
-      }
-      window.MathJax.typesetPromise(latexElements).catch(err => console.error("MathJax error:", err));
-    } else if (typeof renderMathInElement === "function") {
-      latexElements.forEach(el => {
-        renderMathInElement(el, {
-          delimiters: [
-            { left: "$$", right: "$$", display: true },
-            { left: "$", right: "$", display: false }
-          ],
-          throwOnError: false
-        });
-      });
-    }
-  };
-
-  if (window.MathJax && typeof window.MathJax.typesetPromise === "function") {
-    doTypeset();
-  } else if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
-    window.MathJax.startup.promise.then(doTypeset);
-  } else {
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      if ((window.MathJax && typeof window.MathJax.typesetPromise === "function") || typeof renderMathInElement === "function") {
-        clearInterval(interval);
-        doTypeset();
-      } else if (attempts > 60) {
-        clearInterval(interval);
-      }
-    }, 50);
-  }
-}
-
 // Select dropdown component factory
 function createSelectMenu(options, onChange, selectedValue = "") {
   const select = document.createElement("select");
@@ -137,21 +93,6 @@ const ColumnFeatures = {
       return (abs > 0 && (abs < 1e-3 || abs >= 1e4))
         ? converted.toExponential(2)
         : Number(converted.toFixed(4)).toString();
-    };
-  },
-
-  // Scientific notation formatted into LaTeX math strings
-  latexnum: (colDef, colCfg, ctx) => {
-    ColumnFeatures.number(colDef, colCfg, ctx);
-    const baseFormatter = colDef.formatter;
-    colDef.formatter = (cell) => {
-      const formattedVal = baseFormatter(cell);
-      if (!formattedVal || isNaN(Number(cell.getValue()))) return formattedVal;
-      if (formattedVal.includes("e")) {
-        const [mantissa, exponent] = formattedVal.split("e");
-        return `$${mantissa} \\times 10^{${parseInt(exponent, 10)}}$`;
-      }
-      return `$${formattedVal}$`;
     };
   },
 
@@ -246,11 +187,9 @@ class TabulatorTableController {
     const columns = this.headers.map((h, idx) => {
       const colCfg = this.config.find(c => c.index === idx) || { index: idx };
       colCfg.name = colCfg.header || h;
-      const isLatex = Boolean(colCfg.latex || colCfg.latexnum);
 
       const colDef = {
         title: colCfg.name,
-        cssClass: isLatex ? "tabulator-latex-col tex2jax_process" : "",
         field: "col_" + idx,
         headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
         sorter: colCfg.type === "number" ? "number" : "string",
@@ -259,8 +198,7 @@ class TabulatorTableController {
         minWidth: (colCfg.dropdown || colCfg.units) ? 115 : 55
       };
 
-      if (colCfg.type === "number" && !colCfg.latexnum) ColumnFeatures.number(colDef, colCfg, this);
-      if (colCfg.latexnum) ColumnFeatures.latexnum(colDef, colCfg, this);
+      if (colCfg.type === "number") ColumnFeatures.number(colDef, colCfg, this);
       if (colCfg.dropdown) ColumnFeatures.dropdown(colDef, colCfg, this);
       if (colCfg.units) ColumnFeatures.units(colDef, colCfg, this);
 
@@ -276,10 +214,6 @@ class TabulatorTableController {
       paginationSize: this.perPage,
       paginationSizeSelector: [10, 15, 25, 50],
       movableColumns: false
-    });
-
-    this.table.on("renderComplete", () => {
-      retriggerMath(this.container);
     });
 
     if (this.searchable) {

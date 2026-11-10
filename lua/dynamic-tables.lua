@@ -121,8 +121,6 @@ local function extract_lines_from_div(el)
                     local l = trim(table.concat(current))
                     if l ~= "" then table.insert(lines, l) end
                     current = {}
-                elseif inline.t == "Math" then
-                    table.insert(current, "$" .. inline.text .. "$")
                 else table.insert(current, pandoc.utils.stringify(inline)) end
             end
             local final = trim(table.concat(current))
@@ -139,12 +137,11 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    local header_val = body:match('header%s*=%s*"([^"]+)"') 
-                    or body:match("header%s*=%s*'([^']+)'") 
-                    or body:match('header%s*=%s*“([^”]+)”')
-    if header_val then
-        rule.header = trim(header_val)
-        body = body:gsub('header%s*=%s*"[^"]+"', ''):gsub("header%s*=%s*'[^']+'", ''):gsub('header%s*=%s*“[^”]+”', '')
+    local raw_header = body:match('header%s*=%s*(.-)%s*,') or body:match('header%s*=%s*(.*)$')
+    if raw_header then
+        local clean_hdr = trim(raw_header):gsub('^["\'“]+', ''):gsub('["\'”]+$', '')
+        if clean_hdr ~= "" then rule.header = clean_hdr end
+        body = body:gsub('header%s*=%s*.-,', ''):gsub('header%s*=%s*.*$', '')
     end
 
     local units_str = body:match("units%((.-)%)")
@@ -171,12 +168,6 @@ local function parse_column_rule(line)
         elseif tag == "string" then
             rule.type = "string"
         elseif tag == "number" then
-            rule.type = "number"
-        elseif tag == "latex" then
-            rule.latex = true
-        elseif tag == "latexnum" then
-            rule.latexnum = true
-            rule.latex = true
             rule.type = "number"
         end
     end
@@ -281,7 +272,6 @@ function Pandoc(doc)
     if has_dynamic_table then
         local assets_html = load_assets_html()
         table.insert(doc.blocks, pandoc.RawBlock('html', assets_html))
-        table.insert(doc.blocks, pandoc.Para({ pandoc.Math("InlineMath", "x") }))
         has_dynamic_table = false
     end
     return doc
