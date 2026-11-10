@@ -244,15 +244,38 @@ window.Quarto = {
 
 <script>
 
-// MathJax / KaTeX typesetting helper
+// Robust MathJax / KaTeX typesetting helper with async loading handling
 function renderMathInContainer(container) {
-  if (window.MathJax && window.MathJax.typesetPromise) {
-    window.MathJax.typesetPromise([container]).catch(() => {});
-  } else if (window.MathJax && window.MathJax.Hub) {
-    window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, container]);
-  } else if (window.renderMathInElement) {
-    window.renderMathInElement(container);
-  }
+  if (!container) return;
+
+  const trigger = () => {
+    if (window.MathJax) {
+      if (typeof window.MathJax.typesetPromise === "function") {
+        window.MathJax.typesetPromise([container]).catch(() => {});
+      } else if (window.MathJax.startup && window.MathJax.startup.promise) {
+        window.MathJax.startup.promise.then(() => {
+          window.MathJax.typesetPromise([container]).catch(() => {});
+        });
+      } else if (window.MathJax.Hub) {
+        window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, container]);
+      }
+    } else if (typeof window.renderMathInElement === "function") {
+      window.renderMathInElement(container);
+    }
+  };
+
+  trigger();
+
+  let attempts = 0;
+  const timer = setInterval(() => {
+    attempts++;
+    if ((window.MathJax && (window.MathJax.typesetPromise || window.MathJax.Hub)) || typeof window.renderMathInElement === "function") {
+      clearInterval(timer);
+      trigger();
+    } else if (attempts >= 50) {
+      clearInterval(timer);
+    }
+  }, 100);
 }
 
 // Select dropdown component factory
