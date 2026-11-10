@@ -12,13 +12,15 @@ local DEFAULTS = {
 local has_dynamic_table = false
 local cached_assets_html = nil
 
--- Reads include/dynamic-tables.html directly by transforming PANDOC_SCRIPT_FILE path
+local SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
+
+-- Loads include/dynamic-tables.html directly relative to lua/
 local function load_assets_html()
     if cached_assets_html then return cached_assets_html end
     local html_path = PANDOC_SCRIPT_FILE:gsub("lua/dynamic%-tables%.lua$", "include/dynamic-tables.html")
     local file = io.open(html_path, "r")
     if not file then
-        error("[dynamic-tables.lua] Error: Cannot open '" .. html_path .. "'.")
+        error("[dynamic-tables.lua] Error: Cannot open template at '" .. html_path .. "'. Check file path.")
     end
     cached_assets_html = file:read("*a")
     file:close()
@@ -66,8 +68,25 @@ local function parse_csv_line(line)
     return res
 end
 
+-- Resolves CSV path across execution working dir, script root, and input doc dir
 local function open_csv_file(src)
-    return io.open(src, "r")
+    local file = io.open(src, "r")
+    if file then return file end
+
+    if SCRIPT_DIR ~= "" then
+        file = io.open(SCRIPT_DIR .. "../" .. src, "r")
+        if file then return file end
+    end
+
+    if PANDOC_STATE and PANDOC_STATE.input_files and #PANDOC_STATE.input_files > 0 then
+        local doc_dir = PANDOC_STATE.input_files[1]:match("(.*[/\\])")
+        if doc_dir then
+            file = io.open(doc_dir .. src, "r")
+            if file then return file end
+        end
+    end
+
+    return nil
 end
 
 local function extract_lines_from_div(el)
@@ -149,7 +168,10 @@ end
 
 local function render_table(src, searchable, per_page, sortable, columns_meta)
     local file = open_csv_file(src)
-    if not file then return nil end
+    if not file then
+        error("[dynamic-tables.lua] Error: Cannot open CSV file at '" .. src .. "'. Check file path.")
+    end
+
     local lines = {}
     for line in file:lines() do
         line = line:gsub("\r$", "")
