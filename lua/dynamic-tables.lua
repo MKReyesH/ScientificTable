@@ -139,10 +139,11 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    local header_val = body:match('header%s*=%s*"([^"]+)"') or body:match("header%s*=%s*'([^']+)'") or body:match('header%s*=%s*“([^”]+)”')
-    if header_val then
-        rule.header = trim(header_val)
-        body = body:gsub('header%s*=%s*"[^"]+"', ''):gsub("header%s*=%s*'[^']+'", ''):gsub('header%s*=%s*“[^”]+”', '')
+    local raw_header = body:match('header%s*=%s*(.-)%s*,') or body:match('header%s*=%s*(.*)$')
+    if raw_header then
+        local clean_hdr = trim(raw_header):gsub('^["\'“]+', ''):gsub('["\'”]+$', '')
+        if clean_hdr ~= "" then rule.header = clean_hdr end
+        body = body:gsub('header%s*=%s*.-,', ''):gsub('header%s*=%s*.*$', '')
     end
 
     local units_str = body:match("units%((.-)%)")
