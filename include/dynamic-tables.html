@@ -54,6 +54,30 @@
 
 <script>
 
+// Asynchronous MathJax / KaTeX re-typesetting helper
+function retriggerMath(container) {
+  if (!container) return;
+
+  const doTypeset = () => {
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise([container]).catch(err => console.error("MathJax error:", err));
+    } else if (typeof renderMathInElement === "function") {
+      renderMathInElement(container, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false }
+        ]
+      });
+    }
+  };
+
+  if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+    window.MathJax.startup.promise.then(doTypeset);
+  } else {
+    doTypeset();
+  }
+}
+
 // Select dropdown component factory
 function createSelectMenu(options, onChange, selectedValue = "") {
   const select = document.createElement("select");
@@ -96,7 +120,7 @@ const ColumnFeatures = {
     };
   },
 
-  // Scientific notation wrapped in LaTeX math delimiters
+  // Scientific notation formatted into LaTeX math strings
   latexnum: (colDef, colCfg, ctx) => {
     ColumnFeatures.number(colDef, colCfg, ctx);
     const baseFormatter = colDef.formatter;
@@ -202,11 +226,9 @@ class TabulatorTableController {
     const columns = this.headers.map((h, idx) => {
       const colCfg = this.config.find(c => c.index === idx) || { index: idx };
       colCfg.name = colCfg.header || h;
-      const isLatex = colCfg.latex || colCfg.latexnum || (colCfg.name && colCfg.name.includes("$"));
 
       const colDef = {
         title: colCfg.name,
-        cssClass: isLatex ? "tabulator-latex-field" : "",
         field: "col_" + idx,
         headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
         sorter: colCfg.type === "number" ? "number" : "string",
@@ -232,6 +254,10 @@ class TabulatorTableController {
       paginationSize: this.perPage,
       paginationSizeSelector: [10, 15, 25, 50],
       movableColumns: false
+    });
+
+    this.table.on("renderComplete", () => {
+      retriggerMath(this.container);
     });
 
     this.table.on("renderComplete", () => {

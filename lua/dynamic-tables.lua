@@ -175,6 +175,7 @@ local function parse_column_rule(line)
             rule.latex = true
         elseif tag == "latexnum" then
             rule.latexnum = true
+            rule.latex = true
             rule.type = "number"
         end
     end
