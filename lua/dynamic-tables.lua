@@ -2,7 +2,6 @@
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
 -- =============================================================================
 
--- Global configuration defaults
 local DEFAULTS = {
     searchable = true,
     sortable   = true,
@@ -13,12 +12,13 @@ local DEFAULTS = {
 local has_dynamic_table = false
 local cached_assets_html = nil
 
--- Reads template directly from include/dynamic-tables.html
+-- Reads include/dynamic-tables.html directly by transforming PANDOC_SCRIPT_FILE path
 local function load_assets_html()
     if cached_assets_html then return cached_assets_html end
-    local file = io.open("include/dynamic-tables.html", "r")
+    local html_path = PANDOC_SCRIPT_FILE:gsub("lua/dynamic%-tables%.lua$", "include/dynamic-tables.html")
+    local file = io.open(html_path, "r")
     if not file then
-        error("[dynamic-tables.lua] Error: Cannot open 'include/dynamic-tables.html'. File does not exist.")
+        error("[dynamic-tables.lua] Error: Cannot open '" .. html_path .. "'.")
     end
     cached_assets_html = file:read("*a")
     file:close()
@@ -67,13 +67,7 @@ local function parse_csv_line(line)
 end
 
 local function open_csv_file(src)
-    local file = io.open(src, "r")
-    if file then return file end
-    if PANDOC_STATE and PANDOC_STATE.input_files and #PANDOC_STATE.input_files > 0 then
-        local doc_dir = PANDOC_STATE.input_files[1]:match("(.*[/\\])")
-        if doc_dir then return io.open(doc_dir .. src, "r") end
-    end
-    return nil
+    return io.open(src, "r")
 end
 
 local function extract_lines_from_div(el)
@@ -95,7 +89,6 @@ local function extract_lines_from_div(el)
     return lines
 end
 
--- Auto-detect numeric vs string data type for unconfigured columns
 local function auto_detect_column_type(rows, col_index)
     local has_numeric = false
     for _, r in ipairs(rows) do
@@ -119,7 +112,6 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    -- Parse units(...) clause
     local units_str = body:match("units%((.-)%)")
     if units_str then
         local map, units = {}, {}
@@ -133,7 +125,6 @@ local function parse_column_rule(line)
         body = body:gsub("units%((.-)%)", "")
     end
 
-    -- Parse strict canonical tags
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag)
         if tag == "unsortable" then
@@ -211,14 +202,12 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
     return pandoc.RawBlock('html', html)
 end
 
--- Inline initializer: !dynamic-table: data/bounds.csv
 function Para(p)
     local txt = trim(pandoc.utils.stringify(p))
     local src = txt:match("^%!dynamic%-table:%s*(.+)$")
     return src and render_table(trim(src), tostring(DEFAULTS.searchable), tostring(DEFAULTS.per_page), tostring(DEFAULTS.sortable), {}) or nil
 end
 
--- Block initializer: ::: {.dynamic-table}
 function Div(el)
     if not el.classes:includes("dynamic-table") then return nil end
     local src = el.attributes["src"]
@@ -246,7 +235,6 @@ function Div(el)
     return (src and src ~= "") and render_table(src, searchable, per_page, sortable, columns_meta) or nil
 end
 
--- Injects include/dynamic-tables.html ONCE per document
 function Pandoc(doc)
     if has_dynamic_table then
         local assets_html = load_assets_html()
