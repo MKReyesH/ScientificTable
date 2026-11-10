@@ -96,6 +96,21 @@ const ColumnFeatures = {
     };
   },
 
+  // Scientific notation wrapped in LaTeX math delimiters
+  latexnum: (colDef, colCfg, ctx) => {
+    ColumnFeatures.number(colDef, colCfg, ctx);
+    const baseFormatter = colDef.formatter;
+    colDef.formatter = (cell) => {
+      const formattedVal = baseFormatter(cell);
+      if (!formattedVal || isNaN(Number(cell.getValue()))) return formattedVal;
+      if (formattedVal.includes("e")) {
+        const [mantissa, exponent] = formattedVal.split("e");
+        return `$${mantissa} \\times 10^{${parseInt(exponent, 10)}}$`;
+      }
+      return `$${formattedVal}$`;
+    };
+  },
+
   // Multi-value dropdown header filter
   dropdown: (colDef, colCfg, ctx) => {
     const field = "col_" + colCfg.index;
@@ -187,9 +202,11 @@ class TabulatorTableController {
     const columns = this.headers.map((h, idx) => {
       const colCfg = this.config.find(c => c.index === idx) || { index: idx };
       colCfg.name = colCfg.header || h;
+      const isLatex = colCfg.latex || colCfg.latexnum || (colCfg.name && colCfg.name.includes("$"));
 
       const colDef = {
         title: colCfg.name,
+        cssClass: isLatex ? "tabulator-latex-field" : "",
         field: "col_" + idx,
         headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
         sorter: colCfg.type === "number" ? "number" : "string",
@@ -198,7 +215,8 @@ class TabulatorTableController {
         minWidth: (colCfg.dropdown || colCfg.units) ? 115 : 55
       };
 
-      if (colCfg.type === "number") ColumnFeatures.number(colDef, colCfg, this);
+      if (colCfg.type === "number" && !colCfg.latexnum) ColumnFeatures.number(colDef, colCfg, this);
+      if (colCfg.latexnum) ColumnFeatures.latexnum(colDef, colCfg, this);
       if (colCfg.dropdown) ColumnFeatures.dropdown(colDef, colCfg, this);
       if (colCfg.units) ColumnFeatures.units(colDef, colCfg, this);
 
@@ -214,6 +232,17 @@ class TabulatorTableController {
       paginationSize: this.perPage,
       paginationSizeSelector: [10, 15, 25, 50],
       movableColumns: false
+    });
+
+    this.table.on("renderComplete", () => {
+      const latexNodes = this.container.querySelectorAll(".tabulator-latex-field");
+      if (latexNodes.length > 0) {
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          MathJax.typesetPromise(latexNodes);
+        } else if (window.renderMathInElement) {
+          renderMathInElement(this.container);
+        }
+      }
     });
 
     if (this.searchable) {

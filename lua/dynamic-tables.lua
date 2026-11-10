@@ -121,6 +121,8 @@ local function extract_lines_from_div(el)
                     local l = trim(table.concat(current))
                     if l ~= "" then table.insert(lines, l) end
                     current = {}
+                elseif inline.t == "Math" then
+                    table.insert(current, "$" .. inline.text .. "$")
                 else table.insert(current, pandoc.utils.stringify(inline)) end
             end
             local final = trim(table.concat(current))
@@ -168,6 +170,11 @@ local function parse_column_rule(line)
         elseif tag == "string" then
             rule.type = "string"
         elseif tag == "number" then
+            rule.type = "number"
+        elseif tag == "latex" then
+            rule.latex = true
+        elseif tag == "latexnum" then
+            rule.latexnum = true
             rule.type = "number"
         end
     end
