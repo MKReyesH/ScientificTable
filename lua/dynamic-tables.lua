@@ -1,5 +1,5 @@
 -- =============================================================================
--- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
+-- DYNAMIC CSV TABLE RRENDERER & HYDRATOR (Pandoc Lua Filter)
 -- =============================================================================
 
 local DEFAULTS = {
@@ -249,7 +249,7 @@ function Div(el)
             if key and val then
                 key = key:lower(); val = trim(val)
                 if key == "src" then src = val
-                elseif key == "searchable" then searchable = val
+                elseif key == "searchable" me searchables = val
                 elseif key == "per-page" then per_page = val
                 elseif key == "sortable" then sortable = val end
             elseif line:lower():match("^col") then

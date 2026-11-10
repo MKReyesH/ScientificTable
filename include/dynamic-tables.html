@@ -15,34 +15,38 @@
   /* Header Title Wrap */
   .tabulator-title-wrap { display: flex; flex-direction: column; gap: 4px; width: 100%; }
   
-  /* UNIFIED NATIVE DROPDOWN STYLING ACROSS ALL HEADER SELECTS */
-  .tabulator-header select,
-  .tabulator-header-filter select,
-  .tabulator-unit-select {
-    display: block !important;
-    width: 100% !important;
-    font-size: 0.75rem !important;
-    padding: 0.2rem 1.4rem 0.2rem 0.4rem !important;
-    line-height: 1.2 !important;
-    color: #212529 !important;
-    background-color: #ffffff !important;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 0.35rem center !important;
-    background-size: 9px 9px !important;
-    border: 1px solid #ced4da !important;
-    border-radius: 0.2rem !important;
-    box-sizing: border-box !important;
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    cursor: pointer !important;
+  /* Unified Select Override */
+  .tabulator-unified-select {
+    padding-top: 0.15rem !important;
+    padding-bottom: 0.15rem !important;
+    margin-top: 0.25rem !important;
   }
-
-  .tabulator-header-filter { margin-top: 4px !important; }
 </style>
 
 <script>
+// =============================================================================
+// SINGLE UNIFIED DROPDOWN FACTORY FUNCTION
+// =============================================================================
+function createSelectMenu(options, onChange, selectedValue = "") {
+  const select = document.createElement("select");
+  select.className = "form-select form-select-sm tabulator-unified-select";
+  select.style.fontSize = "0.75rem";
+
+  options.forEach(opt => {
+    const optionEl = document.createElement("option");
+    const val = typeof opt === "object" ? opt.value : opt;
+    const lbl = typeof opt === "object" ? opt.label : opt;
+    optionEl.value = val;
+    optionEl.textContent = lbl;
+    if (String(val) === String(selectedValue)) optionEl.selected = true;
+    select.appendChild(optionEl);
+  });
+
+  select.addEventListener("click", e => e.stopPropagation());
+  select.addEventListener("change", e => onChange(e.target.value));
+  return select;
+}
+
 // =============================================================================
 // CENTRALIZED COLUMN FEATURE REGISTRY
 // =============================================================================
@@ -65,16 +69,25 @@ const ColumnFeatures = {
     };
   },
 
-  // Native Standard Dropdown Filter
+  // Multi-Column Dropdown Filter (Uses Unified Factory)
   dropdown: (colDef) => {
-    colDef.headerFilter = "select";
-    colDef.headerFilterParams = {
-      valuesLookup: "all",
-      clearable: true
+    colDef.headerFilter = function(cell, onRendered, success, cancel, editorParams) {
+      const field = cell.getColumn().getField();
+      const tableData = cell.getTable().getData();
+      
+      // Extract unique non-empty options from table data
+      const rawValues = [...new Set(tableData.map(row => row[field]).filter(v => v !== null && v !== undefined && v !== ""))].sort();
+      
+      const options = [
+        { label: "All", value: "" },
+        ...rawValues.map(v => ({ label: v, value: v }))
+      ];
+
+      return createSelectMenu(options, (val) => success(val));
     };
   },
 
-  // Dynamic Unit Conversion Dropdown
+  // Dynamic Unit Conversion Dropdown (Uses Unified Factory)
   units: (colDef, colCfg, ctx) => {
     if (!colCfg.units || !colCfg.map) return;
     
@@ -89,17 +102,17 @@ const ColumnFeatures = {
       label.textContent = colCfg.name || "";
       wrap.appendChild(label);
 
-      const select = document.createElement("select");
-      select.className = "tabulator-unit-select mt-1";
-      select.innerHTML = colCfg.units.map(u => `<option value="${u}">${u}</option>`).join("");
-      select.addEventListener("click", e => e.stopPropagation());
-      select.addEventListener("change", e => {
-        const factor = colCfg.map[e.target.value];
-        if (factor !== undefined) {
-          ctx.unitFactors[colCfg.index] = factor;
-          ctx.table.redraw(true);
-        }
-      });
+      const select = createSelectMenu(
+        colCfg.units, 
+        (val) => {
+          const factor = colCfg.map[val];
+          if (factor !== undefined) {
+            ctx.unitFactors[colCfg.index] = factor;
+            ctx.table.redraw(true);
+          }
+        }, 
+        colCfg.units[0]
+      );
 
       wrap.appendChild(select);
       return wrap;
@@ -133,7 +146,7 @@ class TabulatorTableController {
       topBar.innerHTML = '<div></div>';
     }
 
-    // Scrollable wrapper container to keep all columns in 1 header row
+    // Scrollable wrapper container keeping all columns on 1 top header row
     const scrollWrap = document.createElement("div");
     scrollWrap.style.overflowX = "auto";
     scrollWrap.style.width = "100%";
