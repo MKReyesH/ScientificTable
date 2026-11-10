@@ -46,7 +46,7 @@
 <script>
 
 // Scoped LaTeX re-typesetting helper
-function retriggerMath(container) {
+function retriggerMath(container, onComplete) {
   if (!container) return;
 
   const doTypeset = () => {
@@ -54,7 +54,9 @@ function retriggerMath(container) {
       if (typeof window.MathJax.typesetClear === "function") {
         try { window.MathJax.typesetClear([container]); } catch(e) {}
       }
-      window.MathJax.typesetPromise([container]).catch(err => console.error("MathJax error:", err));
+      window.MathJax.typesetPromise([container])
+        .then(() => { if (typeof onComplete === "function") onComplete(); })
+        .catch(err => console.error("MathJax error:", err));
     } else if (typeof renderMathInElement === "function") {
       const latexElements = Array.from(container.querySelectorAll(".tabulator-latex-col"));
       latexElements.forEach(el => {
@@ -67,6 +69,7 @@ function retriggerMath(container) {
           throwOnError: false
         });
       });
+      if (typeof onComplete === "function") onComplete();
     }
   };
 
@@ -269,9 +272,14 @@ class TabulatorTableController {
       movableColumns: false
     });
 
-    // Single event listener for render completion
+    this.isRedrawingMath = false;
     this.table.on("renderComplete", () => {
-      retriggerMath(this.container);
+      if (this.isRedrawingMath) return;
+      this.isRedrawingMath = true;
+      retriggerMath(this.container, () => {
+        this.table.redraw(true);
+        setTimeout(() => { this.isRedrawingMath = false; }, 50);
+      });
     });
 
     if (this.searchable) {
