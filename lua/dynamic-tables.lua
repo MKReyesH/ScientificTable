@@ -110,43 +110,7 @@ local function auto_detect_column_type(rows, col_index)
     return has_numeric and "number" or "string"
 end
 
--- AST text extraction converting Math to standard LaTeX \(...\) and \[...\] delimiters
-local function stringify_inline_with_math(inline)
-    if not inline then return "" end
-    
-    if inline.t == "Math" then
-        if inline.mathtype == "DisplayMath" or inline.mathtype == pandoc.DisplayMath then
-            return "\\[" .. inline.text .. "\\]"
-        else
-            return "\\(" .. inline.text .. "\\)"
-        end
-    elseif inline.t == "Space" then
-        return " "
-    elseif inline.t == "SoftBreak" or inline.t == "LineBreak" then
-        return "\n"
-    elseif inline.t == "Str" then
-        return inline.text
-    elseif inline.t == "Quoted" then
-        local q_char = (inline.quotetype == "SingleQuote" or inline.quotetype == pandoc.SingleQuote) and "'" or '"'
-        local inner = {}
-        for _, child in ipairs(inline.content or {}) do
-            table.insert(inner, stringify_inline_with_math(child))
-        end
-        return q_char .. table.concat(inner) .. q_char
-    elseif inline.c or inline.content then
-        local children = inline.content or inline.c
-        if type(children) == "table" then
-            local res = {}
-            for _, child in ipairs(children) do
-                table.insert(res, stringify_inline_with_math(child))
-            end
-            return table.concat(res)
-        end
-    end
-    
-    return pandoc.utils.stringify(inline)
-end
-
+-- AST text extraction preserving math nodes
 local function extract_lines_from_div(el)
     local lines = {}
     for _, block in ipairs(el.content) do
@@ -157,8 +121,10 @@ local function extract_lines_from_div(el)
                     local l = trim(table.concat(current))
                     if l ~= "" then table.insert(lines, l) end
                     current = {}
-                else
-                    table.insert(current, stringify_inline_with_math(inline))
+                elseif inline.t == "Math" then
+                    table.insert(current, "$" .. inline.text .. "$")
+                else 
+                    table.insert(current, pandoc.utils.stringify(inline)) 
                 end
             end
             local final = trim(table.concat(current))
@@ -175,19 +141,15 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    -- Normalize smart/curly quotes produced by Pandoc typography parsing
-    body = body:gsub("“", '"'):gsub("”", '"'):gsub("’", "'"):gsub("‘", "'")
-
-    -- Convert unparsed literal $...$ or $$...$$ to \(...\) and \[...\]
-    body = body:gsub("%$%$([^%$]+)%$%$", "\\[%1\\]"):gsub("%$([^%$]+)%$", "\\(%1\\)")
-
-    -- Parse custom header label: header="..." or header='...' or unquoted
-    local header_val = body:match('header%s*=%s*["\'](.-)["\']') or body:match('header%s*=%s*([^,]+)')
-    if header_val then
-        rule.header = trim(header_val)
-        body = body:gsub('header%s*=%s*["\'](.-)["\']', ""):gsub('header%s*=%s*[^,]+', "")
+    -- Header extraction & quote stripping
+    local raw_header = body:match('header%s*=%s*(.-)%s*,') or body:match('header%s*=%s*(.*)$')
+    if raw_header then
+        local clean_hdr = trim(raw_header):gsub('^["\'“]+', ''):gsub('["\'”]+$', '')
+        if clean_hdr ~= "" then rule.header = clean_hdr end
+        body = body:gsub('header%s*=%s*.-,', ''):gsub('header%s*=%s*.*$', '')
     end
 
+    -- Units definition extraction
     local units_str = body:match("units%((.-)%)")
     if units_str then
         local map, units = {}, {}
@@ -201,21 +163,31 @@ local function parse_column_rule(line)
         body = body:gsub("units%((.-)%)", "")
     end
 
+    -- Tag parsing
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag)
-        if tag ~= "" then
-            if tag == "unsortable" then
-                rule.sortable = false
-            elseif tag == "sortable" then
-                rule.sortable = true
-            elseif tag == "dropdown" then
-                rule.dropdown = true
-            elseif tag == "string" then
-                rule.type = "string"
-            elseif tag == "number" then
-                rule.type = "number"
-            end
+        if tag == "unsortable" then
+            rule.sortable = false
+        elseif tag == "sortable" then
+            rule.sortable = true
+        elseif tag == "dropdown" then
+            rule.dropdown = true
+        elseif tag == "string" then
+            rule.type = "string"
+        elseif tag == "number" then
+            rule.type = "number"
+        elseif tag == "latex" then
+            rule.latex = true
+        elseif tag == "latexnum" then
+            rule.latexnum = true
+            rule.latex = true
+            rule.type = "number"
         end
+    end
+
+    -- Delimiter conversion: Convert $...$ to \(...\) ONLY if column is tagged with latex/latexnum
+    if (rule.latex or rule.latexnum) and rule.header then
+        rule.header = rule.header:gsub("%$([^%$]+)%$", "\\(%1\\)")
     end
 
     return rule
@@ -318,6 +290,7 @@ function Pandoc(doc)
     if has_dynamic_table then
         local assets_html = load_assets_html()
         table.insert(doc.blocks, pandoc.RawBlock('html', assets_html))
+        table.insert(doc.blocks, pandoc.Para({ pandoc.Math("InlineMath", "x") }))
         has_dynamic_table = false
     end
     return doc
