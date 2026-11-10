@@ -4,7 +4,8 @@
 
 local has_dynamic_table = false
 
-local CLIENT_ASSETS_HTML = [[
+-- Use [=[ ... ]=] to prevent JS array index brackets `col.units[0]]` from terminating Lua string
+local CLIENT_ASSETS_HTML = [=[
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
 <style>
   table.dynamic-table-target th { vertical-align: top !important; }
@@ -104,7 +105,8 @@ local CLIENT_ASSETS_HTML = [[
 
         // Unit conversion dropdown construction
         if (col.units && col.map) {
-          this.unitFactors[col.index] = col.map[col.units[0]] || 1;
+          const defaultUnit = col.units[0];
+          this.unitFactors[col.index] = col.map[defaultUnit] !== undefined ? col.map[defaultUnit] : 1;
           const select = this.createSelectElement(col.units);
           select.addEventListener("change", (e) => {
             const factor = col.map[e.target.value];
@@ -194,7 +196,7 @@ local CLIENT_ASSETS_HTML = [[
     });
   });
 </script>
-]]
+]=]
 
 -- -----------------------------------------------------------------------------
 -- LUA UTILITIES & CSV PARSER
@@ -343,7 +345,7 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         table.insert(html, '      </tr>')
     end
 
-    table.insert(html, '    </tbody></table></div>')
+    table.insert(html, '    </tbody>mtable</div>')
     return pandoc.RawBlock('html', table.concat(html, "\n"))
 end
 
