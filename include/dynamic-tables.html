@@ -110,13 +110,12 @@ function renderMathInContainer(container) {
       }
     }
 
-    // KaTeX auto-render (must explicitly include single $ delimiters)
+    // KaTeX auto-render
     if (typeof window.renderMathInElement === "function") {
       window.renderMathInElement(container, {
         delimiters: [
           { left: "$$", right: "$$", display: true },
-          { left: "$", right: "$", inline: true },
-          { left: "\\(", right: "\\)", inline: false },
+          { left: "\\(", right: "\\)", inline: true },
           { left: "\\[", right: "\\]", display: true }
         ],
         throwOnError: false

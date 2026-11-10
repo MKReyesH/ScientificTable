@@ -110,15 +110,15 @@ local function auto_detect_column_type(rows, col_index)
     return has_numeric and "number" or "string"
 end
 
--- AST text extraction preserving Math elements ($...$) recursively
+-- AST text extraction converting Math to standard LaTeX \(...\) and \[...\] delimiters
 local function stringify_inline_with_math(inline)
     if not inline then return "" end
     
     if inline.t == "Math" then
         if inline.mathtype == "DisplayMath" or inline.mathtype == pandoc.DisplayMath then
-            return "$$" .. inline.text .. "$$"
+            return "\\[" .. inline.text .. "\\]"
         else
-            return "$" .. inline.text .. "$"
+            return "\\(" .. inline.text .. "\\)"
         end
     elseif inline.t == "Space" then
         return " "
@@ -177,6 +177,9 @@ local function parse_column_rule(line)
 
     -- Normalize smart/curly quotes produced by Pandoc typography parsing
     body = body:gsub("“", '"'):gsub("”", '"'):gsub("’", "'"):gsub("‘", "'")
+
+    -- Convert unparsed literal $...$ or $$...$$ to \(...\) and \[...\]
+    body = body:gsub("%$%$([^%$]+)%$%$", "\\[%1\\]"):gsub("%$([^%$]+)%$", "\\(%1\\)")
 
     -- Parse custom header label: header="..." or header='...' or unquoted
     local header_val = body:match('header%s*=%s*["\'](.-)["\']') or body:match('header%s*=%s*([^,]+)')
