@@ -185,7 +185,7 @@ window.Quarto = {
 
 
 <div class="dynamic-table-wrapper">
-  mtable<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css"><table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:2,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]},{&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]}]">
+  <table class="dynamic-table-target table table-striped table-hover" data-searchable="true" data-per-page="15" data-sortable="true" data-columns="[{&quot;dropdown&quot;:true,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;dropdown&quot;:true,&quot;index&quot;:2,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:4,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]},{&quot;index&quot;:5,&quot;map&quot;:{&quot;GeV&quot;:12200000000000000000,&quot;Planck units&quot;:1,&quot;eV&quot;:12200000000000000000000000000},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;Planck units&quot;,&quot;eV&quot;,&quot;GeV&quot;]}]">
     <thead><tr>
         <th>Messengers</th>
         <th>Luminality</th>
@@ -227,7 +227,7 @@ window.Quarto = {
         <td>+</td>
         <td>Pair decay</td>
         <td></td>
-        <td data-order="139000.0" data-base-order="139000.0">1.39e5</td>
+        <td data-order="139000" data-base-order="139000">1.39e5</td>
         <td data-order="0.000117" data-base-order="0.000117">1.17e-4</td>
         <td data-order="1863649" data-base-order="1863649">1863649</td>
       </tr>
@@ -236,7 +236,7 @@ window.Quarto = {
         <td>+</td>
         <td>Pair decay</td>
         <td></td>
-        <td data-order="116000.0" data-base-order="116000.0">1.16e5</td>
+        <td data-order="116000" data-base-order="116000">1.16e5</td>
         <td data-order="0.000104" data-base-order="0.000104">1.04e-4</td>
         <td data-order="1869962" data-base-order="1869962">1869962</td>
       </tr>
@@ -281,7 +281,7 @@ window.Quarto = {
         <td>-</td>
         <td>Time delays</td>
         <td data-order="2.5e-18" data-base-order="2.5e-18">2.5e-18</td>
-        <td data-order="123.0" data-base-order="123.0">1.23e2</td>
+        <td data-order="123" data-base-order="123">1.23e2</td>
         <td data-order="3.44e-07" data-base-order="3.44e-07">3.44e-7</td>
         <td data-order="1434280" data-base-order="1434280">1434280</td>
       </tr>
@@ -299,15 +299,15 @@ window.Quarto = {
         <td>+</td>
         <td>Splitting</td>
         <td></td>
-        <td data-order="43400000000.0" data-base-order="43400000000.0">4.34e10</td>
+        <td data-order="43400000000" data-base-order="43400000000">4.34e10</td>
         <td data-order="0.9" data-base-order="0.9">0.9</td>
         <td data-order="2879713" data-base-order="2879713">2879713</td>
       </tr>
-    </tbody>
+    </tbody></table></div>
 
 
 
-
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
 <style>
   table.dynamic-table-target th { vertical-align: top !important; }
   .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; font-weight: normal; }
@@ -323,28 +323,18 @@ window.Quarto = {
       this.table = tableEl;
       this.config = JSON.parse(tableEl.dataset.columns || "[]");
       this.globalSortable = tableEl.dataset.sortable !== "false";
-      this.unitFactors = {};  // colIndex -> activeMultiplier
+      this.unitFactors = {};   // colIndex -> activeMultiplier
       this.activeFilters = {}; // colIndex -> selectedFilterValue
       this.init();
     }
 
     init() {
-      // Build simple-datatables column definitions with custom numeric comparator
+      // Build simple-datatables column configuration (Native data-order sorting)
       const columnRules = this.config.map(col => {
         const rule = { select: col.index };
         if (col.sortable !== undefined) rule.sortable = col.sortable;
         else if (!this.globalSortable) rule.sortable = false;
-
-        if (col.type === "number") {
-          rule.sort = (a, b) => {
-            const valA = this.parseNumericValue(a);
-            const valB = this.parseNumericValue(b);
-            if (valA === null && valB === null) return 0;
-            if (valA === null) return 1;  // Null/Empty at the end
-            if (valB === null) return -1; // Null/Empty at the end
-            return valA - valB;
-          };
-        }
+        if (col.type) rule.type = col.type;
         return rule;
       });
 
@@ -353,7 +343,12 @@ window.Quarto = {
         sortable: true,
         perPage: parseInt(this.table.dataset.perPage || "15", 10),
         columns: columnRules.length > 0 ? columnRules : undefined,
-        labels: { placeholder: "Search table...", perPage: "entries per page", noRows: "No entries found", info: "Showing {start} to {end} of {rows} entries" }
+        labels: { 
+          placeholder: "Search table...", 
+          perPage: "entries per page", 
+          noRows: "No entries found", 
+          info: "Showing {start} to {end} of {rows} entries" 
+        }
       });
 
       this.dt.on("datatable.init", () => {
@@ -371,20 +366,6 @@ window.Quarto = {
       this.dt.on("datatable.perpage", syncUI);
     }
 
-    parseNumericValue(cell) {
-      if (cell === null || cell === undefined) return null;
-      let str = "";
-      if (typeof cell === "object") {
-        str = cell.order !== undefined ? String(cell.order) : (cell.data !== undefined ? String(cell.data) : "");
-      } else {
-        str = String(cell);
-      }
-      str = str.replace(/<[^>]*>/g, "").trim();
-      if (str === "") return null;
-      const num = Number(str);
-      return isNaN(num) ? null : num;
-    }
-
     buildHeaderControls() {
       this.config.forEach(col => {
         const th = this.table.querySelectorAll("thead th")[col.index];
@@ -393,7 +374,7 @@ window.Quarto = {
         const wrap = document.createElement("div");
         wrap.className = "dynamic-table-ctrl-wrap";
 
-        // Dropdown filter construction
+        // Multi-column dropdown filter construction
         if (col.dropdown) {
           const uniqueVals = this.getUniqueColumnValues(col.index);
           const select = this.createSelectElement(uniqueVals, "All");
@@ -414,6 +395,9 @@ window.Quarto = {
             if (factor !== undefined) {
               this.unitFactors[col.index] = factor;
               this.applyUnitConversions();
+              if (this.dt && typeof this.dt.update === "function") {
+                this.dt.update();
+              }
             }
           });
           wrap.appendChild(select);
@@ -498,7 +482,7 @@ window.Quarto = {
   });
 </script>
 
- <!-- /main -->
+</main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
@@ -975,9 +959,9 @@ window.Quarto = {
   <script type="application/javascript">
   window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
   </script>
- <!-- /content -->
+</div> <!-- /content -->
 
 
 
 
-</table></div></main></div></body></html>
+</body></html>
