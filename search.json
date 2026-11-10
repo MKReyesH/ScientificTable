@@ -7,6 +7,13 @@
     "text": "About us\n\n    MKReyesH\n\n\n\nPowered By\n\nGitHub Pages: Hosting and deployment infrastructure.\nQuarto: Markdown rendering, cross-referencing, and website generation.\nPandoc: Document format translation.\nBootstrap and Bootswatch: CSS support and user interface.\nMathJax: Mathematical notation rendering.\nGemini: Help writing the Lua filters.\n\n\n\nContributing\nIf you would like to contribute to the core template, add new LaTeX translation rules, or fix a bug, do not hesitate to open a Pull Request at the GitHub Repository."
   },
   {
+    "objectID": "doc/bounds.html",
+    "href": "doc/bounds.html",
+    "title": "Bounds",
+    "section": "",
+    "text": "\\(\\)"
+  },
+  {
     "objectID": "index.html",
     "href": "index.html",
     "title": "Scientific Table Template",
