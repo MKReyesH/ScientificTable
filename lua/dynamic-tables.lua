@@ -137,6 +137,12 @@ local function parse_column_rule(line)
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
+    local header_str = body:match('header%s*=%s*"([^"]+)"')
+    if header_str then
+        rule.header = header_str
+        body = body:gsub('header%s*=%s*"([^"]+)"', "")
+    end
+
     local units_str = body:match("units%((.-)%)")
     if units_str then
         local map, units = {}, {}

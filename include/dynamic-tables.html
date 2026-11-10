@@ -186,10 +186,10 @@ class TabulatorTableController {
 
     const columns = this.headers.map((h, idx) => {
       const colCfg = this.config.find(c => c.index === idx) || { index: idx };
-      colCfg.name = h;
+      colCfg.name = colCfg.header || h;
 
       const colDef = {
-        title: h,
+        title: colCfg.name,
         field: "col_" + idx,
         headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
         sorter: colCfg.type === "number" ? "number" : "string",
