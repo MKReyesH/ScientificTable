@@ -1,33 +1,23 @@
-<!-- Tabulator Bootstrap 5 Assets -->
+<!-- Asset dependencies -->
 <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
 <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
 
+<!-- Custom styles -->
 <style>
+
+  /* Container & table layout */
   .tabulator-container-wrap { margin: 1.5rem 0; font-size: 0.9em; width: 100%; }
   .tabulator { border: 1px solid #dee2e6; background-color: transparent !important; width: 100% !important; }
-  
-  /* Prevent header overflow clipping (Fix for Issue 1) */
+  .tabulator-footer { background-color: transparent !important; border-top: 1px solid #dee2e6 !important; }
+
+  /* Header & sorting alignment */
   .tabulator-col, .tabulator-col-content { overflow: visible !important; }
-
-  /* Footer blending override */
-  .tabulator-footer { 
-    background-color: transparent !important; 
-    border-top: 1px solid #dee2e6 !important; 
-  }
-  
-  /* Align sorting arrows cleanly to the top of all header cells (Fix for Issue 3) */
-  .tabulator-header .tabulator-col-title-holder {
-    align-items: flex-start !important;
-  }
-  .tabulator-header .tabulator-col-sorter {
-    align-self: flex-start !important;
-    margin-top: 2px !important;
-  }
-
-  /* Header Title Wrap */
+  .tabulator-header .tabulator-col-title-holder { align-items: flex-start !important; }
+  .tabulator-header .tabulator-col-sorter { align-self: flex-start !important; margin-top: 2px !important; }
   .tabulator-title-wrap { display: flex; flex-direction: column; gap: 4px; width: 100%; }
-  
-  /* UNIFIED NATIVE DROPDOWN STYLING ACROSS ALL HEADER SELECTS */
+  .tabulator-header-filter { margin-top: 4px !important; }
+
+  /* Dropdown controls */
   .tabulator-header select,
   .tabulator-header-filter select,
   .tabulator-unified-select {
@@ -51,7 +41,7 @@
     cursor: pointer !important;
   }
 
-  /* Inset Focus state preventing cut-off outlines (Fix for Issue 1) */
+  /* Focus states */
   .tabulator-header select:focus,
   .tabulator-header-filter select:focus,
   .tabulator-unified-select:focus {
@@ -60,13 +50,11 @@
     box-shadow: inset 0 0 0 1px #86b7fe !important;
   }
 
-  .tabulator-header-filter { margin-top: 4px !important; }
 </style>
 
 <script>
-// =============================================================================
-// SINGLE UNIFIED DROPDOWN FACTORY FUNCTION
-// =============================================================================
+
+// Select dropdown component factory
 function createSelectMenu(options, onChange, selectedValue = "") {
   const select = document.createElement("select");
   select.className = "form-select form-select-sm tabulator-unified-select";
@@ -87,11 +75,10 @@ function createSelectMenu(options, onChange, selectedValue = "") {
   return select;
 }
 
-// =============================================================================
-// CENTRALIZED COLUMN FEATURE REGISTRY
-// =============================================================================
+// Column feature registry
 const ColumnFeatures = {
-  // Numeric & Scientific Notation Formatting
+
+  // Numeric formatting & unit scaling
   number: (colDef, colCfg, ctx) => {
     colDef.formatter = (cell) => {
       const val = cell.getValue();
@@ -109,10 +96,9 @@ const ColumnFeatures = {
     };
   },
 
-  // Multi-Column Dropdown Filter (Pre-populated from dataset payload)
+  // Multi-value dropdown header filter
   dropdown: (colDef, colCfg, ctx) => {
     const field = "col_" + colCfg.index;
-    
     const rawValues = [...new Set((ctx.rows || []).map(r => r[field]).filter(v => v !== null && v !== undefined && v !== ""))].sort();
     
     const options = [
@@ -125,7 +111,7 @@ const ColumnFeatures = {
     };
   },
 
-  // Dynamic Unit Conversion Dropdown (Uses Unified Factory)
+  // Dynamic unit conversion select menu
   units: (colDef, colCfg, ctx) => {
     if (!colCfg.units || !colCfg.map) return;
     
@@ -156,9 +142,12 @@ const ColumnFeatures = {
       return wrap;
     };
   }
+
 };
 
+// Table controller
 class TabulatorTableController {
+
   constructor(container) {
     this.container = container;
     this.headers = JSON.parse(container.dataset.headers || "[]");
@@ -206,7 +195,6 @@ class TabulatorTableController {
         sorter: colCfg.type === "number" ? "number" : "string",
         sorterParams: { alignEmptyValues: "bottom" },
         headerHozAlign: "left",
-        // Assign dynamic minimum widths based on column feature requirements (Fix for Issue 2)
         minWidth: (colCfg.dropdown || colCfg.units) ? 115 : 55
       };
 
@@ -217,7 +205,6 @@ class TabulatorTableController {
       return colDef;
     });
 
-    // fitDataFill distributes space based on content size while filling 100% table width
     this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
@@ -245,8 +232,10 @@ class TabulatorTableController {
       }
     }
   }
+
 }
 
+// Global initialization
 function initDynamicTables() {
   document.querySelectorAll(".tabulator-container-wrap").forEach(el => {
     if (!el.dataset.initialized) {
@@ -261,4 +250,5 @@ if (document.readyState === "loading") {
 } else {
   initDynamicTables();
 }
+
 </script>

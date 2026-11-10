@@ -1,7 +1,8 @@
 -- =============================================================================
--- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
+-- Dynamic CSV Tables Pandoc Lua Filter
 -- =============================================================================
 
+-- Default configuration
 local DEFAULTS = {
     searchable = true,
     sortable   = true,
@@ -9,6 +10,7 @@ local DEFAULTS = {
     auto_type  = true
 }
 
+-- Filter path mappings
 local PATHS = {
     filter_rel   = "lua/dynamic%-tables%.lua",
     template_rel = "include/dynamic-tables.html"
@@ -19,6 +21,7 @@ local cached_assets_html = nil
 
 local SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
 
+-- Load template HTML assets
 local function load_assets_html()
     if cached_assets_html then return cached_assets_html end
     
@@ -33,10 +36,7 @@ local function load_assets_html()
     return cached_assets_html
 end
 
--- -----------------------------------------------------------------------------
--- LUA HELPERS & CSV PARSER
--- -----------------------------------------------------------------------------
-
+-- String utilities
 local function trim(s) 
     return s and s:match("^%s*(.-)%s*$") or "" 
 end
@@ -45,6 +45,7 @@ local function html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
 end
 
+-- CSV line parser
 local function parse_csv_line(line)
     local res, pos, len = {}, 1, #line
     while pos <= len do
@@ -74,6 +75,7 @@ local function parse_csv_line(line)
     return res
 end
 
+-- File resolution helper
 local function open_csv_file(src)
     local file = io.open(src, "r")
     if file then return file end
@@ -94,6 +96,21 @@ local function open_csv_file(src)
     return nil
 end
 
+-- Column data type detection
+local function auto_detect_column_type(rows, col_index)
+    local has_numeric = false
+    for _, r in ipairs(rows) do
+        local val = trim(r["col_" .. tostring(col_index - 1)] or "")
+        if val ~= "" then
+            local num = tonumber(val)
+            if not num then return "string" end
+            has_numeric = true
+        end
+    end
+    return has_numeric and "number" or "string"
+end
+
+-- AST text extraction
 local function extract_lines_from_div(el)
     local lines = {}
     for _, block in ipairs(el.content) do
@@ -113,23 +130,7 @@ local function extract_lines_from_div(el)
     return lines
 end
 
-local function auto_detect_column_type(rows, col_index)
-    local has_numeric = false
-    for _, r in ipairs(rows) do
-        local val = trim(r["col_" .. tostring(col_index - 1)] or "")
-        if val ~= "" then
-            local num = tonumber(val)
-            if not num then return "string" end
-            has_numeric = true
-        end
-    end
-    return has_numeric and "number" or "string"
-end
-
--- -----------------------------------------------------------------------------
--- STRICT COLUMN TAG PARSER
--- -----------------------------------------------------------------------------
-
+-- Column rule parser
 local function parse_column_rule(line)
     local col_idx = tonumber(line:match("^col%a*%s+(%d+)"))
     if not col_idx then return nil end
@@ -167,10 +168,7 @@ local function parse_column_rule(line)
     return rule
 end
 
--- -----------------------------------------------------------------------------
--- CORE RENDER ENGINE & PANDOC HOOKS
--- -----------------------------------------------------------------------------
-
+-- Main table renderer
 local function render_table(src, searchable, per_page, sortable, columns_meta)
     local file = open_csv_file(src)
     if not file then
@@ -229,6 +227,7 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
     return pandoc.RawBlock('html', html)
 end
 
+-- Pandoc AST entry points
 function Para(p)
     local txt = trim(pandoc.utils.stringify(p))
     local src = txt:match("^%!dynamic%-table:%s*(.+)$")
