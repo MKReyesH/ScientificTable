@@ -1,10 +1,11 @@
 -- =============================================================================
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
+-- Option A Architecture: Native HTML5 data-order + Client-side UI Controller
 -- =============================================================================
 
 local has_dynamic_table = false
 
--- Use [=[ ... ]=] to prevent JS array index brackets `col.units[0]]` from terminating Lua string
+-- Use [=[ ... ]=] long brackets to safely wrap JavaScript code without ]] conflicts
 local CLIENT_ASSETS_HTML = [=[
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
 <style>
@@ -22,28 +23,18 @@ local CLIENT_ASSETS_HTML = [=[
       this.table = tableEl;
       this.config = JSON.parse(tableEl.dataset.columns || "[]");
       this.globalSortable = tableEl.dataset.sortable !== "false";
-      this.unitFactors = {};  // colIndex -> activeMultiplier
+      this.unitFactors = {};   // colIndex -> activeMultiplier
       this.activeFilters = {}; // colIndex -> selectedFilterValue
       this.init();
     }
 
     init() {
-      // Build simple-datatables column definitions with custom numeric comparator
+      // Build simple-datatables column configuration (Native data-order sorting)
       const columnRules = this.config.map(col => {
         const rule = { select: col.index };
         if (col.sortable !== undefined) rule.sortable = col.sortable;
         else if (!this.globalSortable) rule.sortable = false;
-
-        if (col.type === "number") {
-          rule.sort = (a, b) => {
-            const valA = this.parseNumericValue(a);
-            const valB = this.parseNumericValue(b);
-            if (valA === null && valB === null) return 0;
-            if (valA === null) return 1;  // Null/Empty at the end
-            if (valB === null) return -1; // Null/Empty at the end
-            return valA - valB;
-          };
-        }
+        if (col.type) rule.type = col.type;
         return rule;
       });
 
@@ -52,7 +43,12 @@ local CLIENT_ASSETS_HTML = [=[
         sortable: true,
         perPage: parseInt(this.table.dataset.perPage || "15", 10),
         columns: columnRules.length > 0 ? columnRules : undefined,
-        labels: { placeholder: "Search table...", perPage: "entries per page", noRows: "No entries found", info: "Showing {start} to {end} of {rows} entries" }
+        labels: { 
+          placeholder: "Search table...", 
+          perPage: "entries per page", 
+          noRows: "No entries found", 
+          info: "Showing {start} to {end} of {rows} entries" 
+        }
       });
 
       this.dt.on("datatable.init", () => {
@@ -70,20 +66,6 @@ local CLIENT_ASSETS_HTML = [=[
       this.dt.on("datatable.perpage", syncUI);
     }
 
-    parseNumericValue(cell) {
-      if (cell === null || cell === undefined) return null;
-      let str = "";
-      if (typeof cell === "object") {
-        str = cell.order !== undefined ? String(cell.order) : (cell.data !== undefined ? String(cell.data) : "");
-      } else {
-        str = String(cell);
-      }
-      str = str.replace(/<[^>]*>/g, "").trim();
-      if (str === "") return null;
-      const num = Number(str);
-      return isNaN(num) ? null : num;
-    }
-
     buildHeaderControls() {
       this.config.forEach(col => {
         const th = this.table.querySelectorAll("thead th")[col.index];
@@ -92,7 +74,7 @@ local CLIENT_ASSETS_HTML = [=[
         const wrap = document.createElement("div");
         wrap.className = "dynamic-table-ctrl-wrap";
 
-        // Dropdown filter construction
+        // Multi-column dropdown filter construction
         if (col.dropdown) {
           const uniqueVals = this.getUniqueColumnValues(col.index);
           const select = this.createSelectElement(uniqueVals, "All");
@@ -113,6 +95,9 @@ local CLIENT_ASSETS_HTML = [=[
             if (factor !== undefined) {
               this.unitFactors[col.index] = factor;
               this.applyUnitConversions();
+              if (this.dt && typeof this.dt.update === "function") {
+                this.dt.update();
+              }
             }
           });
           wrap.appendChild(select);
@@ -199,7 +184,7 @@ local CLIENT_ASSETS_HTML = [=[
 ]=]
 
 -- -----------------------------------------------------------------------------
--- LUA UTILITIES & CSV PARSER
+-- LUA HELPERS & PARSERS
 -- -----------------------------------------------------------------------------
 
 local function trim(s) 
@@ -336,7 +321,9 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
                 local num = tonumber(cell_trimmed)
                 local display_txt = html_escape(cell_trimmed)
                 if num then
-                    table.insert(html, string.format('        <td data-order="%s" data-base-order="%s">%s</td>', tostring(num), tostring(num), display_txt))
+                    -- Output explicit float string into data-order for standard HTML5 sorting
+                    local order_val = string.format("%.14g", num)
+                    table.insert(html, string.format('        <td data-order="%s" data-base-order="%s">%s</td>', order_val, order_val, display_txt))
                 else
                     table.insert(html, string.format('        <td>%s</td>', display_txt))
                 end
@@ -345,7 +332,7 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         table.insert(html, '      </tr>')
     end
 
-    table.insert(html, '    </tbody>mtable</div>')
+    table.insert(html, '    </tbody></table></div>')
     return pandoc.RawBlock('html', table.concat(html, "\n"))
 end
 
