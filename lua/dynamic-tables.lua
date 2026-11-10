@@ -110,7 +110,37 @@ local function auto_detect_column_type(rows, col_index)
     return has_numeric and "number" or "string"
 end
 
--- AST text extraction preserving math nodes
+-- AST text extraction recursively preserving math & quoted nodes
+local function stringify_inline_with_math(inline)
+    if not inline then return "" end
+    
+    if inline.t == "Math" then
+        if inline.mathtype == "DisplayMath" or inline.mathtype == pandoc.DisplayMath then
+            return "\\[" .. inline.text .. "\\]"
+        else
+            return "\\(" .. inline.text .. "\\)"
+        end
+    elseif inline.t == "Quoted" then
+        local q_char = (inline.quotetype == "SingleQuote" or inline.quotetype == pandoc.SingleQuote) and "'" or '"'
+        local inner = {}
+        for _, child in ipairs(inline.content or inline.c or {}) do
+            table.insert(inner, stringify_inline_with_math(child))
+        end
+        return q_char .. table.concat(inner) .. q_char
+    elseif inline.c or inline.content then
+        local children = inline.content or inline.c
+        if type(children) == "table" then
+            local res = {}
+            for _, child in ipairs(children) do
+                table.insert(res, stringify_inline_with_math(child))
+            end
+            return table.concat(res)
+        end
+    end
+    
+    return pandoc.utils.stringify(inline)
+end
+
 local function extract_lines_from_div(el)
     local lines = {}
     for _, block in ipairs(el.content) do
@@ -121,10 +151,8 @@ local function extract_lines_from_div(el)
                     local l = trim(table.concat(current))
                     if l ~= "" then table.insert(lines, l) end
                     current = {}
-                elseif inline.t == "Math" then
-                    table.insert(current, "$" .. inline.text .. "$")
-                else 
-                    table.insert(current, pandoc.utils.stringify(inline)) 
+                else
+                    table.insert(current, stringify_inline_with_math(inline))
                 end
             end
             local final = trim(table.concat(current))
@@ -185,9 +213,13 @@ local function parse_column_rule(line)
         end
     end
 
-    -- Delimiter conversion: Convert $...$ to \(...\) ONLY if column is tagged with latex/latexnum
-    if (rule.latex or rule.latexnum) and rule.header then
-        rule.header = rule.header:gsub("%$([^%$]+)%$", "\\(%1\\)")
+    -- Fencing logic:
+    if rule.header then
+        if rule.latex or rule.latexnum then
+            rule.header = rule.header:gsub("%$([^%$]+)%$", "\\(%1\\)")
+        else
+            rule.header = rule.header:gsub("\\%((.-)\\%)", "$%1$")
+        end
     end
 
     return rule

@@ -45,20 +45,18 @@
 
 <script>
 
-// Scoped LaTeX re-typesetting helper for elements tagged with .tabulator-latex-col
+// Scoped LaTeX re-typesetting helper
 function retriggerMath(container) {
   if (!container) return;
 
   const doTypeset = () => {
-    const latexElements = Array.from(container.querySelectorAll(".tabulator-latex-col"));
-    if (latexElements.length === 0) return;
-
     if (window.MathJax && typeof window.MathJax.typesetPromise === "function") {
       if (typeof window.MathJax.typesetClear === "function") {
-        try { window.MathJax.typesetClear(latexElements); } catch(e) {}
+        try { window.MathJax.typesetClear([container]); } catch(e) {}
       }
-      window.MathJax.typesetPromise(latexElements).catch(err => console.error("MathJax error:", err));
+      window.MathJax.typesetPromise([container]).catch(err => console.error("MathJax error:", err));
     } else if (typeof renderMathInElement === "function") {
+      const latexElements = Array.from(container.querySelectorAll(".tabulator-latex-col"));
       latexElements.forEach(el => {
         renderMathInElement(el, {
           delimiters: [
@@ -179,7 +177,7 @@ const ColumnFeatures = {
       wrap.appendChild(label);
 
       const select = createSelectMenu(
-        colCfg.units,
+        colCfg.units, 
         (val) => {
           const factor = colCfg.map[val];
           if (factor !== undefined) {
