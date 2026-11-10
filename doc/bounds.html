@@ -193,7 +193,7 @@ window.Quarto = {
 <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
 
 <style>
-  .tabulator-container-wrap { margin: 1.5rem 0; font-size: 0.9em; }
+  .tabulator-container-wrap { margin: 1.5rem 0; font-size: 0.9em; width: 100%; }
   .tabulator { border: 1px solid #dee2e6; background-color: transparent !important; }
   
   /* Footer blending override */
@@ -202,14 +202,34 @@ window.Quarto = {
     border-top: 1px solid #dee2e6 !important; 
   }
   
-  /* Column title & unit dropdown styling */
+  /* Header Title Wrap */
   .tabulator-title-wrap { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+  
+  /* UNIFIED NATIVE DROPDOWN STYLING ACROSS ALL HEADER SELECTS */
+  .tabulator-header select,
+  .tabulator-header-filter select,
   .tabulator-unit-select {
+    display: block !important;
+    width: 100% !important;
     font-size: 0.75rem !important;
-    padding: 1px 1.5rem 1px 0.35rem !important; /* Space for dropdown arrow */
-    width: auto !important;
-    max-width: 100px;
+    padding: 0.2rem 1.4rem 0.2rem 0.4rem !important;
+    line-height: 1.2 !important;
+    color: #212529 !important;
+    background-color: #ffffff !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.35rem center !important;
+    background-size: 9px 9px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 0.2rem !important;
+    box-sizing: border-box !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    cursor: pointer !important;
   }
+
+  .tabulator-header-filter { margin-top: 4px !important; }
 </style>
 
 <script>
@@ -235,16 +255,12 @@ const ColumnFeatures = {
     };
   },
 
-  // Standard Native Dropdown Filter
+  // Native Standard Dropdown Filter
   dropdown: (colDef) => {
     colDef.headerFilter = "select";
     colDef.headerFilterParams = {
       valuesLookup: "all",
-      clearable: true,
-      elementAttributes: {
-        class: "form-select form-select-sm mt-1 py-0 px-2",
-        style: "font-size: 0.75rem;"
-      }
+      clearable: true
     };
   },
 
@@ -264,7 +280,7 @@ const ColumnFeatures = {
       wrap.appendChild(label);
 
       const select = document.createElement("select");
-      select.className = "form-select form-select-sm tabulator-unit-select mt-1";
+      select.className = "tabulator-unit-select mt-1";
       select.innerHTML = colCfg.units.map(u => `<option value="${u}">${u}</option>`).join("");
       select.addEventListener("click", e => e.stopPropagation());
       select.addEventListener("change", e => {
@@ -307,10 +323,16 @@ class TabulatorTableController {
       topBar.innerHTML = '<div></div>';
     }
 
+    // Scrollable wrapper container to keep all columns in 1 header row
+    const scrollWrap = document.createElement("div");
+    scrollWrap.style.overflowX = "auto";
+    scrollWrap.style.width = "100%";
+
     const tableDiv = document.createElement("div");
+    scrollWrap.appendChild(tableDiv);
 
     this.container.appendChild(topBar);
-    this.container.appendChild(tableDiv);
+    this.container.appendChild(scrollWrap);
 
     const columns = this.headers.map((h, idx) => {
       const colCfg = this.config.find(c => c.index === idx) || { index: idx };
@@ -332,12 +354,12 @@ class TabulatorTableController {
       return colDef;
     });
 
-    // Content-aware column sizing (fitDataFill preventing text truncation)
+    // Content-aware column sizing (fitData + responsiveLayout: false prevents header collapse)
     this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
-      layout: "fitDataFill",
-      responsiveLayout: "collapse",
+      layout: "fitData",
+      responsiveLayout: false,
       pagination: "local",
       paginationSize: this.perPage,
       paginationSizeSelector: [10, 15, 25, 50],
