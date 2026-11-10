@@ -167,18 +167,19 @@ const ColumnFeatures = {
     if (!colCfg.units || !colCfg.map) return;
     
     ctx.unitFactors[colCfg.index] = colCfg.map[colCfg.units[0]] || 1;
+    const isLatex = Boolean(colCfg.latex || colCfg.latexnum);
 
     colDef.titleFormatter = () => {
       const wrap = document.createElement("div");
       wrap.className = "tabulator-title-wrap";
 
       const label = document.createElement("span");
-      label.className = "fw-bold";
+      label.className = isLatex ? "fw-bold tabulator-latex-col tex2jax_process" : "fw-bold";
       label.textContent = colCfg.name || "";
       wrap.appendChild(label);
 
       const select = createSelectMenu(
-        colCfg.units, 
+        colCfg.units,
         (val) => {
           const factor = colCfg.map[val];
           if (factor !== undefined) {
