@@ -253,6 +253,9 @@ function retriggerMath(container) {
     if (latexElements.length === 0) return;
 
     if (window.MathJax && typeof window.MathJax.typesetPromise === "function") {
+      if (typeof window.MathJax.typesetClear === "function") {
+        window.MathJax.typesetClear(latexElements);
+      }
       window.MathJax.typesetPromise(latexElements).catch(err => console.error("MathJax error:", err));
     } else if (typeof renderMathInElement === "function") {
       latexElements.forEach(el => {
@@ -437,7 +440,7 @@ class TabulatorTableController {
 
       const colDef = {
         title: colCfg.name,
-        cssClass: isLatex ? "tabulator-latex-col" : "",
+        cssClass: isLatex ? "tabulator-latex-col tex2jax_process" : "",
         field: "col_" + idx,
         headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
         sorter: colCfg.type === "number" ? "number" : "string",
