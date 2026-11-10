@@ -8,7 +8,7 @@ local CLIENT_ASSETS_HTML = [[
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
 <style>
   table.dynamic-table-target th { vertical-align: top !important; }
-  .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; }
+  .dynamic-table-ctrl-wrap { display: block; margin-top: 4px; font-weight: normal; }
   .dynamic-table-ctrl-select {
     display: block; width: 100%; max-width: 120px; font-size: 0.8em;
     padding: 2px 4px; border-radius: 4px; border: 1px solid #ced4da; background: #fff; cursor: pointer;
@@ -25,8 +25,10 @@ local CLIENT_ASSETS_HTML = [[
 
       const globalSortable = table.dataset.sortable !== "false";
 
+      // Build column definitions with custom numeric comparator
       const columnRules = customColumns.map(col => {
         const rule = { select: col.index };
+        
         if (col.sortable !== undefined) {
           rule.sortable = col.sortable;
         } else if (!globalSortable) {
@@ -34,11 +36,33 @@ local CLIENT_ASSETS_HTML = [[
         }
 
         if (col.type === "number") {
-          rule.type = "number";
-          rule.numeric = true;
-        } else if (col.type) {
-          rule.type = col.type;
+          // Robust numeric comparator function handling scientific notation and empty cells
+          rule.sort = (a, b) => {
+            const extractVal = (cell) => {
+              if (cell === null || cell === undefined) return null;
+              let str = "";
+              if (typeof cell === "object") {
+                str = cell.order !== undefined ? String(cell.order) : (cell.data !== undefined ? String(cell.data) : "");
+              } else {
+                str = String(cell);
+              }
+              str = str.replace(/<[^>]*>/g, "").trim();
+              if (str === "") return null;
+              const num = Number(str);
+              return isNaN(num) ? null : num;
+            };
+
+            const valA = extractVal(a);
+            const valB = extractVal(b);
+
+            if (valA === null && valB === null) return 0;
+            if (valA === null) return 1;  // Place empty cells at the end
+            if (valB === null) return -1; // Place empty cells at the end
+
+            return valA - valB;
+          };
         }
+
         return rule;
       });
 
@@ -102,6 +126,7 @@ local CLIENT_ASSETS_HTML = [[
       });
     };
 
+    // Prevent dropdown interactions from triggering header column sorting
     wrap.addEventListener("click", (e) => e.stopPropagation());
     select.addEventListener("click", (e) => e.stopPropagation());
     select.addEventListener("change", applyFilter);
@@ -140,13 +165,9 @@ local CLIENT_ASSETS_HTML = [[
           }
         }
       });
-
-      // Synchronize changes with simple-datatables cache
-      if (dt && typeof dt.update === "function") {
-        dt.update();
-      }
     };
 
+    // Prevent unit dropdown interactions from triggering header column sorting
     wrap.addEventListener("click", (e) => e.stopPropagation());
     select.addEventListener("click", (e) => e.stopPropagation());
     select.addEventListener("change", applyConversion);
@@ -289,7 +310,6 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
                 local num = tonumber(cell_trimmed)
                 local display_txt = html_escape(cell_trimmed)
                 if num then
-                    -- Express numbers in float format for data-order
                     table.insert(html, string.format('        <td data-order="%s" data-base-order="%s">%s</td>', tostring(num), tostring(num), display_txt))
                 else
                     table.insert(html, string.format('        <td>%s</td>', display_txt))
