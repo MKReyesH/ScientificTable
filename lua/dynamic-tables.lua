@@ -110,8 +110,10 @@ local function auto_detect_column_type(rows, col_index)
     return has_numeric and "number" or "string"
 end
 
--- AST text extraction preserving Math elements ($...$)
+-- AST text extraction preserving Math elements ($...$) recursively
 local function stringify_inline_with_math(inline)
+    if not inline then return "" end
+    
     if inline.t == "Math" then
         if inline.mathtype == "DisplayMath" or inline.mathtype == pandoc.DisplayMath then
             return "$$" .. inline.text .. "$$"
@@ -122,9 +124,27 @@ local function stringify_inline_with_math(inline)
         return " "
     elseif inline.t == "SoftBreak" or inline.t == "LineBreak" then
         return "\n"
-    else
-        return pandoc.utils.stringify(inline)
+    elseif inline.t == "Str" then
+        return inline.text
+    elseif inline.t == "Quoted" then
+        local q_char = (inline.quotetype == "SingleQuote" or inline.quotetype == pandoc.SingleQuote) and "'" or '"'
+        local inner = {}
+        for _, child in ipairs(inline.content or {}) do
+            table.insert(inner, stringify_inline_with_math(child))
+        end
+        return q_char .. table.concat(inner) .. q_char
+    elseif inline.c or inline.content then
+        local children = inline.content or inline.c
+        if type(children) == "table" then
+            local res = {}
+            for _, child in ipairs(children) do
+                table.insert(res, stringify_inline_with_math(child))
+            end
+            return table.concat(res)
+        end
     end
+    
+    return pandoc.utils.stringify(inline)
 end
 
 local function extract_lines_from_div(el)
