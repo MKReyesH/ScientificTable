@@ -54,19 +54,25 @@
 
 <script>
 
-// Asynchronous MathJax / KaTeX re-typesetting helper
+// LaTeX re-typesetting helper for tabulator-latex-col
 function retriggerMath(container) {
   if (!container) return;
 
   const doTypeset = () => {
+    const latexElements = Array.from(container.querySelectorAll(".tabulator-latex-col"));
+    if (latexElements.length === 0) return;
+
     if (window.MathJax && window.MathJax.typesetPromise) {
-      window.MathJax.typesetPromise([container]).catch(err => console.error("MathJax error:", err));
+      window.MathJax.typesetPromise(latexElements).catch(err => console.error("MathJax error:", err));
     } else if (typeof renderMathInElement === "function") {
-      renderMathInElement(container, {
-        delimiters: [
-          { left: "$$", right: "$$", display: true },
-          { left: "$", right: "$", display: false }
-        ]
+      latexElements.forEach(el => {
+        renderMathInElement(el, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "$", right: "$", display: false }
+          ],
+          throwOnError: false
+        });
       });
     }
   };
@@ -226,9 +232,11 @@ class TabulatorTableController {
     const columns = this.headers.map((h, idx) => {
       const colCfg = this.config.find(c => c.index === idx) || { index: idx };
       colCfg.name = colCfg.header || h;
+      const isLatex = Boolean(colCfg.latex || colCfg.latexnum);
 
       const colDef = {
         title: colCfg.name,
+        cssClass: isLatex ? "tabulator-latex-col" : "",
         field: "col_" + idx,
         headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
         sorter: colCfg.type === "number" ? "number" : "string",
@@ -258,24 +266,6 @@ class TabulatorTableController {
 
     this.table.on("renderComplete", () => {
       retriggerMath(this.container);
-    });
-
-    this.table.on("renderComplete", () => {
-      requestAnimationFrame(() => {
-        const nodes = Array.from(this.container.querySelectorAll(".tabulator-latex-field"));
-        if (nodes.length === 0) return;
-
-        if (window.MathJax && window.MathJax.typesetPromise) {
-          window.MathJax.typesetPromise(nodes).catch(err => console.error(err));
-        } else if (typeof renderMathInElement === "function") {
-          renderMathInElement(this.container, {
-            delimiters: [
-              {left: "$$", right: "$$", display: true},
-              {left: "$", right: "$", display: false}
-            ]
-          });
-        }
-      });
     });
 
     if (this.searchable) {
