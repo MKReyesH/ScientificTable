@@ -1,20 +1,19 @@
 -- =============================================================================
 -- DYNAMIC CSV TABLE RENDERER & HYDRATOR (Pandoc Lua Filter)
--- Strategy A: Tabulator.js Integration (Scientific Notation & Dynamic Units)
+-- Strategy A: Tabulator.js + Native Bootstrap 5 Integration
 -- =============================================================================
 
 local has_dynamic_table = false
-local table_counter = 0
 
--- Use [=[ ... ]=] long bracket syntax to prevent JS brackets from terminating Lua strings
+-- Use [=[ ... ]=] long bracket syntax to prevent JS array indexing brackets from ending Lua string
 local CLIENT_ASSETS_HTML = [=[
 <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
 <style>
-  .tabulator-container-wrap { margin: 1.5rem 0; font-family: system-ui, -apple-system, sans-serif; }
-  .tabulator-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 8px; }
-  .tabulator-search-input { padding: 4px 8px; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.9em; width: 220px; }
-  .tabulator-title-wrap { display: flex; flex-direction: column; gap: 4px; }
-  .tabulator-unit-select { font-size: 0.8em; padding: 1px 4px; border-radius: 4px; border: 1px solid #ced4da; background: #fff; cursor: pointer; }
+  .tabulator-container-wrap { margin: 1.5rem 0; font-size: 0.9em; }
+  .tabulator-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 8px; }
+  .tabulator-search-input { width: 220px; }
+  .tabulator-title-wrap { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+  .tabulator-unit-select { font-size: 0.75rem !important; padding-top: 1px !important; padding-bottom: 1px !important; }
 </style>
 <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
 <script>
@@ -42,11 +41,11 @@ class TabulatorTableController {
       }
     });
 
-    // 2. Build HTML layout container
+    // 2. Build HTML layout container using Bootstrap classes
     const tableElId = "tabulator-table-" + Math.random().toString(36).substring(2, 9);
     this.container.innerHTML = `
       <div class="tabulator-top-bar">
-        ${this.searchable ? '<input type="text" class="tabulator-search-input" placeholder="Search table...">' : '<div></div>'}
+        ${this.searchable ? '<input type="text" class="form-control form-control-sm tabulator-search-input" placeholder="Search table...">' : '<div></div>'}
       </div>
       <div id="${tableElId}"></div>
     `;
@@ -62,19 +61,20 @@ class TabulatorTableController {
           titleWrap.className = "tabulator-title-wrap";
           
           const label = document.createElement("span");
+          label.className = "fw-bold";
           label.textContent = h;
           titleWrap.appendChild(label);
 
           if (colCfg.units && colCfg.map) {
             const select = document.createElement("select");
-            select.className = "tabulator-unit-select";
+            select.className = "form-select form-select-sm tabulator-unit-select mt-1";
             select.innerHTML = colCfg.units.map(u => `<option value="${u}">${u}</option>`).join("");
             select.addEventListener("click", e => e.stopPropagation());
             select.addEventListener("change", e => {
               const factor = colCfg.map[e.target.value];
               if (factor !== undefined) {
                 this.unitFactors[idx] = factor;
-                this.table.redraw(true); // Re-apply visual formatters across cells
+                this.table.redraw(true); // Re-evaluate formatters without disturbing sort
               }
             });
             titleWrap.appendChild(select);
@@ -83,13 +83,14 @@ class TabulatorTableController {
         },
         field: "col_" + idx,
         headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
+        // SYMMETRY FIX: Apply alignEmptyValues: "bottom" to ALL columns (numeric & string)
+        sorter: isNum ? "number" : "string",
+        sorterParams: { alignEmptyValues: "bottom" },
         headerHozAlign: "left"
       };
 
-      // Scientific Number Sorter & Dynamic Unit Formatter
+      // Scientific Formatting for numeric/unit columns
       if (isNum) {
-        colDef.sorter = "number";
-        colDef.sorterParams = { alignEmptyValues: "bottom" };
         colDef.formatter = (cell) => {
           const val = cell.getValue();
           if (val === null || val === undefined || val === "") return "";
@@ -106,12 +107,16 @@ class TabulatorTableController {
         };
       }
 
-      // Native Multi-Column Dropdown Filter
+      // Native Multi-Column Dropdown Filter with Bootstrap styling
       if (colCfg.dropdown) {
         colDef.headerFilter = "list";
         colDef.headerFilterParams = {
           valuesLookup: "all",
-          clearable: true
+          clearable: true,
+          elementAttributes: {
+            class: "form-select form-select-sm mt-1 py-0 px-2",
+            style: "font-size: 0.75rem;"
+          }
         };
       }
 
