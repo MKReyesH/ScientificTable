@@ -430,7 +430,7 @@ const ColumnFeatures = {
           const factor = colCfg.map[val];
           if (factor !== undefined) {
             ctx.unitFactors[colCfg.index] = factor;
-            ctx.table.redraw(true); // Re-evaluates formatters -> synchronous SVG pass
+            ctx.table.redraw(false);
           }
         }, 
         colCfg.units[0]
@@ -516,7 +516,6 @@ class TabulatorTableController {
       movableColumns: false
     });
 
-    // Single reactive hook fallback
     this.table.on("renderComplete", () => {
       retriggerMath(this.container);
     });
@@ -544,14 +543,21 @@ class TabulatorTableController {
 
 }
 
-// Global initialization
 function initDynamicTables() {
-  document.querySelectorAll(".tabulator-container-wrap").forEach(el => {
-    if (!el.dataset.initialized) {
-      el.dataset.initialized = "true";
-      new TabulatorTableController(el);
-    }
-  });
+  const doInit = () => {
+    document.querySelectorAll(".tabulator-container-wrap").forEach(el => {
+      if (!el.dataset.initialized) {
+        el.dataset.initialized = "true";
+        new TabulatorTableController(el);
+      }
+    });
+  };
+
+  if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+    window.MathJax.startup.promise.then(doInit).catch(doInit);
+  } else {
+    doInit();
+  }
 }
 
 if (document.readyState === "loading") {
