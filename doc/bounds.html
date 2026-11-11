@@ -194,30 +194,58 @@ window.Quarto = {
 
 <!-- Custom styles -->
 <style>
-  .tabulator-container-wrap { margin: 1.5rem 0; font-size: 0.9em; width: 100%; }
-  .tabulator { border: 1px solid #dee2e6; background-color: transparent !important; width: 100% !important; }
-  .tabulator-footer { background-color: transparent !important; border-top: 1px solid #dee2e6 !important; }
+  .tabulator-container-wrap { 
+    margin: 1.5rem 0; 
+    font-size: 0.9em; 
+    width: 100%; 
+  }
 
-  /* Header & filter styling */
-  .tabulator-col, .tabulator-col-content { overflow: visible !important; }
-  .tabulator-header .tabulator-col-title-holder { align-items: flex-start !important; }
-  .tabulator-header .tabulator-col-sorter { align-self: flex-start !important; margin-top: 2px !important; }
-  .tabulator-title-wrap { display: flex; flex-direction: column; gap: 4px; width: 100%; }
-  .tabulator-header-filter { margin-top: 4px !important; }
+  .tabulator { 
+    border: 1px solid #dee2e6; 
+    background-color: transparent !important; 
+    width: 100% !important; 
+  }
+  
+  .tabulator-footer { 
+    background-color: transparent !important; 
+    border-top: 1px solid #dee2e6 !important; 
+  }
 
-  /* Align MathJax inline math cleanly without breaking vertical alignment */
-  .tabulator-latex-col mjx-container { 
+  /* Header & filter layout */
+  .tabulator-col, .tabulator-col-content { 
+    overflow: visible !important; 
+  }
+  .tabulator-header .tabulator-col-title-holder { 
+    align-items: flex-start !important; 
+  }
+  .tabulator-header .tabulator-col-sorter { 
+    align-self: flex-start !important; 
+    margin-top: 2px !important; 
+  }
+  .tabulator-title-wrap { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4px; 
+    width: 100%; 
+  }
+  .tabulator-header-filter { 
+    margin-top: 4px !important; 
+  }
+
+  .tabulator-cell mjx-container,
+  .tabulator-col-content mjx-container { 
     margin: 0 !important; 
-    display: inline-block !important; 
+    display: inline-flex !important; 
     vertical-align: middle !important; 
   }
 
-  /* Unified dropdown styling */
+  /* Dropdown controls*/
   .tabulator-header select,
   .tabulator-header-filter select,
   .tabulator-unified-select {
     display: block !important;
     width: 100% !important;
+    min-width: 90px !important;
     font-size: 0.75rem !important;
     padding: 0.2rem 1.4rem 0.2rem 0.4rem !important;
     line-height: 1.2 !important;
@@ -294,7 +322,6 @@ function retriggerMath(container) {
 function createSelectMenu(options, onChange, selectedValue = "") {
   const select = document.createElement("select");
   select.className = "form-select form-select-sm tabulator-unified-select";
-  select.style.fontSize = "0.75rem";
 
   options.forEach(opt => {
     const optionEl = document.createElement("option");
@@ -462,7 +489,7 @@ class TabulatorTableController {
     this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
-      layout: "fitColumns",
+      layout: "fitDataFill",
       responsiveLayout: false,
       pagination: "local",
       paginationSize: this.perPage,
