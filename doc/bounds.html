@@ -232,6 +232,7 @@ window.Quarto = {
     margin-top: 4px !important; 
   }
 
+  /* Natural inline MathJax SVG alignment */
   .tabulator-cell mjx-container,
   .tabulator-col-content mjx-container { 
     margin: 0 !important; 
@@ -239,13 +240,13 @@ window.Quarto = {
     vertical-align: middle !important; 
   }
 
-  /* Dropdown controls*/
+  /* Native select styling: uses intrinsic option width calculation without hardcoded pixels */
   .tabulator-header select,
   .tabulator-header-filter select,
   .tabulator-unified-select {
     display: block !important;
-    width: 100% !important;
-    min-width: 90px !important;
+    width: auto !important;
+    max-width: 100% !important;
     font-size: 0.75rem !important;
     padding: 0.2rem 1.4rem 0.2rem 0.4rem !important;
     line-height: 1.2 !important;
@@ -274,7 +275,22 @@ window.Quarto = {
 
 <script>
 
-// Scoped LaTeX re-typesetting helper
+// Synchronous TeX-to-SVG renderer helper
+function renderTexToSvg(texStr, display = false) {
+  if (!texStr) return "";
+  if (window.MathJax && typeof window.MathJax.tex2svg === "function") {
+    try {
+      const container = window.MathJax.tex2svg(texStr, { display: display });
+      const mjx = container.querySelector("mjx-container") || container;
+      return mjx.outerHTML;
+    } catch(e) {
+      return `\\(${texStr}\\)`;
+    }
+  }
+  return `\\(${texStr}\\)`;
+}
+
+// Fallback async typesetter for late-loading MathJax scripts
 function retriggerMath(container) {
   if (!container) return;
 
@@ -304,17 +320,6 @@ function retriggerMath(container) {
     doTypeset();
   } else if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
     window.MathJax.startup.promise.then(doTypeset);
-  } else {
-    let attempts = 0;
-    const interval = setInterval(() => {
-      attempts++;
-      if ((window.MathJax && typeof window.MathJax.typesetPromise === "function") || typeof renderMathInElement === "function") {
-        clearInterval(interval);
-        doTypeset();
-      } else if (attempts > 60) {
-        clearInterval(interval);
-      }
-    }, 50);
   }
 }
 
@@ -359,18 +364,20 @@ const ColumnFeatures = {
     };
   },
 
-  // Scientific notation formatted into LaTeX math strings using \( ... \) delimiters
+  // Scientific notation formatted synchronously into rendered MathJax SVG elements
   latexnum: (colDef, colCfg, ctx) => {
     ColumnFeatures.number(colDef, colCfg, ctx);
     const baseFormatter = colDef.formatter;
     colDef.formatter = (cell) => {
       const formattedVal = baseFormatter(cell);
       if (!formattedVal || isNaN(Number(cell.getValue()))) return formattedVal;
+      
+      let texStr = formattedVal;
       if (formattedVal.includes("e")) {
         const [mantissa, exponent] = formattedVal.split("e");
-        return `\\(${mantissa} \\times 10^{${parseInt(exponent, 10)}}\\)`;
+        texStr = `${mantissa} \\times 10^{${parseInt(exponent, 10)}}`;
       }
-      return `\\(${formattedVal}\\)`;
+      return renderTexToSvg(texStr, false);
     };
   },
 
@@ -402,7 +409,19 @@ const ColumnFeatures = {
 
       const label = document.createElement("span");
       label.className = isLatex ? "fw-bold tabulator-latex-col tex2jax_process" : "fw-bold";
-      label.textContent = colCfg.name || "";
+      
+      // Synchronously render LaTeX title if MathJax is available
+      const cleanTitle = (colCfg.name || "").replace(/^\\\(|^\\\[|^\$|\$\$$|\\\)$|\\\]$/g, "");
+      if (isLatex && window.MathJax && typeof window.MathJax.tex2svg === "function") {
+        try {
+          const svgContainer = window.MathJax.tex2svg(cleanTitle, { display: false });
+          label.appendChild(svgContainer);
+        } catch(e) {
+          label.textContent = colCfg.name || "";
+        }
+      } else {
+        label.textContent = colCfg.name || "";
+      }
       wrap.appendChild(label);
 
       const select = createSelectMenu(
@@ -411,7 +430,7 @@ const ColumnFeatures = {
           const factor = colCfg.map[val];
           if (factor !== undefined) {
             ctx.unitFactors[colCfg.index] = factor;
-            ctx.table.redraw(true);
+            ctx.table.redraw(true); // Re-evaluates formatters -> synchronous SVG pass
           }
         }, 
         colCfg.units[0]
@@ -497,6 +516,7 @@ class TabulatorTableController {
       movableColumns: false
     });
 
+    // Single reactive hook fallback
     this.table.on("renderComplete", () => {
       retriggerMath(this.container);
     });
