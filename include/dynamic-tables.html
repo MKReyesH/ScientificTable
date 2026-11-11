@@ -4,23 +4,37 @@
 
 <!-- Custom styles -->
 <style>
-  .tabulator-container-wrap { 
-    margin: 1.5rem 0; 
-    font-size: 0.9em; 
-    width: 100%; 
-    opacity: 0; 
-    transition: opacity 0.2s ease-in-out; 
-  }
-  .tabulator-container-wrap.is-ready { 
-    opacity: 1; 
-  }
+  .tabulator-container-wrap { margin: 1.5rem 0; font-size: 0.9em; width: 100%; }
   .tabulator { border: 1px solid #dee2e6; background-color: transparent !important; width: 100% !important; }
   .tabulator-footer { background-color: transparent !important; border-top: 1px solid #dee2e6 !important; }
+
   .tabulator-col, .tabulator-col-content { overflow: visible !important; }
   .tabulator-header .tabulator-col-title-holder { align-items: flex-start !important; }
   .tabulator-header .tabulator-col-sorter { align-self: flex-start !important; margin-top: 2px !important; }
   .tabulator-title-wrap { display: flex; flex-direction: column; gap: 4px; width: 100%; }
   .tabulator-header-filter { margin-top: 4px !important; }
+
+  .tabulator-cell { 
+    display: flex !important; 
+    align-items: center !important; 
+    min-height: 40px !important; 
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+  .tabulator-col-content { 
+    min-height: 48px !important; 
+    display: flex !important; 
+    flex-direction: column !important; 
+    justify-content: center !important; 
+  }
+  .tabulator-latex-col mjx-container { 
+    margin: 0 !important; 
+    display: inline-flex !important; 
+    align-items: center !important; 
+    vertical-align: middle !important; 
+  }
+
+  /* Dropdown controls */
   .tabulator-header select,
   .tabulator-header-filter select,
   .tabulator-unified-select {
@@ -55,7 +69,7 @@
 <script>
 
 // Scoped LaTeX re-typesetting helper
-function retriggerMath(container, onComplete) {
+function retriggerMath(container) {
   if (!container) return;
 
   const doTypeset = () => {
@@ -63,12 +77,7 @@ function retriggerMath(container, onComplete) {
       if (typeof window.MathJax.typesetClear === "function") {
         try { window.MathJax.typesetClear([container]); } catch(e) {}
       }
-      window.MathJax.typesetPromise([container])
-        .then(() => { if (typeof onComplete === "function") onComplete(); })
-        .catch(err => {
-          console.error("MathJax error:", err);
-          if (typeof onComplete === "function") onComplete();
-        });
+      window.MathJax.typesetPromise([container]).catch(err => console.error("MathJax error:", err));
     } else if (typeof renderMathInElement === "function") {
       const latexElements = Array.from(container.querySelectorAll(".tabulator-latex-col"));
       latexElements.forEach(el => {
@@ -81,9 +90,6 @@ function retriggerMath(container, onComplete) {
           throwOnError: false
         });
       });
-      if (typeof onComplete === "function") onComplete();
-    } else {
-      if (typeof onComplete === "function") onComplete();
     }
   };
 
@@ -100,7 +106,6 @@ function retriggerMath(container, onComplete) {
         doTypeset();
       } else if (attempts > 60) {
         clearInterval(interval);
-        if (typeof onComplete === "function") onComplete();
       }
     }, 50);
   }
@@ -200,7 +205,7 @@ const ColumnFeatures = {
           const factor = colCfg.map[val];
           if (factor !== undefined) {
             ctx.unitFactors[colCfg.index] = factor;
-            ctx.table.redraw(true);
+            ctx.table.redraw(true); // Re-evaluates formatters -> single MathJax pass
           }
         }, 
         colCfg.units[0]
@@ -227,7 +232,6 @@ class TabulatorTableController {
     
     this.unitFactors = {};
     this.table = null;
-    this.isAdjustingLayout = false;
     this.init();
   }
 
@@ -258,6 +262,15 @@ class TabulatorTableController {
       colCfg.name = colCfg.header || h;
       const isLatex = Boolean(colCfg.latex || colCfg.latexnum);
 
+      let minWidth = 55;
+      if (colCfg.units) {
+        minWidth = 135;
+      } else if (colCfg.dropdown) {
+        minWidth = 115;
+      } else if (isLatex) {
+        minWidth = 95;
+      }
+
       const colDef = {
         title: colCfg.name,
         cssClass: isLatex ? "tabulator-latex-col tex2jax_process" : "",
@@ -266,7 +279,7 @@ class TabulatorTableController {
         sorter: colCfg.type === "number" ? "number" : "string",
         sorterParams: { alignEmptyValues: "bottom" },
         headerHozAlign: "left",
-        minWidth: (colCfg.dropdown || colCfg.units) ? 115 : 55
+        minWidth: minWidth
       };
 
       if (colCfg.type === "number" && !colCfg.latexnum) ColumnFeatures.number(colDef, colCfg, this);
@@ -289,14 +302,7 @@ class TabulatorTableController {
     });
 
     this.table.on("renderComplete", () => {
-      if (this.isAdjustingLayout) return;
-
-      retriggerMath(this.container, () => {
-        this.isAdjustingLayout = true;
-        this.table.redraw(false);
-        this.isAdjustingLayout = false;
-        this.container.classList.add("is-ready");
-      });
+      retriggerMath(this.container);
     });
 
     if (this.searchable) {
