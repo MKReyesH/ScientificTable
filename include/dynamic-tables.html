@@ -8,12 +8,14 @@
   .tabulator { border: 1px solid #dee2e6; background-color: transparent !important; width: 100% !important; }
   .tabulator-footer { background-color: transparent !important; border-top: 1px solid #dee2e6 !important; }
 
+  /* Header & filter styling */
   .tabulator-col, .tabulator-col-content { overflow: visible !important; }
   .tabulator-header .tabulator-col-title-holder { align-items: flex-start !important; }
   .tabulator-header .tabulator-col-sorter { align-self: flex-start !important; margin-top: 2px !important; }
   .tabulator-title-wrap { display: flex; flex-direction: column; gap: 4px; width: 100%; }
   .tabulator-header-filter { margin-top: 4px !important; }
 
+  /* Align MathJax inline math cleanly without breaking vertical alignment */
   .tabulator-latex-col mjx-container { 
     margin: 0 !important; 
     display: inline-block !important; 
@@ -58,15 +60,16 @@
 function retriggerMath(container) {
   if (!container) return;
 
+  const targets = Array.from(container.querySelectorAll(".tabulator-latex-col"))
+    .filter(el => !el.querySelector("mjx-container, .katex") && (el.textContent.includes("\\(") || el.textContent.includes("$")));
+
+  if (targets.length === 0) return;
+
   const doTypeset = () => {
     if (window.MathJax && typeof window.MathJax.typesetPromise === "function") {
-      if (typeof window.MathJax.typesetClear === "function") {
-        try { window.MathJax.typesetClear([container]); } catch(e) {}
-      }
-      window.MathJax.typesetPromise([container]).catch(err => console.error("MathJax error:", err));
+      window.MathJax.typesetPromise(targets).catch(err => console.error("MathJax error:", err));
     } else if (typeof renderMathInElement === "function") {
-      const latexElements = Array.from(container.querySelectorAll(".tabulator-latex-col"));
-      latexElements.forEach(el => {
+      targets.forEach(el => {
         renderMathInElement(el, {
           delimiters: [
             { left: "$$", right: "$$", display: true },
@@ -191,7 +194,7 @@ const ColumnFeatures = {
           const factor = colCfg.map[val];
           if (factor !== undefined) {
             ctx.unitFactors[colCfg.index] = factor;
-            ctx.table.redraw(true); // Re-evaluates formatters -> single MathJax pass
+            ctx.table.redraw(true);
           }
         }, 
         colCfg.units[0]
