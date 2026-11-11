@@ -14,27 +14,13 @@
   .tabulator-title-wrap { display: flex; flex-direction: column; gap: 4px; width: 100%; }
   .tabulator-header-filter { margin-top: 4px !important; }
 
-  .tabulator-cell { 
-    display: flex !important; 
-    align-items: center !important; 
-    min-height: 40px !important; 
-    box-sizing: border-box !important;
-    overflow: hidden !important;
-  }
-  .tabulator-col-content { 
-    min-height: 48px !important; 
-    display: flex !important; 
-    flex-direction: column !important; 
-    justify-content: center !important; 
-  }
   .tabulator-latex-col mjx-container { 
     margin: 0 !important; 
-    display: inline-flex !important; 
-    align-items: center !important; 
+    display: inline-block !important; 
     vertical-align: middle !important; 
   }
 
-  /* Dropdown controls */
+  /* Unified dropdown styling */
   .tabulator-header select,
   .tabulator-header-filter select,
   .tabulator-unified-select {
@@ -262,15 +248,6 @@ class TabulatorTableController {
       colCfg.name = colCfg.header || h;
       const isLatex = Boolean(colCfg.latex || colCfg.latexnum);
 
-      let minWidth = 55;
-      if (colCfg.units) {
-        minWidth = 135;
-      } else if (colCfg.dropdown) {
-        minWidth = 115;
-      } else if (isLatex) {
-        minWidth = 95;
-      }
-
       const colDef = {
         title: colCfg.name,
         cssClass: isLatex ? "tabulator-latex-col tex2jax_process" : "",
@@ -278,8 +255,7 @@ class TabulatorTableController {
         headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
         sorter: colCfg.type === "number" ? "number" : "string",
         sorterParams: { alignEmptyValues: "bottom" },
-        headerHozAlign: "left",
-        minWidth: minWidth
+        headerHozAlign: "left"
       };
 
       if (colCfg.type === "number" && !colCfg.latexnum) ColumnFeatures.number(colDef, colCfg, this);
@@ -293,7 +269,7 @@ class TabulatorTableController {
     this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
-      layout: "fitDataFill",
+      layout: "fitColumns",
       responsiveLayout: false,
       pagination: "local",
       paginationSize: this.perPage,
