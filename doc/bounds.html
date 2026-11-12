@@ -289,8 +289,16 @@ window.Quarto = {
   }
   .dynamic-table-refs .csl-entry {
     margin-bottom: 0.45rem;
-    padding-left: 1.5em;
+    padding: 0.25rem 0.5rem 0.25rem 2em;
     text-indent: -1.5em;
+    border-radius: 0.25rem;
+    background-color: transparent;
+    transition: background-color 1.2s ease-out;
+  }
+  .dynamic-table-refs .csl-entry.is-highlighted {
+    background-color: var(--bs-tertiary-bg, rgba(128, 128, 128, 0.12));
+    background-color: color-mix(in srgb, var(--bs-link-color, currentColor) 14%, transparent);
+    transition: none;
   }
 </style>
 
@@ -421,6 +429,21 @@ function parseCitationKeys(raw) {
     .filter(Boolean);
 }
 
+// Temporary highlight for selected reference entries
+const highlightTimers = new WeakMap();
+
+function highlightReference(entryEl) {
+  if (!entryEl) return;
+  clearTimeout(highlightTimers.get(entryEl));
+  entryEl.classList.remove("is-highlighted");
+  void entryEl.offsetWidth;
+  entryEl.classList.add("is-highlighted");
+
+  highlightTimers.set(entryEl, setTimeout(() => {
+    entryEl.classList.remove("is-highlighted");
+  }, 1600));
+}
+
 // Select dropdown factory
 function createSelectMenu(options, onChange, selectedValue = "") {
   const select = document.createElement("select");
@@ -468,9 +491,11 @@ const ColumnFeatures = {
         if (idx > 0) frag.appendChild(document.createTextNode(", "));
         const targetId = ctx.refTargetIds.get(key);
         if (targetId) {
+          const label = ctx.refLabels.get(key);
           const link = document.createElement("a");
           link.href = `#${targetId}`;
-          link.textContent = key;
+          link.textContent = label ? `${label} ${key}` : key;
+          link.addEventListener("click", () => highlightReference(ctx.refEntries.get(key)));
           frag.appendChild(link);
         } else {
           frag.appendChild(document.createTextNode(key));
@@ -556,6 +581,7 @@ class TabulatorTableController {
       : null;
     this.refEntries = new Map();
     this.refTargetIds = new Map();
+    this.refLabels = new Map();
     this.rowKeysCache = new WeakMap();
 
     this.table = null;
@@ -604,6 +630,9 @@ class TabulatorTableController {
     allKeys.forEach(key => {
       const sourceEl = document.getElementById(`ref-${key}`);
       if (!sourceEl) return;
+
+      const labelText = sourceEl.querySelector(".csl-left-margin")?.textContent.trim() || "";
+      if (labelText) this.refLabels.set(key, labelText);
 
       let entryEl;
       if (sourceEl.closest(".dynamic-table-refs")) {
@@ -781,32 +810,32 @@ if (document.readyState === "loading") {
 
 
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body" role="list">
-<div id="ref-Cao:2021tat" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[1] </div><div class="csl-right-inline"><span class="nocase">Cao Z et al</span> 2022 <a href="https://doi.org/10.1103/PhysRevLett.128.051102"><span class="nocase">Exploring Lorentz Invariance Violation from Ultrahigh-Energy <span><span class="math inline">\(\gamma\)</span></span> Rays Observed by LHAASO</span></a> <em>Phys. Rev. Lett.</em> <strong>128</strong> 051102</div>
-</div>
-<div id="ref-KM3NeT:2025mfl" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[2] </div><div class="csl-right-inline"><span class="nocase">Adriani O et al</span> 2025 <a href="https://doi.org/10.1038/s42005-025-02347-z"><span class="nocase">KM3NeT constraint on Lorentz-violating superluminal neutrino velocity</span></a> <em>Commun. Phys.</em> <strong>8</strong> 457</div>
-</div>
 <div id="ref-Gotz:2014vza" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[3] </div><div class="csl-right-inline">Gotz D, Laurent P, Antier S, Covino S, D’Avanzo P, D’Elia V and Melandri A 2014 <a href="https://doi.org/10.1093/mnras/stu1634"><span class="nocase">GRB 140206A: the most distant polarized Gamma-Ray Burst</span></a> <em>Mon. Not. Roy. Astron. Soc.</em> <strong>444</strong> 2776–82</div>
-</div>
-<div id="ref-Wei:2016ygk" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[4] </div><div class="csl-right-inline">Wei J-J, Wu X-F, Gao H and Mészáros P 2016 <a href="https://doi.org/10.1088/1475-7516/2016/08/031"><span class="nocase">Limits on the Neutrino Velocity, Lorentz Invariance, and the Weak Equivalence Principle with TeV Neutrinos from Gamma-Ray Bursts</span></a> <em>JCAP</em> <strong>08</strong> 031</div>
+<div class="csl-left-margin">[1] </div><div class="csl-right-inline">Gotz D, Laurent P, Antier S, Covino S, D’Avanzo P, D’Elia V and Melandri A 2014 <a href="https://doi.org/10.1093/mnras/stu1634"><span class="nocase">GRB 140206A: the most distant polarized Gamma-Ray Burst</span></a> <em>Mon. Not. Roy. Astron. Soc.</em> <strong>444</strong> 2776–82</div>
 </div>
 <div id="ref-LHAASO:2024lub" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[5] </div><div class="csl-right-inline"><span class="nocase">Cao Z et al</span> 2024 <a href="https://doi.org/10.1103/PhysRevLett.133.071501"><span class="nocase">Stringent Tests of Lorentz Invariance Violation from LHAASO Observations of GRB 221009A</span></a> <em>Phys. Rev. Lett.</em> <strong>133</strong> 071501</div>
-</div>
-<div id="ref-Lang:2018yog" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[6] </div><div class="csl-right-inline">Lang R G, Martı́nez-Huerta H and Souza V de 2019 <a href="https://doi.org/10.1103/PhysRevD.99.043015"><span class="nocase">Improved limits on Lorentz invariance violation from astrophysical gamma-ray sources</span></a> <em>Phys. Rev. D</em> <strong>99</strong> 043015</div>
-</div>
-<div id="ref-Rubtsov:2016bea" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[7] </div><div class="csl-right-inline">Rubtsov G, Satunin P and Sibiryakov S 2017 <a href="https://doi.org/10.1088/1475-7516/2017/05/049"><span class="nocase">Constraints on violation of Lorentz invariance from atmospheric showers initiated by multi-TeV photons</span></a> <em>JCAP</em> <strong>05</strong> 049</div>
+<div class="csl-left-margin">[2] </div><div class="csl-right-inline"><span class="nocase">Cao Z et al</span> 2024 <a href="https://doi.org/10.1103/PhysRevLett.133.071501"><span class="nocase">Stringent Tests of Lorentz Invariance Violation from LHAASO Observations of GRB 221009A</span></a> <em>Phys. Rev. Lett.</em> <strong>133</strong> 071501</div>
 </div>
 <div id="ref-Chen:2021hen" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[8] </div><div class="csl-right-inline">Chen L, Xiong Z, Li C, Chen S and He H 2021 <a href="https://doi.org/10.1088/1674-1137/ac1166"><span class="nocase">Strong constraints on Lorentz violation using new <span><span class="math inline">\(\gamma\)</span></span>-ray observations around PeV</span></a> <em>Chin. Phys. C</em> <strong>45</strong> 105105</div>
+<div class="csl-left-margin">[3] </div><div class="csl-right-inline">Chen L, Xiong Z, Li C, Chen S and He H 2021 <a href="https://doi.org/10.1088/1674-1137/ac1166"><span class="nocase">Strong constraints on Lorentz violation using new <span><span class="math inline">\(\gamma\)</span></span>-ray observations around PeV</span></a> <em>Chin. Phys. C</em> <strong>45</strong> 105105</div>
+</div>
+<div id="ref-Cao:2021tat" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[4] </div><div class="csl-right-inline"><span class="nocase">Cao Z et al</span> 2022 <a href="https://doi.org/10.1103/PhysRevLett.128.051102"><span class="nocase">Exploring Lorentz Invariance Violation from Ultrahigh-Energy <span><span class="math inline">\(\gamma\)</span></span> Rays Observed by LHAASO</span></a> <em>Phys. Rev. Lett.</em> <strong>128</strong> 051102</div>
+</div>
+<div id="ref-Lang:2018yog" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[5] </div><div class="csl-right-inline">Lang R G, Martı́nez-Huerta H and Souza V de 2019 <a href="https://doi.org/10.1103/PhysRevD.99.043015"><span class="nocase">Improved limits on Lorentz invariance violation from astrophysical gamma-ray sources</span></a> <em>Phys. Rev. D</em> <strong>99</strong> 043015</div>
+</div>
+<div id="ref-Rubtsov:2016bea" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[6] </div><div class="csl-right-inline">Rubtsov G, Satunin P and Sibiryakov S 2017 <a href="https://doi.org/10.1088/1475-7516/2017/05/049"><span class="nocase">Constraints on violation of Lorentz invariance from atmospheric showers initiated by multi-TeV photons</span></a> <em>JCAP</em> <strong>05</strong> 049</div>
 </div>
 <div id="ref-Maccione:2011fr" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[9] </div><div class="csl-right-inline">Maccione L, Liberati S and Mattingly D M 2013 <a href="https://doi.org/10.1088/1475-7516/2013/03/039"><span class="nocase">Violations of Lorentz invariance in the neutrino sector after OPERA</span></a> <em>JCAP</em> <strong>03</strong> 039</div>
+<div class="csl-left-margin">[7] </div><div class="csl-right-inline">Maccione L, Liberati S and Mattingly D M 2013 <a href="https://doi.org/10.1088/1475-7516/2013/03/039"><span class="nocase">Violations of Lorentz invariance in the neutrino sector after OPERA</span></a> <em>JCAP</em> <strong>03</strong> 039</div>
+</div>
+<div id="ref-Wei:2016ygk" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[8] </div><div class="csl-right-inline">Wei J-J, Wu X-F, Gao H and Mészáros P 2016 <a href="https://doi.org/10.1088/1475-7516/2016/08/031"><span class="nocase">Limits on the Neutrino Velocity, Lorentz Invariance, and the Weak Equivalence Principle with TeV Neutrinos from Gamma-Ray Bursts</span></a> <em>JCAP</em> <strong>08</strong> 031</div>
+</div>
+<div id="ref-KM3NeT:2025mfl" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[9] </div><div class="csl-right-inline"><span class="nocase">Adriani O et al</span> 2025 <a href="https://doi.org/10.1038/s42005-025-02347-z"><span class="nocase">KM3NeT constraint on Lorentz-violating superluminal neutrino velocity</span></a> <em>Commun. Phys.</em> <strong>8</strong> 457</div>
 </div>
 <div id="ref-Satunin:2025uui" class="csl-entry" role="listitem">
 <div class="csl-left-margin">[10] </div><div class="csl-right-inline">Satunin P 2025 <a href="https://doi.org/10.1140/epjc/s10052-025-14240-8"><span class="nocase">Ultra-high-energy event KM3-230213A constraints on Lorentz Invariance Violation in neutrino sector</span></a> <em>Eur. Phys. J. C</em> <strong>85</strong> 545</div>
