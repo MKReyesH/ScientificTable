@@ -19,7 +19,6 @@
     border-top: 1px solid #dee2e6 !important;
   }
 
-  /* Header & filter layout */
   .tabulator-col, .tabulator-col-content {
     overflow: visible !important;
   }
@@ -39,12 +38,10 @@
     margin-top: 4px !important;
   }
 
-  /* Prevent MathJax containers from adding vertical margins inside cells */
   .tabulator mjx-container {
     margin: 0 !important;
   }
 
-  /* Native select sizing so dropdowns adapt naturally to their option labels */
   .tabulator-unified-select {
     display: block !important;
     width: auto !important;
@@ -75,6 +72,7 @@
 const MathRenderer = {
   cache: new Map(),
   readyPromise: null,
+  queue: Promise.resolve(),
 
   waitForEngine() {
     if (this.readyPromise) return this.readyPromise;
@@ -86,8 +84,7 @@ const MathRenderer = {
     );
 
     if (!hasMathScript) {
-      this.readyPromise = Promise.resolve("none");
-      return this.readyPromise;
+      return (this.readyPromise = Promise.resolve("none"));
     }
 
     this.readyPromise = new Promise((resolve) => {
@@ -111,9 +108,14 @@ const MathRenderer = {
     return this.readyPromise;
   },
 
-  async prepare(strings) {
-    const unique = [...new Set(strings.filter(s => s !== null && s !== undefined && s !== "").map(String))];
-    const uncached = unique.filter(s => !this.cache.has(s));
+  prepare(strings) {
+    this.queue = this.queue.then(() => this._renderBatch(strings));
+    return this.queue;
+  },
+
+  async _renderBatch(strings) {
+    const uncached = [...new Set(strings.filter(s => s !== null && s !== undefined && s !== "").map(String))]
+      .filter(s => !this.cache.has(s));
     if (uncached.length === 0) return;
 
     const engine = await this.waitForEngine();
@@ -124,12 +126,14 @@ const MathRenderer = {
 
     const sandbox = document.createElement("div");
     sandbox.style.cssText = "position:absolute;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;";
+    const fragment = document.createDocumentFragment();
     const items = uncached.map(str => {
       const span = document.createElement("span");
       span.textContent = str;
-      sandbox.appendChild(span);
+      fragment.appendChild(span);
       return { str, span };
     });
+    sandbox.appendChild(fragment);
     document.body.appendChild(sandbox);
 
     try {
@@ -154,10 +158,8 @@ const MathRenderer = {
     }
   },
 
-  // Returns pre-rendered HTML only; never exposes raw LaTeX strings to Tabulator
   get(str) {
-    if (str === null || str === undefined || str === "") return "";
-    return this.cache.get(String(str)) ?? "";
+    return (str === null || str === undefined || str === "") ? "" : (this.cache.get(String(str)) ?? "");
   }
 };
 
@@ -175,8 +177,8 @@ function formatScaledNumber(val, factor = 1) {
 }
 
 function toLatexNumberString(val, factor = 1) {
+  if (val === null || val === undefined || val === "" || isNaN(Number(val))) return "";
   const formatted = formatScaledNumber(val, factor);
-  if (!formatted || isNaN(Number(val))) return formatted;
   if (formatted.includes("e")) {
     const [mantissa, exponent] = formatted.split("e");
     return `\\(${mantissa} \\times 10^{${parseInt(exponent, 10)}}\\)`;
@@ -207,15 +209,14 @@ function createSelectMenu(options, onChange, selectedValue = "") {
 // Column feature registry
 const ColumnFeatures = {
   number: (colDef, colCfg, ctx) => {
-    colDef.formatter = (cell) => formatScaledNumber(cell.getValue(), ctx.unitFactors[colCfg.index] || 1);
+    colDef.formatter = (cell) => formatScaledNumber(cell.getValue(), ctx.unitFactors[colCfg.index]);
   },
 
   latexnum: (colDef, colCfg, ctx) => {
     colDef.formatter = (cell) => {
       const val = cell.getValue();
-      if (val === null || val === undefined || val === "") return "";
-      if (isNaN(Number(val))) return String(val);
-      return MathRenderer.get(toLatexNumberString(val, ctx.unitFactors[colCfg.index] || 1));
+      const latex = toLatexNumberString(val, ctx.unitFactors[colCfg.index]);
+      return latex ? MathRenderer.get(latex) : (val ?? "");
     };
   },
 
@@ -224,18 +225,13 @@ const ColumnFeatures = {
   },
 
   dropdown: (colDef, colCfg, ctx) => {
-    const field = "col_" + colCfg.index;
-    const rawValues = [...new Set((ctx.rows || []).map(r => r[field]).filter(v => v !== null && v !== undefined && v !== ""))].sort();
+    const rawValues = [...new Set(ctx.rows.map(r => r[colCfg.field]).filter(v => v !== null && v !== undefined && v !== ""))].sort();
     const options = [{ label: "All", value: "" }, ...rawValues.map(v => ({ label: v, value: v }))];
-
-    colDef.headerFilter = (cell, onRendered, success) => createSelectMenu(options, val => success(val));
+    colDef.headerFilter = (cell, onRendered, success) => createSelectMenu(options, success);
   },
 
   units: (colDef, colCfg, ctx) => {
     if (!colCfg.units || !colCfg.map) return;
-
-    ctx.unitFactors[colCfg.index] = colCfg.map[colCfg.units[0]] || 1;
-    const isLatex = Boolean(colCfg.latex || colCfg.latexnum);
 
     colDef.titleFormatter = () => {
       const wrap = document.createElement("div");
@@ -243,10 +239,10 @@ const ColumnFeatures = {
 
       const label = document.createElement("span");
       label.className = "fw-bold";
-      if (isLatex) {
+      if (colCfg.isLatex) {
         label.innerHTML = MathRenderer.get(colCfg.name);
       } else {
-        label.textContent = colCfg.name || "";
+        label.textContent = colCfg.name;
       }
       wrap.appendChild(label);
 
@@ -257,11 +253,8 @@ const ColumnFeatures = {
           if (factor === undefined) return;
           ctx.unitFactors[colCfg.index] = factor;
 
-          // Pre-render new LaTeX values off-screen before Tabulator updates
           if (colCfg.latexnum) {
-            const field = "col_" + colCfg.index;
-            const nextStrings = ctx.rows.map(r => toLatexNumberString(r[field], factor));
-            await MathRenderer.prepare(nextStrings);
+            await MathRenderer.prepare(ctx.rows.map(r => toLatexNumberString(r[colCfg.field], factor)));
           }
           ctx.table.redraw(true);
         },
@@ -280,89 +273,83 @@ class TabulatorTableController {
     this.container = container;
     this.headers = JSON.parse(container.dataset.headers || "[]");
     this.rows = JSON.parse(container.dataset.rows || "[]");
-    this.config = JSON.parse(container.dataset.columns || "[]");
     this.perPage = parseInt(container.dataset.perpage || "15", 10);
     this.searchable = container.dataset.searchable !== "false";
     this.sortable = container.dataset.sortable !== "false";
 
+    const rawConfig = JSON.parse(container.dataset.columns || "[]");
     this.unitFactors = {};
+    this.columnConfigs = this.headers.map((h, idx) => {
+      const cfg = rawConfig.find(c => c.index === idx) || {};
+      this.unitFactors[idx] = (cfg.units && cfg.map) ? (cfg.map[cfg.units[0]] ?? 1) : 1;
+      return {
+        ...cfg,
+        index: idx,
+        name: cfg.header || h,
+        field: "col_" + idx,
+        isLatex: Boolean(cfg.latex || cfg.latexnum)
+      };
+    });
+
     this.table = null;
     this.init();
   }
 
   collectInitialLatexStrings() {
     const strings = [];
-    this.headers.forEach((h, idx) => {
-      const colCfg = this.config.find(c => c.index === idx) || { index: idx };
-      const name = colCfg.header || h;
-      const field = "col_" + idx;
-      const initialFactor = (colCfg.units && colCfg.map) ? (colCfg.map[colCfg.units[0]] || 1) : 1;
-
-      if (colCfg.latex || colCfg.latexnum) {
-        strings.push(name);
-      }
-      if (colCfg.latexnum) {
-        this.rows.forEach(r => strings.push(toLatexNumberString(r[field], initialFactor)));
-      } else if (colCfg.latex) {
-        this.rows.forEach(r => strings.push(r[field]));
+    this.columnConfigs.forEach(cfg => {
+      if (cfg.isLatex) strings.push(cfg.name);
+      if (cfg.latexnum) {
+        const factor = this.unitFactors[cfg.index];
+        this.rows.forEach(r => strings.push(toLatexNumberString(r[cfg.field], factor)));
+      } else if (cfg.latex) {
+        this.rows.forEach(r => strings.push(r[cfg.field]));
       }
     });
     return strings;
   }
 
   async init() {
-    // 1. Pre-render all initial headers and cell LaTeX off-screen first
     await MathRenderer.prepare(this.collectInitialLatexStrings());
-
-    // 2. Build DOM containers
     this.container.innerHTML = "";
 
-    const topBar = document.createElement("div");
-    topBar.className = "d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2";
-    topBar.innerHTML = this.searchable
-      ? '<input type="text" class="form-control form-control-sm tabulator-search-input" style="width:220px;" placeholder="Search table...">'
-      : '<div></div>';
+    let searchInput = null;
+    if (this.searchable) {
+      const topBar = document.createElement("div");
+      topBar.className = "d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2";
+      topBar.innerHTML = '<input type="text" class="form-control form-control-sm tabulator-search-input" style="width:220px;" placeholder="Search table...">';
+      this.container.appendChild(topBar);
+      searchInput = topBar.querySelector(".tabulator-search-input");
+    }
 
     const scrollWrap = document.createElement("div");
-    scrollWrap.style.overflowX = "auto";
-    scrollWrap.style.width = "100%";
-
+    scrollWrap.style.cssText = "overflow-x:auto;width:100%;";
     const tableDiv = document.createElement("div");
-    tableDiv.style.width = "100%";
     scrollWrap.appendChild(tableDiv);
-
-    this.container.appendChild(topBar);
     this.container.appendChild(scrollWrap);
 
-    // 3. Configure columns using already-rendered math cache
-    const columns = this.headers.map((h, idx) => {
-      const colCfg = this.config.find(c => c.index === idx) || { index: idx };
-      colCfg.name = colCfg.header || h;
-      const isLatex = Boolean(colCfg.latex || colCfg.latexnum);
-
+    const columns = this.columnConfigs.map(colCfg => {
       const colDef = {
         title: colCfg.name,
-        field: "col_" + idx,
+        field: colCfg.field,
         headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
         sorter: colCfg.type === "number" ? "number" : "string",
         sorterParams: { alignEmptyValues: "bottom" },
         headerHozAlign: "left"
       };
 
-      if (isLatex && !colCfg.units) {
+      if (colCfg.isLatex && !colCfg.units) {
         colDef.titleFormatter = () => MathRenderer.get(colCfg.name);
       }
 
-      if (colCfg.type === "number" && !colCfg.latexnum) ColumnFeatures.number(colDef, colCfg, this);
-      if (colCfg.latexnum) ColumnFeatures.latexnum(colDef, colCfg, this);
-      if (colCfg.latex && !colCfg.latexnum) ColumnFeatures.latex(colDef);
+      const formatFeature = colCfg.latexnum ? "latexnum" : colCfg.latex ? "latex" : colCfg.type === "number" ? "number" : null;
+      if (formatFeature) ColumnFeatures[formatFeature](colDef, colCfg, this);
       if (colCfg.dropdown) ColumnFeatures.dropdown(colDef, colCfg, this);
       if (colCfg.units) ColumnFeatures.units(colDef, colCfg, this);
 
       return colDef;
     });
 
-    // 4. Mount Tabulator once with rendered DOM nodes
     this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
@@ -374,24 +361,30 @@ class TabulatorTableController {
       movableColumns: false
     });
 
-    if (this.searchable) {
-      const searchInput = topBar.querySelector(".tabulator-search-input");
-      if (searchInput) {
-        let searchTimer = null;
-        searchInput.addEventListener("input", (e) => {
-          clearTimeout(searchTimer);
-          const query = e.target.value.toLowerCase().trim();
-          searchTimer = setTimeout(() => {
-            if (query === "") {
-              this.table.clearFilter();
-            } else {
-              this.table.setFilter(data =>
-                Object.values(data).some(val => String(val || "").toLowerCase().includes(query))
-              );
-            }
-          }, 150);
-        });
-      }
+    if (searchInput) {
+      let searchTimer = null;
+      const fields = this.columnConfigs.map(c => c.field);
+      const rowSearchIndex = new WeakMap();
+      const getRowText = (row) => {
+        let text = rowSearchIndex.get(row);
+        if (text === undefined) {
+          text = fields.map(f => row[f] ?? "").join("\0").toLowerCase();
+          rowSearchIndex.set(row, text);
+        }
+        return text;
+      };
+
+      searchInput.addEventListener("input", (e) => {
+        clearTimeout(searchTimer);
+        const query = e.target.value.toLowerCase().trim();
+        searchTimer = setTimeout(() => {
+          if (query === "") {
+            this.table.clearFilter();
+          } else {
+            this.table.setFilter(data => getRowText(data).includes(query));
+          }
+        }, 150);
+      });
     }
   }
 }
