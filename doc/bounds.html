@@ -230,8 +230,6 @@ window.Quarto = {
 
   .tabulator mjx-container {
     margin: 0 !important;
-    overflow: visible !important;
-    max-width: none !important;
   }
 
   .tabulator-unified-select {
@@ -542,6 +540,7 @@ class TabulatorTableController {
       return colDef;
     });
 
+    const self = this;
     this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
@@ -550,7 +549,10 @@ class TabulatorTableController {
       pagination: "local",
       paginationSize: this.perPage,
       paginationSizeSelector: [10, 15, 25, 50],
-      movableColumns: false
+      movableColumns: false,
+      tableBuilt() {
+        requestAnimationFrame(() => self.table?.redraw(true));
+      }
     });
 
     if (searchInput) {
