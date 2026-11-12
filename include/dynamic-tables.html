@@ -249,17 +249,22 @@ const ColumnFeatures = {
     colDef.formatter = (cell) => MathRenderer.get(cell.getValue());
   },
 
-  inspire: (colDef) => {
+  inspire: (colDef, colCfg, ctx) => {
     colDef.formatter = (cell) => {
       const keys = parseCitationKeys(cell.getValue());
       if (keys.length === 0) return "";
       const frag = document.createDocumentFragment();
       keys.forEach((key, idx) => {
         if (idx > 0) frag.appendChild(document.createTextNode(", "));
-        const link = document.createElement("a");
-        link.href = `#ref-${key}`;
-        link.textContent = key;
-        frag.appendChild(link);
+        const targetId = ctx.refTargetIds.get(key);
+        if (targetId) {
+          const link = document.createElement("a");
+          link.href = `#${targetId}`;
+          link.textContent = key;
+          frag.appendChild(link);
+        } else {
+          frag.appendChild(document.createTextNode(key));
+        }
       });
       return frag;
     };
@@ -309,8 +314,11 @@ const ColumnFeatures = {
 };
 
 // Table controller
+let tableInstanceCounter = 0;
+
 class TabulatorTableController {
   constructor(container) {
+    this.instanceId = ++tableInstanceCounter;
     this.container = container;
     this.headers = JSON.parse(container.dataset.headers || "[]");
     this.rows = JSON.parse(container.dataset.rows || "[]");
@@ -337,10 +345,11 @@ class TabulatorTableController {
       ? container.nextElementSibling
       : null;
     this.refEntries = new Map();
+    this.refTargetIds = new Map();
+    this.rowKeysCache = new WeakMap();
 
     this.table = null;
     this.heightSyncRaf = null;
-    this.columnObserver = null;
     this.init();
   }
 
@@ -364,14 +373,17 @@ class TabulatorTableController {
     const allKeys = [];
     const seen = new Set();
     this.rows.forEach(row => {
+      const rowKeys = [];
       this.inspireFields.forEach(field => {
         parseCitationKeys(row[field]).forEach(key => {
+          rowKeys.push(key);
           if (!seen.has(key)) {
             seen.add(key);
             allKeys.push(key);
           }
         });
       });
+      this.rowKeysCache.set(row, rowKeys);
     });
 
     const title = document.createElement("div");
@@ -385,18 +397,20 @@ class TabulatorTableController {
 
       let entryEl;
       if (sourceEl.closest(".dynamic-table-refs")) {
-        // Already claimed by an earlier table on the same page; clone without duplicate ID
+        const scopedId = `ref-t${this.instanceId}-${key}`;
         entryEl = sourceEl.cloneNode(true);
-        entryEl.removeAttribute("id");
+        entryEl.id = scopedId;
+        this.refTargetIds.set(key, scopedId);
       } else {
         entryEl = sourceEl;
+        this.refTargetIds.set(key, `ref-${key}`);
       }
 
       this.refsWrap.appendChild(entryEl);
       this.refEntries.set(key, entryEl);
     });
 
-    // If Pandoc's global #refs container has no remaining non-table citations, hide it
+    // Hide Pandoc's global #refs container if no non-table citations remain
     const globalRefs = document.getElementById("refs");
     if (globalRefs && globalRefs.querySelectorAll(".csl-entry").length === 0) {
       globalRefs.style.display = "none";
@@ -412,10 +426,10 @@ class TabulatorTableController {
 
     const visibleKeys = new Set();
     this.table.getRows("visible").forEach(row => {
-      const data = row.getData();
-      this.inspireFields.forEach(field => {
-        parseCitationKeys(data[field]).forEach(key => visibleKeys.add(key));
-      });
+      const keys = this.rowKeysCache.get(row.getData());
+      if (keys) {
+        for (let i = 0; i < keys.length; i++) visibleKeys.add(keys[i]);
+      }
     });
 
     let visibleCount = 0;
@@ -439,6 +453,7 @@ class TabulatorTableController {
   async init() {
     await MathRenderer.prepare(this.collectInitialLatexStrings());
     this.container.innerHTML = "";
+    this.initBibliography();
 
     let searchInput = null;
     if (this.searchable) {
@@ -496,11 +511,10 @@ class TabulatorTableController {
       movableColumns: false
     });
 
-    this.columnObserver = new ResizeObserver(() => this.scheduleHeightSync());
+    const columnObserver = new ResizeObserver(() => this.scheduleHeightSync());
 
     this.table.on("tableBuilt", () => {
-      tableDiv.querySelectorAll(".tabulator-col").forEach(col => this.columnObserver.observe(col));
-      this.initBibliography();
+      tableDiv.querySelectorAll(".tabulator-col").forEach(col => columnObserver.observe(col));
       this.syncBibliography();
       this.scheduleHeightSync();
     });

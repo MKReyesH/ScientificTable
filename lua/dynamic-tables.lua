@@ -4,11 +4,10 @@
 
 -- Default configuration
 local DEFAULTS = {
-    searchable  = true,
-    sortable    = true,
-    per_page    = 15,
-    auto_type   = true,
-    inspire_bib = "bib/bounds.bib"
+    searchable = true,
+    sortable   = true,
+    per_page   = 15,
+    auto_type  = true
 }
 
 -- Filter path mappings
@@ -21,7 +20,6 @@ local has_dynamic_table = false
 local cached_assets_html = nil
 local inspire_keys = {}
 local inspire_keys_seen = {}
-local inspire_bib_path = DEFAULTS.inspire_bib
 
 local SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
 
@@ -74,29 +72,12 @@ local function register_inspire_key(key)
     end
 end
 
--- Resolve project-relative path
-local function resolve_project_path(rel_path)
-    if SCRIPT_DIR ~= "" then
-        return SCRIPT_DIR .. "../" .. rel_path
-    end
-    return rel_path
-end
-
--- Fetch BibTeX entries from INSPIRE-HEP API and update target .bib file
-local function sync_inspire_bibtex(bib_rel_path, keys)
-    if #keys == 0 then return end
-
-    local target_path = resolve_project_path(bib_rel_path)
-    local existing_content = ""
-    local existing_file = io.open(target_path, "r")
-    if existing_file then
-        existing_content = existing_file:read("*a") or ""
-        existing_file:close()
-    end
+-- Fetch BibTeX entries from INSPIRE-HEP API and write a temporary .bib file
+local function write_temp_inspire_bibtex(keys)
+    if #keys == 0 then return nil end
 
     local fetched_chunks = {}
     local batch_size = 50
-    local all_ok = true
 
     for i = 1, #keys, batch_size do
         local query_parts = {}
@@ -111,23 +92,50 @@ local function sync_inspire_bibtex(bib_rel_path, keys)
         if ok and body and body:match("@%w+%s*{") then
             table.insert(fetched_chunks, trim(body))
         else
-            all_ok = false
             io.stderr:write("[dynamic-tables.lua] Warning: Failed to fetch INSPIRE BibTeX batch (" .. tostring(i) .. "-" .. tostring(upper) .. ").\n")
         end
     end
 
-    if #fetched_chunks > 0 then
-        local out = io.open(target_path, "w")
-        if out then
-            out:write("% Auto-generated from INSPIRE-HEP by dynamic-tables.lua\n\n")
-            out:write(table.concat(fetched_chunks, "\n\n") .. "\n")
-            out:close()
-        else
-            io.stderr:write("[dynamic-tables.lua] Warning: Could not write to '" .. target_path .. "'.\n")
-        end
-    elseif not all_ok and existing_content == "" then
-        io.stderr:write("[dynamic-tables.lua] Warning: No BibTeX entries fetched and '" .. target_path .. "' is empty.\n")
+    if #fetched_chunks == 0 then return nil end
+
+    local raw_tmp = os.tmpname()
+    os.remove(raw_tmp)
+    local tmp_bib = raw_tmp .. ".bib"
+
+    local out = io.open(tmp_bib, "w")
+    if not out then
+        io.stderr:write("[dynamic-tables.lua] Warning: Could not create temporary BibTeX file '" .. tmp_bib .. "'.\n")
+        return nil
     end
+
+    out:write(table.concat(fetched_chunks, "\n\n") .. "\n")
+    out:close()
+    return tmp_bib
+end
+
+-- Append temporary .bib file to document metadata for Pandoc citeproc
+local function append_meta_bibliography(meta, bib_path)
+    local list = pandoc.MetaList({})
+    local existing = {}
+
+    local function add_entry(val)
+        local str = trim(pandoc.utils.stringify(val))
+        if str ~= "" and not existing[str] then
+            existing[str] = true
+            list:insert(pandoc.MetaString(str))
+        end
+    end
+
+    if meta.bibliography then
+        if meta.bibliography.t == "MetaList" then
+            for _, item in ipairs(meta.bibliography) do add_entry(item) end
+        else
+            add_entry(meta.bibliography)
+        end
+    end
+
+    add_entry(bib_path)
+    meta.bibliography = list
 end
 
 -- CSV line parser
@@ -396,13 +404,10 @@ end
 
 function Div(el)
     if not el.classes:includes("dynamic-table") then return nil end
-    local src = el.attributes["src"]
+    local src        = el.attributes["src"]
     local searchable = el.attributes["searchable"] or tostring(DEFAULTS.searchable)
     local per_page   = el.attributes["per-page"] or tostring(DEFAULTS.per_page)
     local sortable   = el.attributes["sortable"] or tostring(DEFAULTS.sortable)
-    if el.attributes["bib"] and trim(el.attributes["bib"]) ~= "" then
-        inspire_bib_path = trim(el.attributes["bib"])
-    end
     local columns_meta = {}
 
     for _, line in ipairs(extract_lines_from_div(el)) do
@@ -413,8 +418,7 @@ function Div(el)
                 if key == "src" then src = val
                 elseif key == "searchable" then searchable = val
                 elseif key == "per-page" then per_page = val
-                elseif key == "sortable" then sortable = val
-                elseif key == "bib" and val ~= "" then inspire_bib_path = val end
+                elseif key == "sortable" then sortable = val end
             elseif line:lower():match("^col") then
                 local col_rule = parse_column_rule(line)
                 if col_rule then table.insert(columns_meta, col_rule) end
@@ -427,26 +431,29 @@ end
 
 function Pandoc(doc)
     if #inspire_keys > 0 then
-        sync_inspire_bibtex(inspire_bib_path, inspire_keys)
+        local tmp_bib = write_temp_inspire_bibtex(inspire_keys)
+        if tmp_bib then
+            append_meta_bibliography(doc.meta, tmp_bib)
 
-        local nocite_inlines = {}
-        if doc.meta.nocite then
-            if type(doc.meta.nocite) == "table" and doc.meta.nocite.t == "MetaInlines" then
-                for _, item in ipairs(doc.meta.nocite) do
-                    table.insert(nocite_inlines, item)
+            local nocite_inlines = {}
+            if doc.meta.nocite then
+                if type(doc.meta.nocite) == "table" and doc.meta.nocite.t == "MetaInlines" then
+                    for _, item in ipairs(doc.meta.nocite) do
+                        table.insert(nocite_inlines, item)
+                    end
+                else
+                    table.insert(nocite_inlines, pandoc.Str(pandoc.utils.stringify(doc.meta.nocite)))
                 end
-            else
-                table.insert(nocite_inlines, pandoc.Str(pandoc.utils.stringify(doc.meta.nocite)))
             end
-        end
 
-        for _, key in ipairs(inspire_keys) do
-            if #nocite_inlines > 0 then
-                table.insert(nocite_inlines, pandoc.Space())
+            for _, key in ipairs(inspire_keys) do
+                if #nocite_inlines > 0 then
+                    table.insert(nocite_inlines, pandoc.Space())
+                end
+                table.insert(nocite_inlines, pandoc.Cite({ pandoc.Str("@" .. key) }, { pandoc.Citation(key, "NormalCitation") }))
             end
-            table.insert(nocite_inlines, pandoc.Cite({ pandoc.Str("@" .. key) }, { pandoc.Citation(key, "NormalCitation") }))
+            doc.meta.nocite = pandoc.MetaInlines(nocite_inlines)
         end
-        doc.meta.nocite = pandoc.MetaInlines(nocite_inlines)
 
         inspire_keys = {}
         inspire_keys_seen = {}
