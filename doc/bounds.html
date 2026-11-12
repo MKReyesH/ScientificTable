@@ -483,6 +483,7 @@ class TabulatorTableController {
 
     this.table = null;
     this.heightSyncRaf = null;
+    this.columnObserver = null;
     this.init();
   }
 
@@ -559,6 +560,9 @@ class TabulatorTableController {
       paginationSizeSelector: [10, 15, 25, 50],
       movableColumns: false
     });
+
+    this.columnObserver = new ResizeObserver(() => this.scheduleHeightSync());
+    tableDiv.querySelectorAll(".tabulator-col").forEach(col => this.columnObserver.observe(col));
 
     this.table.on("renderComplete", () => this.scheduleHeightSync());
     this.scheduleHeightSync();
