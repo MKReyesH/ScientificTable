@@ -7,6 +7,13 @@
     "text": "About us\n\n    MKReyesH\n\n\n\nPowered By\n\nGitHub Pages: Hosting and deployment infrastructure.\nQuarto: Markdown rendering, cross-referencing, and website generation.\nPandoc: Document format translation.\nBootstrap and Bootswatch: CSS support and user interface.\nMathJax: Mathematical notation rendering.\nGemini: Help writing the Lua filters.\n\n\n\nContributing\nIf you would like to contribute to the core template, add new LaTeX translation rules, or fix a bug, do not hesitate to open a Pull Request at the GitHub Repository."
   },
   {
+    "objectID": "doc/bounds.html",
+    "href": "doc/bounds.html",
+    "title": "Bounds",
+    "section": "",
+    "text": "References\n\n[1] Cao Z et al 2022 Exploring Lorentz Invariance Violation from Ultrahigh-Energy \\(\\gamma\\) Rays Observed by LHAASO Phys. Rev. Lett. 128 051102\n\n\n[2] Adriani O et al 2025 KM3NeT constraint on Lorentz-violating superluminal neutrino velocity Commun. Phys. 8 457\n\n\n[3] Gotz D, Laurent P, Antier S, Covino S, D’Avanzo P, D’Elia V and Melandri A 2014 GRB 140206A: the most distant polarized Gamma-Ray Burst Mon. Not. Roy. Astron. Soc. 444 2776–82\n\n\n[4] Wei J-J, Wu X-F, Gao H and Mészáros P 2016 Limits on the Neutrino Velocity, Lorentz Invariance, and the Weak Equivalence Principle with TeV Neutrinos from Gamma-Ray Bursts JCAP 08 031\n\n\n[5] Cao Z et al 2024 Stringent Tests of Lorentz Invariance Violation from LHAASO Observations of GRB 221009A Phys. Rev. Lett. 133 071501\n\n\n[6] Lang R G, Martı́nez-Huerta H and Souza V de 2019 Improved limits on Lorentz invariance violation from astrophysical gamma-ray sources Phys. Rev. D 99 043015\n\n\n[7] Rubtsov G, Satunin P and Sibiryakov S 2017 Constraints on violation of Lorentz invariance from atmospheric showers initiated by multi-TeV photons JCAP 05 049\n\n\n[8] Chen L, Xiong Z, Li C, Chen S and He H 2021 Strong constraints on Lorentz violation using new \\(\\gamma\\)-ray observations around PeV Chin. Phys. C 45 105105\n\n\n[9] Satunin P 2025 Ultra-high-energy event KM3-230213A constraints on Lorentz Invariance Violation in neutrino sector Eur. Phys. J. C 85 545\n\n\n[10] Maccione L, Liberati S and Mattingly D M 2013 Violations of Lorentz invariance in the neutrino sector after OPERA JCAP 03 039"
+  },
+  {
     "objectID": "index.html",
     "href": "index.html",
     "title": "Scientific Table Template",
