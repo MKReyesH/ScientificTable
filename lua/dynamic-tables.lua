@@ -1,7 +1,3 @@
--- =============================================================================
--- Dynamic CSV Tables Pandoc Lua Filter
--- =============================================================================
-
 local DEFAULTS = {
     searchable = true,
     sortable   = true,
@@ -36,20 +32,24 @@ local function load_assets_html()
     return cached_assets_html
 end
 
+-- Trims leading and trailing whitespace
 local function trim(s)
     return s and s:match("^%s*(.-)%s*$") or ""
 end
 
+-- Escapes special HTML characters for safe attribute injection
 local function html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
 end
 
+-- Percent-encodes URL query strings
 local function url_encode(str)
     return (str:gsub("([^%w%-_%.~])", function(c)
         return string.format("%%%02X", string.byte(c))
     end))
 end
 
+-- Splits comma- or semicolon-separated citation keys and strips leading '@'
 local function split_citation_keys(raw)
     local keys = {}
     if not raw or raw == "" then return keys end
@@ -60,6 +60,7 @@ local function split_citation_keys(raw)
     return keys
 end
 
+-- Records unique INSPIRE citation keys in initial CSV row order
 local function register_inspire_key(key)
     if key ~= "" and not inspire_keys_seen[key] then
         inspire_keys_seen[key] = true
@@ -67,7 +68,7 @@ local function register_inspire_key(key)
     end
 end
 
--- Indexes BibTeX entries by citation key using Lua's balanced-brace pattern
+-- Indexes BibTeX entries by citation key using balanced-brace matching
 local function index_bibtex_entries(raw_bib, entries_by_key)
     local pos, len = 1, #raw_bib
     while pos <= len do
@@ -83,13 +84,14 @@ local function index_bibtex_entries(raw_bib, entries_by_key)
     end
 end
 
--- Queries INSPIRE-HEP in batches and writes a temporary .bib file ordered by CSV appearance
+-- Fetches BibTeX records from INSPIRE-HEP in batches and writes an ordered temporary .bib file
 local function write_temp_inspire_bibtex(keys)
     if #keys == 0 then return nil end
 
     local entries_by_key = {}
     local batch_size = 50
 
+    -- Batch API requests to respect INSPIRE-HEP rate limits
     for i = 1, #keys, batch_size do
         local query_parts = {}
         local upper = math.min(i + batch_size - 1, #keys)
@@ -107,6 +109,7 @@ local function write_temp_inspire_bibtex(keys)
         end
     end
 
+    -- Reorder entries to match initial CSV row sequence
     local ordered_entries = {}
     for _, key in ipairs(keys) do
         if entries_by_key[key] then
@@ -130,7 +133,7 @@ local function write_temp_inspire_bibtex(keys)
     return tmp_bib
 end
 
--- Registers the temporary .bib file in document metadata for Pandoc citeproc
+-- Appends the temporary .bib file path to document bibliography metadata
 local function append_meta_bibliography(meta, bib_path)
     local list = pandoc.MetaList({})
     local existing = {}
@@ -155,7 +158,7 @@ local function append_meta_bibliography(meta, bib_path)
     meta.bibliography = list
 end
 
--- Parses a single RFC-4180 CSV line supporting quoted fields and escaped quotes
+-- Parses an RFC-4180 CSV line supporting quoted fields and escaped quotes
 local function parse_csv_line(line)
     local res, pos, len = {}, 1, #line
     while pos <= len do
@@ -185,7 +188,7 @@ local function parse_csv_line(line)
     return res
 end
 
--- Resolves CSV path relative to working directory, filter location, or input document
+-- Opens a CSV file relative to working directory, filter directory, or input document
 local function open_csv_file(src)
     local file = io.open(src, "r")
     if file then return file end
@@ -206,6 +209,7 @@ local function open_csv_file(src)
     return nil
 end
 
+-- Infers numeric vs string column type from non-empty cell values
 local function auto_detect_column_type(rows, col_index)
     local has_numeric = false
     for _, r in ipairs(rows) do
@@ -218,7 +222,7 @@ local function auto_detect_column_type(rows, col_index)
     return has_numeric and "number" or "string"
 end
 
--- Preserves LaTeX math and quote characters when extracting configuration lines from Pandoc AST
+-- Serializes Pandoc inline nodes while preserving LaTeX math delimiters and quotes
 local function stringify_inline_with_math(inline)
     if not inline then return "" end
 
@@ -248,6 +252,7 @@ local function stringify_inline_with_math(inline)
     return pandoc.utils.stringify(inline)
 end
 
+-- Extracts logical configuration lines from a Pandoc Div block
 local function extract_lines_from_div(el)
     local lines = {}
     for _, block in ipairs(el.content) do
@@ -269,20 +274,28 @@ local function extract_lines_from_div(el)
     return lines
 end
 
--- Parses per-column configuration directives (header, units, formatting tags)
+-- Parses per-column directives (header, unit conversions, formatting tags)
 local function parse_column_rule(line)
     local col_idx = tonumber(line:match("^col%a*%s+(%d+)"))
     if not col_idx then return nil end
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    local raw_header = body:match('header%s*=%s*(.-)%s*,') or body:match('header%s*=%s*(.*)$')
+    -- Extract quoted or unquoted header title before comma-splitting flags
+    local raw_header = body:match('header%s*=%s*(%b"")')
+        or body:match("header%s*=%s*(%b'')")
+        or body:match('header%s*=%s*(.-)%s*,')
+        or body:match('header%s*=%s*(.*)$')
     if raw_header then
         local clean_hdr = trim(raw_header):gsub('^["\'“]+', ''):gsub('["\'”]+$', '')
         if clean_hdr ~= "" then rule.header = clean_hdr end
-        body = body:gsub('header%s*=%s*.-,', ''):gsub('header%s*=%s*.*$', '')
+        body = body:gsub('header%s*=%s*%b""%s*,?', '', 1)
+                   :gsub("header%s*=%s*%b''%s*,?", '', 1)
+                   :gsub('header%s*=%s*.-,', '', 1)
+                   :gsub('header%s*=%s*.*$', '', 1)
     end
 
+    -- Extract unit conversion map
     local units_str = body:match("units%((.-)%)")
     if units_str then
         local map, units = {}, {}
@@ -320,6 +333,7 @@ local function parse_column_rule(line)
         end
     end
 
+    -- Normalize math delimiters based on whether header LaTeX rendering is active
     if rule.header then
         if rule.latex or rule.latexnum then
             rule.header = rule.header:gsub("%$([^%$]+)%$", "\\(%1\\)")
@@ -331,6 +345,7 @@ local function parse_column_rule(line)
     return rule
 end
 
+-- Creates default table configuration options
 local function default_table_options()
     return {
         src        = nil,
@@ -340,6 +355,7 @@ local function default_table_options()
     }
 end
 
+-- Applies a key-value option to a table options object
 local function apply_table_option(opts, key, val)
     key = trim(key):lower()
     val = trim(val)
@@ -350,7 +366,7 @@ local function apply_table_option(opts, key, val)
     elseif key == "sortable" then opts.sortable = val end
 end
 
--- Renders a CSV dataset into a Tabulator mount container and optional bibliography block
+-- Builds the HTML mount container and optional bibliography placeholder for a CSV table
 local function render_table(opts, columns_meta)
     local file = open_csv_file(opts.src)
     if not file then
@@ -384,6 +400,7 @@ local function render_table(opts, columns_meta)
     local meta_by_index = {}
     for _, m in ipairs(columns_meta or {}) do meta_by_index[m.index] = m end
 
+    -- Resolve column types and collect INSPIRE citation keys
     local has_inspire = false
     local final_columns_meta = {}
     for j = 1, #headers do
@@ -424,6 +441,7 @@ local function render_table(opts, columns_meta)
     return pandoc.RawBlock('html', html)
 end
 
+-- Pandoc filter hook for shorthand '!dynamic-table: path.csv' paragraphs
 function Para(p)
     local txt = trim(pandoc.utils.stringify(p))
     local src = txt:match("^%!dynamic%-table:%s*(.+)$")
@@ -433,6 +451,7 @@ function Para(p)
     return render_table(opts, {})
 end
 
+-- Pandoc filter hook for '::: {.dynamic-table}' fenced divs
 function Div(el)
     if not el.classes:includes("dynamic-table") then return nil end
     local opts = default_table_options()
@@ -457,20 +476,37 @@ function Div(el)
     return (opts.src and opts.src ~= "") and render_table(opts, columns_meta) or nil
 end
 
+-- Pandoc document hook: generates temporary INSPIRE BibTeX metadata and injects client assets
 function Pandoc(doc)
     if #inspire_keys > 0 then
         local tmp_bib = write_temp_inspire_bibtex(inspire_keys)
         if tmp_bib then
             append_meta_bibliography(doc.meta, tmp_bib)
 
+            -- Preserve existing nocite entries before appending table citation keys
             local nocite_inlines = {}
             if doc.meta.nocite then
-                if type(doc.meta.nocite) == "table" and doc.meta.nocite.t == "MetaInlines" then
+                if doc.meta.nocite.t == "MetaInlines" then
                     for _, item in ipairs(doc.meta.nocite) do
                         table.insert(nocite_inlines, item)
                     end
+                elseif doc.meta.nocite.t == "MetaBlocks" then
+                    for _, blk in ipairs(doc.meta.nocite) do
+                        if blk.content then
+                            for _, item in ipairs(blk.content) do
+                                table.insert(nocite_inlines, item)
+                            end
+                        end
+                    end
                 else
-                    table.insert(nocite_inlines, pandoc.Str(pandoc.utils.stringify(doc.meta.nocite)))
+                    local parsed = pandoc.read(pandoc.utils.stringify(doc.meta.nocite), "markdown")
+                    for _, blk in ipairs(parsed.blocks) do
+                        if blk.content then
+                            for _, item in ipairs(blk.content) do
+                                table.insert(nocite_inlines, item)
+                            end
+                        end
+                    end
                 end
             end
 

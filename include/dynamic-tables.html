@@ -65,37 +65,28 @@
   }
 
   .dynamic-table-refs {
-    margin-top: 1rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid #dee2e6;
-    font-size: 0.88em;
-  }
-  .dynamic-table-refs-title {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
+    margin-top: 1.5rem;
   }
   .dynamic-table-refs .csl-entry {
-    margin-bottom: 0.45rem;
-    padding: 0.25rem 0.5rem 0.25rem 2em;
-    text-indent: -1.5em;
     border-radius: 0.25rem;
     background-color: transparent;
     transition: background-color 1.2s ease-out;
   }
   .dynamic-table-refs .csl-entry.is-highlighted {
     background-color: var(--bs-tertiary-bg, rgba(128, 128, 128, 0.12));
-    background-color: color-mix(in srgb, var(--bs-link-color, currentColor) 40%, transparent);
+    background-color: color-mix(in srgb, var(--bs-link-color, currentColor) 50%, transparent);
     transition: none;
   }
 </style>
 
 <script>
-// Batches and caches off-screen MathJax/KaTeX rendering before Tabulator mounts
+// Batches and caches off-screen MathJax or KaTeX rendering before Tabulator mounts
 const MathRenderer = {
   cache: new Map(),
   readyPromise: null,
   queue: Promise.resolve(),
 
+  // Detects and awaits the active page math engine
   waitForEngine() {
     if (this.readyPromise) return this.readyPromise;
 
@@ -130,11 +121,13 @@ const MathRenderer = {
     return this.readyPromise;
   },
 
+  // Enqueues a batch of LaTeX strings for off-screen rendering
   prepare(strings) {
     this.queue = this.queue.then(() => this._renderBatch(strings));
     return this.queue;
   },
 
+  // Renders uncached LaTeX strings inside a hidden off-screen container
   async _renderBatch(strings) {
     const uncached = [...new Set(strings.filter(s => s !== null && s !== undefined && s !== "").map(String))]
       .filter(s => !this.cache.has(s));
@@ -180,11 +173,13 @@ const MathRenderer = {
     }
   },
 
+  // Retrieves pre-rendered HTML for a cached LaTeX string
   get(str) {
     return (str === null || str === undefined || str === "") ? "" : (this.cache.get(String(str)) ?? "");
   }
 };
 
+// Scales a numeric value and formats extreme magnitudes in exponential notation
 function formatScaledNumber(val, factor = 1) {
   if (val === null || val === undefined || val === "") return "";
   const num = Number(val);
@@ -197,6 +192,7 @@ function formatScaledNumber(val, factor = 1) {
     : Number(converted.toFixed(4)).toString();
 }
 
+// Formats a scaled number as an inline LaTeX math string
 function toLatexNumberString(val, factor = 1) {
   if (val === null || val === undefined || val === "" || isNaN(Number(val))) return "";
   const formatted = formatScaledNumber(val, factor);
@@ -207,6 +203,7 @@ function toLatexNumberString(val, factor = 1) {
   return `\\(${formatted}\\)`;
 }
 
+// Parses comma- or semicolon-separated citation keys from a cell value
 function parseCitationKeys(raw) {
   if (raw === null || raw === undefined) return [];
   return String(raw)
@@ -217,6 +214,7 @@ function parseCitationKeys(raw) {
 
 const highlightTimers = new WeakMap();
 
+// Temporarily highlights a target bibliography entry when clicked from the table
 function highlightReference(entryEl) {
   if (!entryEl) return;
   clearTimeout(highlightTimers.get(entryEl));
@@ -229,6 +227,7 @@ function highlightReference(entryEl) {
   }, 1600));
 }
 
+// Builds a unified Bootstrap-styled select control for header filters and unit switchers
 function createSelectMenu(options, onChange, selectedValue = "") {
   const select = document.createElement("select");
   select.className = "form-select form-select-sm tabulator-unified-select";
@@ -248,7 +247,7 @@ function createSelectMenu(options, onChange, selectedValue = "") {
   return select;
 }
 
-// Column formatting and header control behaviors
+// Registry of column cell formatters and header controls
 const ColumnFeatures = {
   number: (colDef, colCfg, ctx) => {
     colDef.formatter = (cell) => formatScaledNumber(cell.getValue(), ctx.unitFactors[colCfg.index]);
@@ -334,7 +333,7 @@ const ColumnFeatures = {
 
 let tableInstanceCounter = 0;
 
-// Manages a Tabulator instance, math pre-rendering, row-height sync, and live bibliography filtering
+// Controller managing Tabulator lifecycle, math pre-rendering, row-height sync, and live bibliography filtering
 class TabulatorTableController {
   constructor(container) {
     this.instanceId = ++tableInstanceCounter;
@@ -373,6 +372,7 @@ class TabulatorTableController {
     this.init();
   }
 
+  // Collects all initial LaTeX strings across headers and cells for batch rendering
   collectInitialLatexStrings() {
     const strings = [];
     this.columnConfigs.forEach(cfg => {
@@ -387,7 +387,7 @@ class TabulatorTableController {
     return strings;
   }
 
-  // Claims Pandoc-rendered #ref-<key> elements into the table's local bibliography block
+  // Relocates Pandoc-rendered references below the table using native Quarto bibliography classes
   initBibliography() {
     if (!this.refsWrap || this.inspireFields.length === 0) return;
 
@@ -407,10 +407,21 @@ class TabulatorTableController {
       this.rowKeysCache.set(row, rowKeys);
     });
 
-    const title = document.createElement("div");
-    title.className = "dynamic-table-refs-title";
-    title.textContent = "References";
-    this.refsWrap.appendChild(title);
+    const globalRefs = document.getElementById("refs");
+    const globalHeading = document.querySelector("#quarto-bibliography .quarto-appendix-heading");
+
+    const heading = document.createElement("h4");
+    heading.textContent = globalHeading?.textContent.trim() || "References";
+    this.refsWrap.appendChild(heading);
+
+    // Mirror Pandoc's native bibliography container classes and attributes so Quarto theme styles apply
+    const listContainer = document.createElement("div");
+    listContainer.className = globalRefs?.className || "references csl-bib-body hanging-indent";
+    listContainer.setAttribute("role", "list");
+    if (globalRefs?.dataset.entrySpacing !== undefined) {
+      listContainer.dataset.entrySpacing = globalRefs.dataset.entrySpacing;
+    }
+    this.refsWrap.appendChild(listContainer);
 
     allKeys.forEach(key => {
       const sourceEl = document.getElementById(`ref-${key}`);
@@ -419,11 +430,13 @@ class TabulatorTableController {
       const labelText = sourceEl.querySelector(".csl-left-margin")?.textContent.trim() || "";
       if (labelText) this.refLabels.set(key, labelText);
 
+      // Clone with a table-scoped ID if an earlier table on the page already claimed this entry
       let entryEl;
       if (sourceEl.closest(".dynamic-table-refs")) {
         const scopedId = `ref-t${this.instanceId}-${key}`;
         entryEl = sourceEl.cloneNode(true);
         entryEl.id = scopedId;
+        entryEl.classList.remove("is-highlighted");
         entryEl.style.display = "";
         this.refTargetIds.set(key, scopedId);
       } else {
@@ -431,21 +444,25 @@ class TabulatorTableController {
         this.refTargetIds.set(key, `ref-${key}`);
       }
 
-      this.refsWrap.appendChild(entryEl);
+      listContainer.appendChild(entryEl);
       this.refEntries.set(key, entryEl);
     });
 
-    const globalRefs = document.getElementById("refs");
+    // Hide Pandoc's global bibliography container when no non-table citations remain
     if (globalRefs && !globalRefs.querySelector(".csl-entry")) {
       globalRefs.style.display = "none";
       const quartoAppendix = globalRefs.closest("#quarto-appendix");
-      if (quartoAppendix && !quartoAppendix.querySelector(".csl-entry")) {
-        quartoAppendix.style.display = "none";
+      if (quartoAppendix) {
+        const hasOtherEntries = Array.from(quartoAppendix.querySelectorAll(".csl-entry"))
+          .some(el => !el.closest(".dynamic-table-refs"));
+        if (!hasOtherEntries) {
+          quartoAppendix.style.display = "none";
+        }
       }
     }
   }
 
-  // Shows only reference entries belonging to currently visible table rows
+  // Updates reference visibility to match currently visible table rows
   syncBibliography() {
     if (!this.refsWrap || this.refEntries.size === 0 || !this.table) return;
 
@@ -467,7 +484,7 @@ class TabulatorTableController {
     this.refsWrap.style.display = visibleCount > 0 ? "" : "none";
   }
 
-  // Recalculates row heights after column resize or render passes
+  // Coalesces row height normalization onto the next animation frame
   scheduleHeightSync() {
     cancelAnimationFrame(this.heightSyncRaf);
     this.heightSyncRaf = requestAnimationFrame(() => {
@@ -476,6 +493,7 @@ class TabulatorTableController {
     });
   }
 
+  // Initializes math cache, bibliography bindings, Tabulator instance, and search filter
   async init() {
     await MathRenderer.prepare(this.collectInitialLatexStrings());
     this.container.innerHTML = "";
@@ -537,6 +555,7 @@ class TabulatorTableController {
       movableColumns: false
     });
 
+    // Sync row heights whenever column widths resize or rows re-render
     const columnObserver = new ResizeObserver(() => this.scheduleHeightSync());
 
     this.table.on("tableBuilt", () => {
@@ -550,6 +569,7 @@ class TabulatorTableController {
       this.scheduleHeightSync();
     });
 
+    // Debounced full-row search using cached lowercase text index
     if (searchInput) {
       let searchTimer = null;
       const fields = this.columnConfigs.map(c => c.field);
@@ -578,6 +598,7 @@ class TabulatorTableController {
   }
 }
 
+// Mounts Tabulator controllers on all dynamic table containers
 function initDynamicTables() {
   document.querySelectorAll(".tabulator-container-wrap").forEach(el => {
     if (!el.dataset.initialized) {
