@@ -79,8 +79,16 @@
   }
   .dynamic-table-refs .csl-entry {
     margin-bottom: 0.45rem;
-    padding-left: 1.5em;
+    padding: 0.25rem 0.5rem 0.25rem 2em;
     text-indent: -1.5em;
+    border-radius: 0.25rem;
+    background-color: transparent;
+    transition: background-color 1.2s ease-out;
+  }
+  .dynamic-table-refs .csl-entry.is-highlighted {
+    background-color: var(--bs-tertiary-bg, rgba(128, 128, 128, 0.12));
+    background-color: color-mix(in srgb, var(--bs-link-color, currentColor) 14%, transparent);
+    transition: none;
   }
 </style>
 
@@ -211,6 +219,21 @@ function parseCitationKeys(raw) {
     .filter(Boolean);
 }
 
+// Temporary highlight for selected reference entries
+const highlightTimers = new WeakMap();
+
+function highlightReference(entryEl) {
+  if (!entryEl) return;
+  clearTimeout(highlightTimers.get(entryEl));
+  entryEl.classList.remove("is-highlighted");
+  void entryEl.offsetWidth;
+  entryEl.classList.add("is-highlighted");
+
+  highlightTimers.set(entryEl, setTimeout(() => {
+    entryEl.classList.remove("is-highlighted");
+  }, 1600));
+}
+
 // Select dropdown factory
 function createSelectMenu(options, onChange, selectedValue = "") {
   const select = document.createElement("select");
@@ -258,9 +281,11 @@ const ColumnFeatures = {
         if (idx > 0) frag.appendChild(document.createTextNode(", "));
         const targetId = ctx.refTargetIds.get(key);
         if (targetId) {
+          const label = ctx.refLabels.get(key);
           const link = document.createElement("a");
           link.href = `#${targetId}`;
-          link.textContent = key;
+          link.textContent = label ? `${label} ${key}` : key;
+          link.addEventListener("click", () => highlightReference(ctx.refEntries.get(key)));
           frag.appendChild(link);
         } else {
           frag.appendChild(document.createTextNode(key));
@@ -346,6 +371,7 @@ class TabulatorTableController {
       : null;
     this.refEntries = new Map();
     this.refTargetIds = new Map();
+    this.refLabels = new Map();
     this.rowKeysCache = new WeakMap();
 
     this.table = null;
@@ -394,6 +420,9 @@ class TabulatorTableController {
     allKeys.forEach(key => {
       const sourceEl = document.getElementById(`ref-${key}`);
       if (!sourceEl) return;
+
+      const labelText = sourceEl.querySelector(".csl-left-margin")?.textContent.trim() || "";
+      if (labelText) this.refLabels.set(key, labelText);
 
       let entryEl;
       if (sourceEl.closest(".dynamic-table-refs")) {

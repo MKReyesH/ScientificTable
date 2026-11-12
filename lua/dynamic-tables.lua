@@ -72,11 +72,41 @@ local function register_inspire_key(key)
     end
 end
 
--- Fetch BibTeX entries from INSPIRE-HEP API and write a temporary .bib file
+-- Parse BibTeX text into a map of { [texkey] = entry_string } using brace matching
+local function index_bibtex_entries(raw_bib, entries_by_key)
+    local pos, len = 1, #raw_bib
+    while pos <= len do
+        local at_start, brace_open, key = raw_bib:find("@[%w_%-]+%s*(%b{})", pos)
+        if not at_start then
+            -- Fallback scanner for entries containing nested braces
+            local header_start, open_pos, entry_key = raw_bib:find("@[%w_%-]+%s*{%s*([^,%s]+)%s*,", pos)
+            if not header_start then break end
+
+            local depth, i = 1, open_pos
+            while i <= len and depth > 0 do
+                local ch = raw_bib:sub(i, i)
+                if ch == "{" then depth = depth + 1
+                elseif ch == "}" then depth = depth - 1 end
+                i = i + 1
+            end
+            entries_by_key[entry_key] = trim(raw_bib:sub(header_start, i - 1))
+            pos = i
+        else
+            local entry_text = trim(raw_bib:sub(at_start, brace_open))
+            local entry_key = entry_text:match("^@[%w_%-]+%s*{%s*([^,%s]+)%s*,")
+            if entry_key then
+                entries_by_key[entry_key] = entry_text
+            end
+            pos = brace_open + 1
+        end
+    end
+end
+
+-- Fetch BibTeX entries from INSPIRE-HEP API and write a temporary .bib file ordered by CSV keys
 local function write_temp_inspire_bibtex(keys)
     if #keys == 0 then return nil end
 
-    local fetched_chunks = {}
+    local entries_by_key = {}
     local batch_size = 50
 
     for i = 1, #keys, batch_size do
@@ -90,13 +120,20 @@ local function write_temp_inspire_bibtex(keys)
 
         local ok, _, body = pcall(pandoc.mediabag.fetch, api_url)
         if ok and body and body:match("@%w+%s*{") then
-            table.insert(fetched_chunks, trim(body))
+            index_bibtex_entries(body, entries_by_key)
         else
             io.stderr:write("[dynamic-tables.lua] Warning: Failed to fetch INSPIRE BibTeX batch (" .. tostring(i) .. "-" .. tostring(upper) .. ").\n")
         end
     end
 
-    if #fetched_chunks == 0 then return nil end
+    local ordered_entries = {}
+    for _, key in ipairs(keys) do
+        if entries_by_key[key] then
+            table.insert(ordered_entries, entries_by_key[key])
+        end
+    end
+
+    if #ordered_entries == 0 then return nil end
 
     local raw_tmp = os.tmpname()
     os.remove(raw_tmp)
@@ -108,7 +145,7 @@ local function write_temp_inspire_bibtex(keys)
         return nil
     end
 
-    out:write(table.concat(fetched_chunks, "\n\n") .. "\n")
+    out:write(table.concat(ordered_entries, "\n\n") .. "\n")
     out:close()
     return tmp_bib
 end
