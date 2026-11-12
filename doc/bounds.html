@@ -499,6 +499,11 @@ class TabulatorTableController {
     return strings;
   }
 
+  syncRowHeights() {
+    if (!this.table) return;
+    this.table.getRows("visible").forEach(row => row.normalizeHeight());
+  }
+
   async init() {
     await MathRenderer.prepare(this.collectInitialLatexStrings());
     this.container.innerHTML = "";
@@ -551,9 +556,8 @@ class TabulatorTableController {
       movableColumns: false
     });
 
-    this.table.on("tableBuilt", () => {
-      requestAnimationFrame(() => this.table.redraw(true));
-    });
+    this.table.on("renderComplete", () => this.syncRowHeights());
+    requestAnimationFrame(() => this.syncRowHeights());
 
     if (searchInput) {
       let searchTimer = null;
