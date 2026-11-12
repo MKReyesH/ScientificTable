@@ -192,7 +192,7 @@ window.Quarto = {
 <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
 <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
 
-<!-- Minimal structural styles -->
+<!-- Styles -->
 <style>
   .tabulator-container-wrap {
     margin: 1.5rem 0;
@@ -482,6 +482,7 @@ class TabulatorTableController {
     });
 
     this.table = null;
+    this.heightSyncRaf = null;
     this.init();
   }
 
@@ -499,9 +500,12 @@ class TabulatorTableController {
     return strings;
   }
 
-  syncRowHeights() {
-    if (!this.table) return;
-    this.table.getRows("visible").forEach(row => row.normalizeHeight());
+  scheduleHeightSync() {
+    cancelAnimationFrame(this.heightSyncRaf);
+    this.heightSyncRaf = requestAnimationFrame(() => {
+      if (!this.table) return;
+      this.table.getRows("visible").forEach(row => row.normalizeHeight());
+    });
   }
 
   async init() {
@@ -556,8 +560,8 @@ class TabulatorTableController {
       movableColumns: false
     });
 
-    this.table.on("renderComplete", () => this.syncRowHeights());
-    requestAnimationFrame(() => this.syncRowHeights());
+    this.table.on("renderComplete", () => this.scheduleHeightSync());
+    this.scheduleHeightSync();
 
     if (searchInput) {
       let searchTimer = null;
