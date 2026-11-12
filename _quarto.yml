@@ -17,7 +17,10 @@ website:
       - text: "About"
         href: about.qmd
 
-bibliography: bib/references.bib
+bibliography:
+  - bib/global.bib
+  - bib/bounds.bib
+
 csl: bib/journal-of-cosmology-and-astroparticle-physics.csl
 
 project:

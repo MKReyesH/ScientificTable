@@ -65,6 +65,23 @@
     border-color: #86b7fe !important;
     box-shadow: inset 0 0 0 1px #86b7fe !important;
   }
+
+  /* Dynamic table bibliography */
+  .dynamic-table-refs {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #dee2e6;
+    font-size: 0.88em;
+  }
+  .dynamic-table-refs-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .dynamic-table-refs .csl-entry {
+    margin-bottom: 0.45rem;
+    padding-left: 1.5em;
+    text-indent: -1.5em;
+  }
 </style>
 
 <script>
@@ -163,7 +180,7 @@ const MathRenderer = {
   }
 };
 
-// Pure numeric formatting helpers
+// Pure numeric & citation helpers
 function formatScaledNumber(val, factor = 1) {
   if (val === null || val === undefined || val === "") return "";
   const num = Number(val);
@@ -184,6 +201,14 @@ function toLatexNumberString(val, factor = 1) {
     return `\\(${mantissa} \\times 10^{${parseInt(exponent, 10)}}\\)`;
   }
   return `\\(${formatted}\\)`;
+}
+
+function parseCitationKeys(raw) {
+  if (raw === null || raw === undefined) return [];
+  return String(raw)
+    .split(/[,;]+/)
+    .map(k => k.trim().replace(/^@/, ""))
+    .filter(Boolean);
 }
 
 // Select dropdown factory
@@ -222,6 +247,22 @@ const ColumnFeatures = {
 
   latex: (colDef) => {
     colDef.formatter = (cell) => MathRenderer.get(cell.getValue());
+  },
+
+  inspire: (colDef) => {
+    colDef.formatter = (cell) => {
+      const keys = parseCitationKeys(cell.getValue());
+      if (keys.length === 0) return "";
+      const frag = document.createDocumentFragment();
+      keys.forEach((key, idx) => {
+        if (idx > 0) frag.appendChild(document.createTextNode(", "));
+        const link = document.createElement("a");
+        link.href = `#ref-${key}`;
+        link.textContent = key;
+        frag.appendChild(link);
+      });
+      return frag;
+    };
   },
 
   dropdown: (colDef, colCfg, ctx) => {
@@ -291,6 +332,12 @@ class TabulatorTableController {
       };
     });
 
+    this.inspireFields = this.columnConfigs.filter(c => c.inspire).map(c => c.field);
+    this.refsWrap = (this.inspireFields.length > 0 && container.nextElementSibling?.classList.contains("dynamic-table-refs"))
+      ? container.nextElementSibling
+      : null;
+    this.refEntries = new Map();
+
     this.table = null;
     this.heightSyncRaf = null;
     this.columnObserver = null;
@@ -309,6 +356,76 @@ class TabulatorTableController {
       }
     });
     return strings;
+  }
+
+  initBibliography() {
+    if (!this.refsWrap || this.inspireFields.length === 0) return;
+
+    const allKeys = [];
+    const seen = new Set();
+    this.rows.forEach(row => {
+      this.inspireFields.forEach(field => {
+        parseCitationKeys(row[field]).forEach(key => {
+          if (!seen.has(key)) {
+            seen.add(key);
+            allKeys.push(key);
+          }
+        });
+      });
+    });
+
+    const title = document.createElement("div");
+    title.className = "dynamic-table-refs-title";
+    title.textContent = "References";
+    this.refsWrap.appendChild(title);
+
+    allKeys.forEach(key => {
+      const sourceEl = document.getElementById(`ref-${key}`);
+      if (!sourceEl) return;
+
+      let entryEl;
+      if (sourceEl.closest(".dynamic-table-refs")) {
+        // Already claimed by an earlier table on the same page; clone without duplicate ID
+        entryEl = sourceEl.cloneNode(true);
+        entryEl.removeAttribute("id");
+      } else {
+        entryEl = sourceEl;
+      }
+
+      this.refsWrap.appendChild(entryEl);
+      this.refEntries.set(key, entryEl);
+    });
+
+    // If Pandoc's global #refs container has no remaining non-table citations, hide it
+    const globalRefs = document.getElementById("refs");
+    if (globalRefs && globalRefs.querySelectorAll(".csl-entry").length === 0) {
+      globalRefs.style.display = "none";
+      const quartoAppendix = globalRefs.closest("#quarto-appendix");
+      if (quartoAppendix && quartoAppendix.querySelectorAll(".csl-entry:not(.dynamic-table-refs .csl-entry)").length === 0) {
+        quartoAppendix.style.display = "none";
+      }
+    }
+  }
+
+  syncBibliography() {
+    if (!this.refsWrap || this.refEntries.size === 0 || !this.table) return;
+
+    const visibleKeys = new Set();
+    this.table.getRows("visible").forEach(row => {
+      const data = row.getData();
+      this.inspireFields.forEach(field => {
+        parseCitationKeys(data[field]).forEach(key => visibleKeys.add(key));
+      });
+    });
+
+    let visibleCount = 0;
+    this.refEntries.forEach((entryEl, key) => {
+      const show = visibleKeys.has(key);
+      entryEl.style.display = show ? "" : "none";
+      if (show) visibleCount++;
+    });
+
+    this.refsWrap.style.display = visibleCount > 0 ? "" : "none";
   }
 
   scheduleHeightSync() {
@@ -352,7 +469,15 @@ class TabulatorTableController {
         colDef.titleFormatter = () => MathRenderer.get(colCfg.name);
       }
 
-      const formatFeature = colCfg.latexnum ? "latexnum" : colCfg.latex ? "latex" : colCfg.type === "number" ? "number" : null;
+      const formatFeature = colCfg.inspire
+        ? "inspire"
+        : colCfg.latexnum
+          ? "latexnum"
+          : colCfg.latex
+            ? "latex"
+            : colCfg.type === "number"
+              ? "number"
+              : null;
       if (formatFeature) ColumnFeatures[formatFeature](colDef, colCfg, this);
       if (colCfg.dropdown) ColumnFeatures.dropdown(colDef, colCfg, this);
       if (colCfg.units) ColumnFeatures.units(colDef, colCfg, this);
@@ -375,10 +500,15 @@ class TabulatorTableController {
 
     this.table.on("tableBuilt", () => {
       tableDiv.querySelectorAll(".tabulator-col").forEach(col => this.columnObserver.observe(col));
+      this.initBibliography();
+      this.syncBibliography();
       this.scheduleHeightSync();
     });
 
-    this.table.on("renderComplete", () => this.scheduleHeightSync());
+    this.table.on("renderComplete", () => {
+      this.syncBibliography();
+      this.scheduleHeightSync();
+    });
 
     if (searchInput) {
       let searchTimer = null;

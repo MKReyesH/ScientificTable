@@ -4,10 +4,11 @@
 
 -- Default configuration
 local DEFAULTS = {
-    searchable = true,
-    sortable   = true,
-    per_page   = 15,
-    auto_type  = true
+    searchable  = true,
+    sortable    = true,
+    per_page    = 15,
+    auto_type   = true,
+    inspire_bib = "bib/bounds.bib"
 }
 
 -- Filter path mappings
@@ -18,31 +19,115 @@ local PATHS = {
 
 local has_dynamic_table = false
 local cached_assets_html = nil
+local inspire_keys = {}
+local inspire_keys_seen = {}
+local inspire_bib_path = DEFAULTS.inspire_bib
 
 local SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
 
 -- Load template HTML assets
 local function load_assets_html()
     if cached_assets_html then return cached_assets_html end
-    
+
     local html_path = PANDOC_SCRIPT_FILE:gsub(PATHS.filter_rel .. "$", PATHS.template_rel)
     local file = io.open(html_path, "r")
     if not file then
         error("[dynamic-tables.lua] Error: Cannot open template at '" .. html_path .. "'. Check file path.")
     end
-    
+
     cached_assets_html = file:read("*a")
     file:close()
     return cached_assets_html
 end
 
--- String utilities
-local function trim(s) 
-    return s and s:match("^%s*(.-)%s*$") or "" 
+-- String & URL utilities
+local function trim(s)
+    return s and s:match("^%s*(.-)%s*$") or ""
 end
 
 local function html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
+end
+
+local function url_encode(str)
+    return (str:gsub("([^%w%-_%.~])", function(c)
+        return string.format("%%%02X", string.byte(c))
+    end))
+end
+
+local function split_citation_keys(raw)
+    local keys = {}
+    if not raw or raw == "" then return keys end
+    for token in raw:gmatch("[^,;]+") do
+        local key = trim(token):gsub("^@", "")
+        if key ~= "" then
+            table.insert(keys, key)
+        end
+    end
+    return keys
+end
+
+local function register_inspire_key(key)
+    if key ~= "" and not inspire_keys_seen[key] then
+        inspire_keys_seen[key] = true
+        table.insert(inspire_keys, key)
+    end
+end
+
+-- Resolve project-relative path
+local function resolve_project_path(rel_path)
+    if SCRIPT_DIR ~= "" then
+        return SCRIPT_DIR .. "../" .. rel_path
+    end
+    return rel_path
+end
+
+-- Fetch BibTeX entries from INSPIRE-HEP API and update target .bib file
+local function sync_inspire_bibtex(bib_rel_path, keys)
+    if #keys == 0 then return end
+
+    local target_path = resolve_project_path(bib_rel_path)
+    local existing_content = ""
+    local existing_file = io.open(target_path, "r")
+    if existing_file then
+        existing_content = existing_file:read("*a") or ""
+        existing_file:close()
+    end
+
+    local fetched_chunks = {}
+    local batch_size = 50
+    local all_ok = true
+
+    for i = 1, #keys, batch_size do
+        local query_parts = {}
+        local upper = math.min(i + batch_size - 1, #keys)
+        for j = i, upper do
+            table.insert(query_parts, 'texkey:"' .. keys[j] .. '"')
+        end
+        local query = table.concat(query_parts, " OR ")
+        local api_url = "https://inspirehep.net/api/literature?q=" .. url_encode(query) .. "&size=" .. tostring(batch_size) .. "&format=bibtex"
+
+        local ok, _, body = pcall(pandoc.mediabag.fetch, api_url)
+        if ok and body and body:match("@%w+%s*{") then
+            table.insert(fetched_chunks, trim(body))
+        else
+            all_ok = false
+            io.stderr:write("[dynamic-tables.lua] Warning: Failed to fetch INSPIRE BibTeX batch (" .. tostring(i) .. "-" .. tostring(upper) .. ").\n")
+        end
+    end
+
+    if #fetched_chunks > 0 then
+        local out = io.open(target_path, "w")
+        if out then
+            out:write("% Auto-generated from INSPIRE-HEP by dynamic-tables.lua\n\n")
+            out:write(table.concat(fetched_chunks, "\n\n") .. "\n")
+            out:close()
+        else
+            io.stderr:write("[dynamic-tables.lua] Warning: Could not write to '" .. target_path .. "'.\n")
+        end
+    elseif not all_ok and existing_content == "" then
+        io.stderr:write("[dynamic-tables.lua] Warning: No BibTeX entries fetched and '" .. target_path .. "' is empty.\n")
+    end
 end
 
 -- CSV line parser
@@ -63,12 +148,12 @@ local function parse_csv_line(line)
             if line:sub(pos, pos) == ',' then pos = pos + 1 end
         else
             local comma_pos = line:find(",", pos)
-            if not comma_pos then 
+            if not comma_pos then
                 table.insert(res, trim(line:sub(pos)))
                 break
-            else 
+            else
                 table.insert(res, trim(line:sub(pos, comma_pos - 1)))
-                pos = comma_pos + 1 
+                pos = comma_pos + 1
             end
         end
     end
@@ -113,7 +198,7 @@ end
 -- AST text extraction recursively preserving math & quoted nodes
 local function stringify_inline_with_math(inline)
     if not inline then return "" end
-    
+
     if inline.t == "Math" then
         if inline.mathtype == "DisplayMath" or inline.mathtype == pandoc.DisplayMath then
             return "\\[" .. inline.text .. "\\]"
@@ -137,7 +222,7 @@ local function stringify_inline_with_math(inline)
             return table.concat(res)
         end
     end
-    
+
     return pandoc.utils.stringify(inline)
 end
 
@@ -210,6 +295,9 @@ local function parse_column_rule(line)
             rule.latexnum = true
             rule.latex = true
             rule.type = "number"
+        elseif tag == "inspire" then
+            rule.inspire = true
+            rule.type = "string"
         end
     end
 
@@ -259,15 +347,26 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
     local meta_by_index = {}
     for _, m in ipairs(columns_meta or {}) do meta_by_index[m.index] = m end
 
+    local has_inspire = false
     local final_columns_meta = {}
     for j = 1, #headers do
         local idx = j - 1
         local col_rule = meta_by_index[idx] or { index = idx }
-        
+
         if not col_rule.type and DEFAULTS.auto_type then
             col_rule.type = auto_detect_column_type(rows, j)
         end
-        
+
+        if col_rule.inspire then
+            has_inspire = true
+            local field = "col_" .. tostring(idx)
+            for _, r in ipairs(rows) do
+                for _, key in ipairs(split_citation_keys(r[field])) do
+                    register_inspire_key(key)
+                end
+            end
+        end
+
         table.insert(final_columns_meta, col_rule)
     end
 
@@ -280,6 +379,10 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         html_escape(per_page or tostring(DEFAULTS.per_page)),
         html_escape(sortable or tostring(DEFAULTS.sortable))
     )
+
+    if has_inspire then
+        html = html .. '\n<div class="dynamic-table-refs" style="display:none;"></div>'
+    end
 
     return pandoc.RawBlock('html', html)
 end
@@ -297,6 +400,9 @@ function Div(el)
     local searchable = el.attributes["searchable"] or tostring(DEFAULTS.searchable)
     local per_page   = el.attributes["per-page"] or tostring(DEFAULTS.per_page)
     local sortable   = el.attributes["sortable"] or tostring(DEFAULTS.sortable)
+    if el.attributes["bib"] and trim(el.attributes["bib"]) ~= "" then
+        inspire_bib_path = trim(el.attributes["bib"])
+    end
     local columns_meta = {}
 
     for _, line in ipairs(extract_lines_from_div(el)) do
@@ -307,7 +413,8 @@ function Div(el)
                 if key == "src" then src = val
                 elseif key == "searchable" then searchable = val
                 elseif key == "per-page" then per_page = val
-                elseif key == "sortable" then sortable = val end
+                elseif key == "sortable" then sortable = val
+                elseif key == "bib" and val ~= "" then inspire_bib_path = val end
             elseif line:lower():match("^col") then
                 local col_rule = parse_column_rule(line)
                 if col_rule then table.insert(columns_meta, col_rule) end
@@ -319,6 +426,32 @@ function Div(el)
 end
 
 function Pandoc(doc)
+    if #inspire_keys > 0 then
+        sync_inspire_bibtex(inspire_bib_path, inspire_keys)
+
+        local nocite_inlines = {}
+        if doc.meta.nocite then
+            if type(doc.meta.nocite) == "table" and doc.meta.nocite.t == "MetaInlines" then
+                for _, item in ipairs(doc.meta.nocite) do
+                    table.insert(nocite_inlines, item)
+                end
+            else
+                table.insert(nocite_inlines, pandoc.Str(pandoc.utils.stringify(doc.meta.nocite)))
+            end
+        end
+
+        for _, key in ipairs(inspire_keys) do
+            if #nocite_inlines > 0 then
+                table.insert(nocite_inlines, pandoc.Space())
+            end
+            table.insert(nocite_inlines, pandoc.Cite({ pandoc.Str("@" .. key) }, { pandoc.Citation(key, "NormalCitation") }))
+        end
+        doc.meta.nocite = pandoc.MetaInlines(nocite_inlines)
+
+        inspire_keys = {}
+        inspire_keys_seen = {}
+    end
+
     if has_dynamic_table then
         local assets_html = load_assets_html()
         table.insert(doc.blocks, pandoc.RawBlock('html', assets_html))
