@@ -1,8 +1,6 @@
-<!-- Asset dependencies -->
 <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
 <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
 
-<!-- Minimal structural styles -->
 <style>
   .tabulator-container-wrap {
     margin: 1.5rem 0;
@@ -92,7 +90,7 @@
 </style>
 
 <script>
-// Off-screen LaTeX pre-renderer & cache
+// Batches and caches off-screen MathJax/KaTeX rendering before Tabulator mounts
 const MathRenderer = {
   cache: new Map(),
   readyPromise: null,
@@ -187,7 +185,6 @@ const MathRenderer = {
   }
 };
 
-// Pure numeric & citation helpers
 function formatScaledNumber(val, factor = 1) {
   if (val === null || val === undefined || val === "") return "";
   const num = Number(val);
@@ -218,7 +215,6 @@ function parseCitationKeys(raw) {
     .filter(Boolean);
 }
 
-// Temporary highlight for selected reference entries
 const highlightTimers = new WeakMap();
 
 function highlightReference(entryEl) {
@@ -233,7 +229,6 @@ function highlightReference(entryEl) {
   }, 1600));
 }
 
-// Select dropdown factory
 function createSelectMenu(options, onChange, selectedValue = "") {
   const select = document.createElement("select");
   select.className = "form-select form-select-sm tabulator-unified-select";
@@ -253,7 +248,7 @@ function createSelectMenu(options, onChange, selectedValue = "") {
   return select;
 }
 
-// Column feature registry
+// Column formatting and header control behaviors
 const ColumnFeatures = {
   number: (colDef, colCfg, ctx) => {
     colDef.formatter = (cell) => formatScaledNumber(cell.getValue(), ctx.unitFactors[colCfg.index]);
@@ -337,9 +332,9 @@ const ColumnFeatures = {
   }
 };
 
-// Table controller
 let tableInstanceCounter = 0;
 
+// Manages a Tabulator instance, math pre-rendering, row-height sync, and live bibliography filtering
 class TabulatorTableController {
   constructor(container) {
     this.instanceId = ++tableInstanceCounter;
@@ -392,6 +387,7 @@ class TabulatorTableController {
     return strings;
   }
 
+  // Claims Pandoc-rendered #ref-<key> elements into the table's local bibliography block
   initBibliography() {
     if (!this.refsWrap || this.inspireFields.length === 0) return;
 
@@ -428,6 +424,7 @@ class TabulatorTableController {
         const scopedId = `ref-t${this.instanceId}-${key}`;
         entryEl = sourceEl.cloneNode(true);
         entryEl.id = scopedId;
+        entryEl.style.display = "";
         this.refTargetIds.set(key, scopedId);
       } else {
         entryEl = sourceEl;
@@ -438,17 +435,17 @@ class TabulatorTableController {
       this.refEntries.set(key, entryEl);
     });
 
-    // Hide Pandoc's global #refs container if no non-table citations remain
     const globalRefs = document.getElementById("refs");
-    if (globalRefs && globalRefs.querySelectorAll(".csl-entry").length === 0) {
+    if (globalRefs && !globalRefs.querySelector(".csl-entry")) {
       globalRefs.style.display = "none";
       const quartoAppendix = globalRefs.closest("#quarto-appendix");
-      if (quartoAppendix && quartoAppendix.querySelectorAll(".csl-entry:not(.dynamic-table-refs .csl-entry)").length === 0) {
+      if (quartoAppendix && !quartoAppendix.querySelector(".csl-entry")) {
         quartoAppendix.style.display = "none";
       }
     }
   }
 
+  // Shows only reference entries belonging to currently visible table rows
   syncBibliography() {
     if (!this.refsWrap || this.refEntries.size === 0 || !this.table) return;
 
@@ -470,6 +467,7 @@ class TabulatorTableController {
     this.refsWrap.style.display = visibleCount > 0 ? "" : "none";
   }
 
+  // Recalculates row heights after column resize or render passes
   scheduleHeightSync() {
     cancelAnimationFrame(this.heightSyncRaf);
     this.heightSyncRaf = requestAnimationFrame(() => {
@@ -580,7 +578,6 @@ class TabulatorTableController {
   }
 }
 
-// Global initialization
 function initDynamicTables() {
   document.querySelectorAll(".tabulator-container-wrap").forEach(el => {
     if (!el.dataset.initialized) {

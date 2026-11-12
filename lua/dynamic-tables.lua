@@ -2,7 +2,6 @@
 -- Dynamic CSV Tables Pandoc Lua Filter
 -- =============================================================================
 
--- Default configuration
 local DEFAULTS = {
     searchable = true,
     sortable   = true,
@@ -10,7 +9,6 @@ local DEFAULTS = {
     auto_type  = true
 }
 
--- Filter path mappings
 local PATHS = {
     filter_rel   = "lua/dynamic%-tables%.lua",
     template_rel = "include/dynamic-tables.html"
@@ -23,7 +21,7 @@ local inspire_keys_seen = {}
 
 local SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
 
--- Load template HTML assets
+-- Loads and caches the client-side Tabulator HTML/CSS/JS template
 local function load_assets_html()
     if cached_assets_html then return cached_assets_html end
 
@@ -38,7 +36,6 @@ local function load_assets_html()
     return cached_assets_html
 end
 
--- String & URL utilities
 local function trim(s)
     return s and s:match("^%s*(.-)%s*$") or ""
 end
@@ -58,9 +55,7 @@ local function split_citation_keys(raw)
     if not raw or raw == "" then return keys end
     for token in raw:gmatch("[^,;]+") do
         local key = trim(token):gsub("^@", "")
-        if key ~= "" then
-            table.insert(keys, key)
-        end
+        if key ~= "" then table.insert(keys, key) end
     end
     return keys
 end
@@ -72,37 +67,23 @@ local function register_inspire_key(key)
     end
 end
 
--- Parse BibTeX text into a map of { [texkey] = entry_string } using brace matching
+-- Indexes BibTeX entries by citation key using Lua's balanced-brace pattern
 local function index_bibtex_entries(raw_bib, entries_by_key)
     local pos, len = 1, #raw_bib
     while pos <= len do
-        local at_start, brace_open, key = raw_bib:find("@[%w_%-]+%s*(%b{})", pos)
-        if not at_start then
-            -- Fallback scanner for entries containing nested braces
-            local header_start, open_pos, entry_key = raw_bib:find("@[%w_%-]+%s*{%s*([^,%s]+)%s*,", pos)
-            if not header_start then break end
+        local start_idx, end_idx = raw_bib:find("@[%w_%-]+%s*%b{}", pos)
+        if not start_idx then break end
 
-            local depth, i = 1, open_pos
-            while i <= len and depth > 0 do
-                local ch = raw_bib:sub(i, i)
-                if ch == "{" then depth = depth + 1
-                elseif ch == "}" then depth = depth - 1 end
-                i = i + 1
-            end
-            entries_by_key[entry_key] = trim(raw_bib:sub(header_start, i - 1))
-            pos = i
-        else
-            local entry_text = trim(raw_bib:sub(at_start, brace_open))
-            local entry_key = entry_text:match("^@[%w_%-]+%s*{%s*([^,%s]+)%s*,")
-            if entry_key then
-                entries_by_key[entry_key] = entry_text
-            end
-            pos = brace_open + 1
+        local entry_text = trim(raw_bib:sub(start_idx, end_idx))
+        local entry_key = entry_text:match("^@[%w_%-]+%s*{%s*([^,%s]+)%s*,")
+        if entry_key then
+            entries_by_key[entry_key] = entry_text
         end
+        pos = end_idx + 1
     end
 end
 
--- Fetch BibTeX entries from INSPIRE-HEP API and write a temporary .bib file ordered by CSV keys
+-- Queries INSPIRE-HEP in batches and writes a temporary .bib file ordered by CSV appearance
 local function write_temp_inspire_bibtex(keys)
     if #keys == 0 then return nil end
 
@@ -132,7 +113,6 @@ local function write_temp_inspire_bibtex(keys)
             table.insert(ordered_entries, entries_by_key[key])
         end
     end
-
     if #ordered_entries == 0 then return nil end
 
     local raw_tmp = os.tmpname()
@@ -150,7 +130,7 @@ local function write_temp_inspire_bibtex(keys)
     return tmp_bib
 end
 
--- Append temporary .bib file to document metadata for Pandoc citeproc
+-- Registers the temporary .bib file in document metadata for Pandoc citeproc
 local function append_meta_bibliography(meta, bib_path)
     local list = pandoc.MetaList({})
     local existing = {}
@@ -175,7 +155,7 @@ local function append_meta_bibliography(meta, bib_path)
     meta.bibliography = list
 end
 
--- CSV line parser
+-- Parses a single RFC-4180 CSV line supporting quoted fields and escaped quotes
 local function parse_csv_line(line)
     local res, pos, len = {}, 1, #line
     while pos <= len do
@@ -205,7 +185,7 @@ local function parse_csv_line(line)
     return res
 end
 
--- File resolution helper
+-- Resolves CSV path relative to working directory, filter location, or input document
 local function open_csv_file(src)
     local file = io.open(src, "r")
     if file then return file end
@@ -226,30 +206,27 @@ local function open_csv_file(src)
     return nil
 end
 
--- Column data type detection
 local function auto_detect_column_type(rows, col_index)
     local has_numeric = false
     for _, r in ipairs(rows) do
         local val = trim(r["col_" .. tostring(col_index - 1)] or "")
         if val ~= "" then
-            local num = tonumber(val)
-            if not num then return "string" end
+            if not tonumber(val) then return "string" end
             has_numeric = true
         end
     end
     return has_numeric and "number" or "string"
 end
 
--- AST text extraction recursively preserving math & quoted nodes
+-- Preserves LaTeX math and quote characters when extracting configuration lines from Pandoc AST
 local function stringify_inline_with_math(inline)
     if not inline then return "" end
 
     if inline.t == "Math" then
         if inline.mathtype == "DisplayMath" or inline.mathtype == pandoc.DisplayMath then
             return "\\[" .. inline.text .. "\\]"
-        else
-            return "\\(" .. inline.text .. "\\)"
         end
+        return "\\(" .. inline.text .. "\\)"
     elseif inline.t == "Quoted" then
         local q_char = (inline.quotetype == "SingleQuote" or inline.quotetype == pandoc.SingleQuote) and "'" or '"'
         local inner = {}
@@ -292,14 +269,13 @@ local function extract_lines_from_div(el)
     return lines
 end
 
--- Column rule parser
+-- Parses per-column configuration directives (header, units, formatting tags)
 local function parse_column_rule(line)
     local col_idx = tonumber(line:match("^col%a*%s+(%d+)"))
     if not col_idx then return nil end
     local body = trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    -- Header extraction & quote stripping
     local raw_header = body:match('header%s*=%s*(.-)%s*,') or body:match('header%s*=%s*(.*)$')
     if raw_header then
         local clean_hdr = trim(raw_header):gsub('^["\'“]+', ''):gsub('["\'”]+$', '')
@@ -307,7 +283,6 @@ local function parse_column_rule(line)
         body = body:gsub('header%s*=%s*.-,', ''):gsub('header%s*=%s*.*$', '')
     end
 
-    -- Units definition extraction
     local units_str = body:match("units%((.-)%)")
     if units_str then
         local map, units = {}, {}
@@ -321,7 +296,6 @@ local function parse_column_rule(line)
         body = body:gsub("units%((.-)%)", "")
     end
 
-    -- Tag parsing
     for tag in body:gmatch("[^,]+") do
         tag = trim(tag)
         if tag == "unsortable" then
@@ -346,7 +320,6 @@ local function parse_column_rule(line)
         end
     end
 
-    -- Fencing logic:
     if rule.header then
         if rule.latex or rule.latexnum then
             rule.header = rule.header:gsub("%$([^%$]+)%$", "\\(%1\\)")
@@ -358,11 +331,30 @@ local function parse_column_rule(line)
     return rule
 end
 
--- Main table renderer
-local function render_table(src, searchable, per_page, sortable, columns_meta)
-    local file = open_csv_file(src)
+local function default_table_options()
+    return {
+        src        = nil,
+        searchable = tostring(DEFAULTS.searchable),
+        per_page   = tostring(DEFAULTS.per_page),
+        sortable   = tostring(DEFAULTS.sortable)
+    }
+end
+
+local function apply_table_option(opts, key, val)
+    key = trim(key):lower()
+    val = trim(val)
+    if val == "" then return end
+    if key == "src" then opts.src = val
+    elseif key == "searchable" then opts.searchable = val
+    elseif key == "per-page" then opts.per_page = val
+    elseif key == "sortable" then opts.sortable = val end
+end
+
+-- Renders a CSV dataset into a Tabulator mount container and optional bibliography block
+local function render_table(opts, columns_meta)
+    local file = open_csv_file(opts.src)
     if not file then
-        error("[dynamic-tables.lua] Error: Cannot open CSV file at '" .. src .. "'. Check file path.")
+        error("[dynamic-tables.lua] Error: Cannot open CSV file at '" .. opts.src .. "'. Check file path.")
     end
 
     local lines = {}
@@ -420,9 +412,9 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
         html_escape(pandoc.json.encode(headers)),
         html_escape(pandoc.json.encode(rows)),
         html_escape(pandoc.json.encode(final_columns_meta)),
-        html_escape(searchable or tostring(DEFAULTS.searchable)),
-        html_escape(per_page or tostring(DEFAULTS.per_page)),
-        html_escape(sortable or tostring(DEFAULTS.sortable))
+        html_escape(opts.searchable),
+        html_escape(opts.per_page),
+        html_escape(opts.sortable)
     )
 
     if has_inspire then
@@ -432,30 +424,29 @@ local function render_table(src, searchable, per_page, sortable, columns_meta)
     return pandoc.RawBlock('html', html)
 end
 
--- Pandoc AST entry points
 function Para(p)
     local txt = trim(pandoc.utils.stringify(p))
     local src = txt:match("^%!dynamic%-table:%s*(.+)$")
-    return src and render_table(trim(src), tostring(DEFAULTS.searchable), tostring(DEFAULTS.per_page), tostring(DEFAULTS.sortable), {}) or nil
+    if not src then return nil end
+    local opts = default_table_options()
+    opts.src = trim(src)
+    return render_table(opts, {})
 end
 
 function Div(el)
     if not el.classes:includes("dynamic-table") then return nil end
-    local src        = el.attributes["src"]
-    local searchable = el.attributes["searchable"] or tostring(DEFAULTS.searchable)
-    local per_page   = el.attributes["per-page"] or tostring(DEFAULTS.per_page)
-    local sortable   = el.attributes["sortable"] or tostring(DEFAULTS.sortable)
+    local opts = default_table_options()
     local columns_meta = {}
+
+    for k, v in pairs(el.attributes) do
+        apply_table_option(opts, k, v)
+    end
 
     for _, line in ipairs(extract_lines_from_div(el)) do
         if not line:match("^#") then
             local key, val = line:match("^([%w_%-]+):%s*(.*)$")
             if key and val then
-                key = key:lower(); val = trim(val)
-                if key == "src" then src = val
-                elseif key == "searchable" then searchable = val
-                elseif key == "per-page" then per_page = val
-                elseif key == "sortable" then sortable = val end
+                apply_table_option(opts, key, val)
             elseif line:lower():match("^col") then
                 local col_rule = parse_column_rule(line)
                 if col_rule then table.insert(columns_meta, col_rule) end
@@ -463,7 +454,7 @@ function Div(el)
         end
     end
 
-    return (src and src ~= "") and render_table(src, searchable, per_page, sortable, columns_meta) or nil
+    return (opts.src and opts.src ~= "") and render_table(opts, columns_meta) or nil
 end
 
 function Pandoc(doc)
@@ -497,8 +488,7 @@ function Pandoc(doc)
     end
 
     if has_dynamic_table then
-        local assets_html = load_assets_html()
-        table.insert(doc.blocks, pandoc.RawBlock('html', assets_html))
+        table.insert(doc.blocks, pandoc.RawBlock('html', load_assets_html()))
         has_dynamic_table = false
     end
     return doc
