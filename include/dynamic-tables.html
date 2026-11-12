@@ -372,10 +372,13 @@ class TabulatorTableController {
     });
 
     this.columnObserver = new ResizeObserver(() => this.scheduleHeightSync());
-    tableDiv.querySelectorAll(".tabulator-col").forEach(col => this.columnObserver.observe(col));
+
+    this.table.on("tableBuilt", () => {
+      tableDiv.querySelectorAll(".tabulator-col").forEach(col => this.columnObserver.observe(col));
+      this.scheduleHeightSync();
+    });
 
     this.table.on("renderComplete", () => this.scheduleHeightSync());
-    this.scheduleHeightSync();
 
     if (searchInput) {
       let searchTimer = null;
