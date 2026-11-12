@@ -540,7 +540,6 @@ class TabulatorTableController {
       return colDef;
     });
 
-    const self = this;
     this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
@@ -549,10 +548,11 @@ class TabulatorTableController {
       pagination: "local",
       paginationSize: this.perPage,
       paginationSizeSelector: [10, 15, 25, 50],
-      movableColumns: false,
-      tableBuilt() {
-        requestAnimationFrame(() => self.table?.redraw(true));
-      }
+      movableColumns: false
+    });
+
+    this.table.on("tableBuilt", () => {
+      requestAnimationFrame(() => this.table.redraw(true));
     });
 
     if (searchInput) {
