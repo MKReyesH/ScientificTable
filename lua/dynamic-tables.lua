@@ -1,5 +1,5 @@
 local DEFAULTS = {
-    searchable = true,
+    searchable = false,
     sortable   = true,
     per_page   = 15,
     auto_type  = true
