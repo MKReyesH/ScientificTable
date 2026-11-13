@@ -443,7 +443,7 @@ Note
 <p>To render a CSV file with default interactive settings, write a standalone paragraph starting with <code>!dynamic-table:</code> followed by the file path:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>!dynamic-table: data/example-table.csv</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This enables a live full-row search box, clickable column sorting, pagination (15 rows per page), and automatic detection of numeric versus text columns:</p>
-<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;fakeKey:2020&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;fakeKey:2020, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="15" data-sortable="true"></div>
+<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;fakeKey:2020&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;fakeKey:2020, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;string&quot;}]" data-searchable="false" data-perpage="15" data-sortable="true"></div>
 </section>
 <section id="fenced-block-configuration" class="level1 page-columns page-full">
 <h1>Fenced Block Configuration</h1>
@@ -498,7 +498,7 @@ Note
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>col 2: header=$E_{\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)</span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>col 3: header="References", inspire, unsortable</span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;fakeKey:2020&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;fakeKey:2020, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Channel&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Operator&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;\\(E_{\\text{LIV}}^{(1)}\\)&quot;,&quot;index&quot;:2,&quot;latex&quot;:true,&quot;latexnum&quot;:true,&quot;map&quot;:{&quot;GeV&quot;:1,&quot;Planck units&quot;:8.19e-20,&quot;TeV&quot;:1.0e-3},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;GeV&quot;,&quot;TeV&quot;,&quot;Planck units&quot;]},{&quot;header&quot;:&quot;References&quot;,&quot;index&quot;:3,&quot;inspire&quot;:true,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="4" data-sortable="true"></div>
+<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;fakeKey:2020&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;fakeKey:2020, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Channel&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Operator&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;\\(E_{\\text{LIV}}^{(1)}\\)&quot;,&quot;index&quot;:2,&quot;latex&quot;:true,&quot;latexnum&quot;:true,&quot;map&quot;:{&quot;GeV&quot;:1,&quot;Planck units&quot;:8.19e-20,&quot;TeV&quot;:1.0e-3},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;GeV&quot;,&quot;TeV&quot;,&quot;Planck units&quot;]},{&quot;header&quot;:&quot;References&quot;,&quot;index&quot;:3,&quot;inspire&quot;:true,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="false" data-perpage="4" data-sortable="true"></div>
 <div class="dynamic-table-refs" style="display:none;"></div>
 
 
@@ -510,14 +510,19 @@ Note
   .tabulator-container-wrap {
     margin: 1.5rem 0;
     font-size: 0.9em;
-    width: 100%;
+    width: fit-content;
+    max-width: 80vw;
+  }
+  .tabulator-container-wrap.column-page {
+    max-width: 100%;
   }
 
   .tabulator {
     border: 1px solid var(--bs-border-color);
     background-color: var(--bs-body-bg) !important;
     color: var(--bs-body-color) !important;
-    width: 100% !important;
+    width: fit-content !important;
+    max-width: 100% !important;
   }
   .tabulator .tabulator-header {
     background-color: var(--bs-tertiary-bg) !important;
@@ -529,6 +534,10 @@ Note
     border-right-color: var(--bs-border-color) !important;
     color: var(--bs-body-color) !important;
     overflow: visible !important;
+  }
+  .tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-title {
+    white-space: normal;
+    overflow-wrap: break-word;
   }
   .tabulator .tabulator-header .tabulator-col.tabulator-sortable:hover {
     background-color: var(--bs-secondary-bg) !important;
@@ -578,6 +587,8 @@ Note
   }
   .tabulator-row .tabulator-cell {
     border-right-color: var(--bs-border-color) !important;
+    white-space: normal;
+    overflow-wrap: break-word;
   }
 
   .tabulator-footer {
@@ -1089,7 +1100,7 @@ class TabulatorTableController {
     }
 
     const scrollWrap = document.createElement("div");
-    scrollWrap.style.cssText = "overflow-x:auto;width:100%;";
+    scrollWrap.style.cssText = "max-width:100%;";
     const tableDiv = document.createElement("div");
     scrollWrap.appendChild(tableDiv);
     this.container.appendChild(scrollWrap);
@@ -1098,6 +1109,7 @@ class TabulatorTableController {
       const colDef = {
         title: colCfg.name,
         field: colCfg.field,
+        maxWidth: 320,
         headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
         sorter: colCfg.type === "number" ? "number" : "string",
         sorterParams: { alignEmptyValues: "bottom" },
@@ -1124,7 +1136,7 @@ class TabulatorTableController {
     this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
-      layout: "fitDataFill",
+      layout: "fitData",
       responsiveLayout: false,
       pagination: "local",
       paginationSize: this.perPage,

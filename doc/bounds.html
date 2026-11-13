@@ -401,14 +401,19 @@ window.Quarto = {
   .tabulator-container-wrap {
     margin: 1.5rem 0;
     font-size: 0.9em;
-    width: 100%;
+    width: fit-content;
+    max-width: 80vw;
+  }
+  .tabulator-container-wrap.column-page {
+    max-width: 100%;
   }
 
   .tabulator {
     border: 1px solid var(--bs-border-color);
     background-color: var(--bs-body-bg) !important;
     color: var(--bs-body-color) !important;
-    width: 100% !important;
+    width: fit-content !important;
+    max-width: 100% !important;
   }
   .tabulator .tabulator-header {
     background-color: var(--bs-tertiary-bg) !important;
@@ -420,6 +425,10 @@ window.Quarto = {
     border-right-color: var(--bs-border-color) !important;
     color: var(--bs-body-color) !important;
     overflow: visible !important;
+  }
+  .tabulator .tabulator-header .tabulator-col .tabulator-col-content .tabulator-col-title {
+    white-space: normal;
+    overflow-wrap: break-word;
   }
   .tabulator .tabulator-header .tabulator-col.tabulator-sortable:hover {
     background-color: var(--bs-secondary-bg) !important;
@@ -469,6 +478,8 @@ window.Quarto = {
   }
   .tabulator-row .tabulator-cell {
     border-right-color: var(--bs-border-color) !important;
+    white-space: normal;
+    overflow-wrap: break-word;
   }
 
   .tabulator-footer {
@@ -980,7 +991,7 @@ class TabulatorTableController {
     }
 
     const scrollWrap = document.createElement("div");
-    scrollWrap.style.cssText = "overflow-x:auto;width:100%;";
+    scrollWrap.style.cssText = "max-width:100%;";
     const tableDiv = document.createElement("div");
     scrollWrap.appendChild(tableDiv);
     this.container.appendChild(scrollWrap);
@@ -989,6 +1000,7 @@ class TabulatorTableController {
       const colDef = {
         title: colCfg.name,
         field: colCfg.field,
+        maxWidth: 320,
         headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
         sorter: colCfg.type === "number" ? "number" : "string",
         sorterParams: { alignEmptyValues: "bottom" },
@@ -1015,7 +1027,7 @@ class TabulatorTableController {
     this.table = new Tabulator(tableDiv, {
       data: this.rows,
       columns: columns,
-      layout: "fitDataFill",
+      layout: "fitData",
       responsiveLayout: false,
       pagination: "local",
       paginationSize: this.perPage,
