@@ -335,7 +335,7 @@ local function parse_column_rule(line)
 
     -- Normalize math delimiters based on whether header LaTeX rendering is active
     if rule.header then
-        if rule.latex or rule.latexnum then
+        if rule.latex then
             rule.header = rule.header:gsub("%$([^%$]+)%$", "\\(%1\\)")
         else
             rule.header = rule.header:gsub("\\%((.-)\\%)", "$%1$")
