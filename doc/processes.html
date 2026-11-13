@@ -424,8 +424,7 @@ window.Quarto = {
 </header>
 
 
-<p>Standard Markdown tables, as shown in the <a href="../doc/Examples/example1.qmd">Quarto Markdown Guide</a>, work well for small static datasets. However, scientific datasets often contain dozens of rows, numerical measurements across different physical units, LaTeX expressions, and literature references. To handle these cases, this template includes a custom <code>dynamic-tables</code> filter that reads external <code>.csv</code> files and renders interactive tables powered by Tabulator.</p>
-<p>This document serves as both a guide and a live test file for the dynamic table syntax. Each configuration snippet below is followed immediately by the rendered table it produces.</p>
+<p>Standard Markdown tables, as shown in the <a href="../doc/Examples/example1.qmd">Quarto Markdown Guide</a>, work well for small static datasets. For larger scientific tables requiring live search, sorting, unit conversions, LaTeX math, or literature references, this template provides a custom <code>dynamic-tables</code> filter that renders interactive Tabulator tables directly from <code>.csv</code> files.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -436,121 +435,70 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>CSV files follow standard RFC-4180 formatting, meaning fields or headers containing commas can be enclosed in double quotes (e.g., <code>"Operator, Symbol"</code>). File paths in <code>src</code> are resolved relative to the project root, the filter directory, or the current <code>.qmd</code> page.</p>
+<p>CSV files follow RFC-4180 formatting, so fields or headers containing commas can be enclosed in double quotes (e.g., <code>"Operator, Symbol"</code>). Paths in <code>src</code> are resolved relative to the project root, the filter directory, or the current <code>.qmd</code> file.</p>
 </div>
 </div>
-<section id="quick-table-insertion" class="level1 page-columns page-full">
-<h1>Quick Table Insertion</h1>
-<p>To display a CSV file with default interactive settings, write a standalone paragraph starting with <code>!dynamic-table:</code> followed by the path to the file:</p>
+<section id="quick-one-line-insertion" class="level1 page-columns page-full">
+<h1>Quick One-Line Insertion</h1>
+<p>To render a CSV file with default interactive settings, write a standalone paragraph starting with <code>!dynamic-table:</code> followed by the file path:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>!dynamic-table: data/example-table.csv</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>This automatically generates an interactive table with a live search bar, clickable column sorting, pagination (15 rows per page), and automatic detection of numeric versus text columns:</p>
+<p>This enables a live full-row search box, clickable column sorting, pagination (15 rows per page), and automatic detection of numeric versus text columns:</p>
 <div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="15" data-sortable="true"></div>
 </section>
-<section id="customizing-tables-and-columns" class="level1 page-columns page-full">
-<h1>Customizing Tables and Columns</h1>
-<p>For full control over table behavior and individual columns, use a fenced <code>::: {.dynamic-table}</code> block. Inside the block, lines starting with <code>#</code> are treated as comments and ignored during rendering.</p>
-<section id="global-table-options" class="level2 page-columns page-full">
-<h2 class="anchored" data-anchor-id="global-table-options">Global Table Options</h2>
-<p>Global options are written as <code>key: value</code> pairs at the top of the <code>::: {.dynamic-table}</code> block:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>searchable: false</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>sortable: true</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>per-page: 3</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="fenced-block-configuration" class="level1 page-columns page-full">
+<h1>Fenced Block Configuration</h1>
+<p>For custom table settings and per-column rules, use a fenced <code>::: {.dynamic-table}</code> block. Lines starting with <code>#</code> inside the block are treated as comments and ignored.</p>
+<section id="global-options" class="level2">
+<h2 class="anchored" data-anchor-id="global-options">Global Options</h2>
+<p>Global options are specified as <code>key: value</code> pairs at the top of the block:</p>
 <ul>
 <li><code>src</code>: Path to the input <code>.csv</code> file (required).</li>
-<li><code>searchable</code>: Displays a live full-row search box above the table (<code>true</code> or <code>false</code>, default <code>true</code>).</li>
+<li><code>searchable</code>: Shows or hides the search bar above the table (<code>true</code> or <code>false</code>, default <code>true</code>).</li>
 <li><code>sortable</code>: Enables or disables sorting across all columns (<code>true</code> or <code>false</code>, default <code>true</code>).</li>
-<li><code>per-page</code>: Sets the initial number of rows displayed per page (default <code>15</code>, with a built-in selector for 10, 15, 25, and 50 rows).</li>
+<li><code>per-page</code>: Sets the initial number of rows per page (default <code>15</code>, with a selector for 10, 15, 25, and 50 rows).</li>
 </ul>
-<p>With <code>searchable: false</code> and <code>per-page: 3</code>, the table hides the search input and paginates the dataset into three rows per page:</p>
-<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;string&quot;}]" data-searchable="false" data-perpage="3" data-sortable="true"></div>
 </section>
-<section id="column-headers-types-and-sorting" class="level2 page-columns page-full">
-<h2 class="anchored" data-anchor-id="column-headers-types-and-sorting">Column Headers, Types, and Sorting</h2>
-<p>Individual columns are configured using <code>col N:</code>, where <code>N</code> is the <strong>0-indexed</strong> column position (<code>col 0:</code> refers to the first column, <code>col 1:</code> to the second, and so on). Multiple properties for the same column are separated by commas:</p>
+<section id="column-options" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="column-options">Column Options</h2>
+<p>Individual columns are configured with <code>col N:</code>, using a <strong>0-based index</strong> (<code>col 0:</code> is the first column, <code>col 1:</code> is the second, and so on). Multiple properties for the same column are separated by commas:</p>
+<ul>
+<li><code>header=...</code>: Replaces the CSV header title. Enclose the title in quotes if it contains commas.</li>
+<li><code>number</code> / <code>string</code>: Enforces numeric or alphabetical sorting instead of auto-detection (empty cells always sort to the bottom).</li>
+<li><code>sortable</code> / <code>unsortable</code>: Overrides the global <code>sortable</code> setting for that column.</li>
+<li><code>latex</code>: Typesets LaTeX math (<code>$ ... $</code>) in both the column header and cell text via MathJax or KaTeX.</li>
+<li><code>dropdown</code>: Adds a filter menu in the column header populated with all unique values in that column.</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>searchable: true</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>per-page: 4</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu"># Column rules (0-indexed)</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>col 0: header="Channel", dropdown</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>col 1: header="Operator", latex</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>col 2: header="Bound <span class="co">[</span><span class="ot">GeV</span><span class="co">]</span>", number</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>col 3: header="Reference", unsortable</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Channel&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Operator&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Bound [GeV]&quot;,&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;header&quot;:&quot;Reference&quot;,&quot;index&quot;:3,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="4" data-sortable="true"></div>
+</section>
+<section id="scientific-units-math-numbers-and-inspire-hep-citations" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="scientific-units-math-numbers-and-inspire-hep-citations">Scientific Units, Math Numbers, and INSPIRE-HEP Citations</h2>
+<p>Three specialized column tags support physical unit scaling, scientific notation in math mode, and automated bibliography management:</p>
+<ul>
+<li><code>units(Unit1: factor1, Unit2: factor2, ...)</code>: Adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor and formats extreme magnitudes in exponential notation.</li>
+<li><code>latexnum</code>: Renders numeric cells—including scientific notation such as <code>1.0e-16</code> displayed as <span class="math inline">\(1.00 \times 10^{-16}\)</span>—in math mode, updating automatically whenever the user switches units.</li>
+<li><code>inspire</code>: Treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP, formats them with the project’s CSL style, turns each key into a clickable <code>[N] CitationKey</code> link, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated.</li>
+</ul>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>col 0: header="Detection Channel", string</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>col 1: header="Operator, Symbol", unsortable</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>col 2: header="Energy Bound <span class="co">[</span><span class="ot">GeV</span><span class="co">]</span>", number</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>col 3: header="INSPIRE Key", unsortable</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<ul>
-<li><code>header=...</code>: Overrides the column title from the CSV header row. Enclose the title in quotes if it contains commas.</li>
-<li><code>number</code> / <code>string</code>: Overrides automatic column type detection to enforce numeric or alphabetical sorting (empty cells are always placed at the bottom).</li>
-<li><code>sortable</code> / <code>unsortable</code>: Overrides the global <code>sortable</code> setting for that specific column.</li>
-</ul>
-<p>Rendering this configuration updates all four column headers and disables sorting on the symbol and key columns:</p>
-<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;header&quot;:&quot;Detection Channel&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Operator, Symbol&quot;,&quot;index&quot;:1,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Energy Bound [GeV]&quot;,&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;header&quot;:&quot;INSPIRE Key&quot;,&quot;index&quot;:3,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="15" data-sortable="true"></div>
-</section>
-<section id="dropdown-filters-and-unit-conversions" class="level2 page-columns page-full">
-<h2 class="anchored" data-anchor-id="dropdown-filters-and-unit-conversions">Dropdown Filters and Unit Conversions</h2>
-<p>Columns with categorical values or physical quantities can include interactive controls directly in the column header:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>col 0: header="Channel", dropdown</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>col 2: header="Energy Bound", units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<ul>
-<li><code>dropdown</code>: Adds a dropdown menu in the column header populated automatically with all unique values present in that column.</li>
-<li><code>units(Unit1: factor1, Unit2: factor2, ...)</code>: Adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric value in the column by its corresponding conversion factor and formats extreme magnitudes in scientific notation.</li>
-</ul>
-<p>Try filtering by <code>Channel</code> or switching units in the <code>Energy Bound</code> header below:</p>
-<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Channel&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Energy Bound&quot;,&quot;index&quot;:2,&quot;map&quot;:{&quot;GeV&quot;:1,&quot;Planck units&quot;:8.19e-20,&quot;TeV&quot;:1.0e-3},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;GeV&quot;,&quot;TeV&quot;,&quot;Planck units&quot;]},{&quot;index&quot;:3,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="15" data-sortable="true"></div>
-</section>
-<section id="latex-math-formatting" class="level2 page-columns page-full">
-<h2 class="anchored" data-anchor-id="latex-math-formatting">LaTeX Math Formatting</h2>
-<p>Columns containing mathematical symbols or scientific numbers can be typeset using MathJax or KaTeX:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>col 1: header="Operator", latex</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>col 2: header=$E_{\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<ul>
-<li><code>latex</code>: Renders LaTeX expressions (enclosed in <code>$ ... $</code>) inside both the column header and text cells.</li>
-<li><code>latexnum</code>: Typesets numeric cells—including scientific notation such as <code>1.0e-16</code> rendered as <span class="math inline">\(1.00 \times 10^{-16}\)</span>—in math mode, updating automatically whenever the user switches units.</li>
-</ul>
-<p>The rendered table typesets both the operator formulas and the scaled numeric bounds in math mode:</p>
-<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Operator&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;\\(E_{\\text{LIV}}^{(1)}\\)&quot;,&quot;index&quot;:2,&quot;latex&quot;:true,&quot;latexnum&quot;:true,&quot;map&quot;:{&quot;GeV&quot;:1,&quot;Planck units&quot;:8.19e-20,&quot;TeV&quot;:1.0e-3},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;GeV&quot;,&quot;TeV&quot;,&quot;Planck units&quot;]},{&quot;index&quot;:3,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="15" data-sortable="true"></div>
-</section>
-</section>
-<section id="automated-inspire-hep-citations" class="level1 page-columns page-full">
-<h1>Automated INSPIRE-HEP Citations</h1>
-<p>A column tagged with <code>inspire</code> automatically links INSPIRE-HEP citation keys to a live bibliography rendered directly underneath the table:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>per-page: 3</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>col 3: header="References", inspire, unsortable</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>In the CSV file, cells in an <code>inspire</code> column should contain valid INSPIRE-HEP TeX keys (e.g., <code>Gotz:2014vza</code>). Multiple keys in the same cell can be separated by commas or semicolons (e.g., <code>"LHAASO:2021opi, Cao:2021tat"</code>).</p>
-<p>During site compilation, the filter automatically:</p>
-<ol type="1">
-<li>Queries the INSPIRE-HEP database for every unique citation key in the table.</li>
-<li>Formats the bibliography entries using the project’s CSL citation style and renders clickable <code>[N] CitationKey</code> links inside the table cells.</li>
-<li>Synchronizes the reference list below the table in real time so that only citations belonging to currently visible rows (after searching, filtering, or changing pages) are displayed.</li>
-</ol>
-<p>Notice below how switching between page 1 and page 2—or typing in the search bar—updates the <code>References</code> list underneath the table automatically, and clicking any citation link highlights its corresponding entry:</p>
-<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;header&quot;:&quot;References&quot;,&quot;index&quot;:3,&quot;inspire&quot;:true,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="3" data-sortable="true"></div>
-<div class="dynamic-table-refs" style="display:none;"></div>
-</section>
-<section id="complete-example" class="level1 page-columns page-full">
-<h1>Complete Example</h1>
-<p>Combining dropdown filtering, unit scaling, LaTeX math formatting, and automated INSPIRE-HEP references in a single block:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>searchable: true</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>per-page: 10</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu"># Column rules (0-indexed)</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>col 0: header="Channel", dropdown</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>col 1: header="Operator", latex</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>col 2: header=$E_{\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>col 3: header="References", inspire, unsortable</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>This produces the full interactive scientific table:</p>
-<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Channel&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Operator&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;\\(E_{\\text{LIV}}^{(1)}\\)&quot;,&quot;index&quot;:2,&quot;latex&quot;:true,&quot;latexnum&quot;:true,&quot;map&quot;:{&quot;GeV&quot;:1,&quot;Planck units&quot;:8.19e-20,&quot;TeV&quot;:1.0e-3},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;GeV&quot;,&quot;TeV&quot;,&quot;Planck units&quot;]},{&quot;header&quot;:&quot;References&quot;,&quot;index&quot;:3,&quot;inspire&quot;:true,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="10" data-sortable="true"></div>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>per-page: 4</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>col 0: header="Channel", dropdown</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>col 1: header="Operator", latex</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>col 2: header=$E_{\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>col 3: header="References", inspire, unsortable</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Channel&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Operator&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;\\(E_{\\text{LIV}}^{(1)}\\)&quot;,&quot;index&quot;:2,&quot;latex&quot;:true,&quot;latexnum&quot;:true,&quot;map&quot;:{&quot;GeV&quot;:1,&quot;Planck units&quot;:8.19e-20,&quot;TeV&quot;:1.0e-3},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;GeV&quot;,&quot;TeV&quot;,&quot;Planck units&quot;]},{&quot;header&quot;:&quot;References&quot;,&quot;index&quot;:3,&quot;inspire&quot;:true,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="4" data-sortable="true"></div>
 <div class="dynamic-table-refs" style="display:none;"></div>
 
 
@@ -1224,6 +1172,7 @@ if (document.readyState === "loading") {
 }
 </script>
 
+</section>
 </section>
 
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body" role="list">

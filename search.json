@@ -25,34 +25,27 @@
     "href": "doc/processes.html",
     "title": "How to create dynamic tables from CSV files",
     "section": "",
-    "text": "Standard Markdown tables, as shown in the Quarto Markdown Guide, work well for small static datasets. However, scientific datasets often contain dozens of rows, numerical measurements across different physical units, LaTeX expressions, and literature references. To handle these cases, this template includes a custom dynamic-tables filter that reads external .csv files and renders interactive tables powered by Tabulator.\nThis document serves as both a guide and a live test file for the dynamic table syntax. Each configuration snippet below is followed immediately by the rendered table it produces."
+    "text": "Standard Markdown tables, as shown in the Quarto Markdown Guide, work well for small static datasets. For larger scientific tables requiring live search, sorting, unit conversions, LaTeX math, or literature references, this template provides a custom dynamic-tables filter that renders interactive Tabulator tables directly from .csv files."
   },
   {
-    "objectID": "doc/processes.html#global-table-options",
-    "href": "doc/processes.html#global-table-options",
+    "objectID": "doc/processes.html#global-options",
+    "href": "doc/processes.html#global-options",
     "title": "How to create dynamic tables from CSV files",
-    "section": "Global Table Options",
-    "text": "Global Table Options\nGlobal options are written as key: value pairs at the top of the ::: {.dynamic-table} block:\n::: {.dynamic-table}\nsrc: data/example-table.csv\nsearchable: false\nsortable: true\nper-page: 3\n:::\n\nsrc: Path to the input .csv file (required).\nsearchable: Displays a live full-row search box above the table (true or false, default true).\nsortable: Enables or disables sorting across all columns (true or false, default true).\nper-page: Sets the initial number of rows displayed per page (default 15, with a built-in selector for 10, 15, 25, and 50 rows).\n\nWith searchable: false and per-page: 3, the table hides the search input and paginates the dataset into three rows per page:"
+    "section": "Global Options",
+    "text": "Global Options\nGlobal options are specified as key: value pairs at the top of the block:\n\nsrc: Path to the input .csv file (required).\nsearchable: Shows or hides the search bar above the table (true or false, default true).\nsortable: Enables or disables sorting across all columns (true or false, default true).\nper-page: Sets the initial number of rows per page (default 15, with a selector for 10, 15, 25, and 50 rows)."
   },
   {
-    "objectID": "doc/processes.html#column-headers-types-and-sorting",
-    "href": "doc/processes.html#column-headers-types-and-sorting",
+    "objectID": "doc/processes.html#column-options",
+    "href": "doc/processes.html#column-options",
     "title": "How to create dynamic tables from CSV files",
-    "section": "Column Headers, Types, and Sorting",
-    "text": "Column Headers, Types, and Sorting\nIndividual columns are configured using col N:, where N is the 0-indexed column position (col 0: refers to the first column, col 1: to the second, and so on). Multiple properties for the same column are separated by commas:\n::: {.dynamic-table}\nsrc: data/example-table.csv\ncol 0: header=\"Detection Channel\", string\ncol 1: header=\"Operator, Symbol\", unsortable\ncol 2: header=\"Energy Bound [GeV]\", number\ncol 3: header=\"INSPIRE Key\", unsortable\n:::\n\nheader=...: Overrides the column title from the CSV header row. Enclose the title in quotes if it contains commas.\nnumber / string: Overrides automatic column type detection to enforce numeric or alphabetical sorting (empty cells are always placed at the bottom).\nsortable / unsortable: Overrides the global sortable setting for that specific column.\n\nRendering this configuration updates all four column headers and disables sorting on the symbol and key columns:"
+    "section": "Column Options",
+    "text": "Column Options\nIndividual columns are configured with col N:, using a 0-based index (col 0: is the first column, col 1: is the second, and so on). Multiple properties for the same column are separated by commas:\n\nheader=...: Replaces the CSV header title. Enclose the title in quotes if it contains commas.\nnumber / string: Enforces numeric or alphabetical sorting instead of auto-detection (empty cells always sort to the bottom).\nsortable / unsortable: Overrides the global sortable setting for that column.\nlatex: Typesets LaTeX math ($ ... $) in both the column header and cell text via MathJax or KaTeX.\ndropdown: Adds a filter menu in the column header populated with all unique values in that column.\n\n::: {.dynamic-table}\nsrc: data/example-table.csv\nsearchable: true\nper-page: 4\n\n# Column rules (0-indexed)\ncol 0: header=\"Channel\", dropdown\ncol 1: header=\"Operator\", latex\ncol 2: header=\"Bound [GeV]\", number\ncol 3: header=\"Reference\", unsortable\n:::"
   },
   {
-    "objectID": "doc/processes.html#dropdown-filters-and-unit-conversions",
-    "href": "doc/processes.html#dropdown-filters-and-unit-conversions",
+    "objectID": "doc/processes.html#scientific-units-math-numbers-and-inspire-hep-citations",
+    "href": "doc/processes.html#scientific-units-math-numbers-and-inspire-hep-citations",
     "title": "How to create dynamic tables from CSV files",
-    "section": "Dropdown Filters and Unit Conversions",
-    "text": "Dropdown Filters and Unit Conversions\nColumns with categorical values or physical quantities can include interactive controls directly in the column header:\n::: {.dynamic-table}\nsrc: data/example-table.csv\ncol 0: header=\"Channel\", dropdown\ncol 2: header=\"Energy Bound\", units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)\n:::\n\ndropdown: Adds a dropdown menu in the column header populated automatically with all unique values present in that column.\nunits(Unit1: factor1, Unit2: factor2, ...): Adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric value in the column by its corresponding conversion factor and formats extreme magnitudes in scientific notation.\n\nTry filtering by Channel or switching units in the Energy Bound header below:"
-  },
-  {
-    "objectID": "doc/processes.html#latex-math-formatting",
-    "href": "doc/processes.html#latex-math-formatting",
-    "title": "How to create dynamic tables from CSV files",
-    "section": "LaTeX Math Formatting",
-    "text": "LaTeX Math Formatting\nColumns containing mathematical symbols or scientific numbers can be typeset using MathJax or KaTeX:\n::: {.dynamic-table}\nsrc: data/example-table.csv\ncol 1: header=\"Operator\", latex\ncol 2: header=$E_{\\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)\n:::\n\nlatex: Renders LaTeX expressions (enclosed in $ ... $) inside both the column header and text cells.\nlatexnum: Typesets numeric cells—including scientific notation such as 1.0e-16 rendered as \\(1.00 \\times 10^{-16}\\)—in math mode, updating automatically whenever the user switches units.\n\nThe rendered table typesets both the operator formulas and the scaled numeric bounds in math mode:"
+    "section": "Scientific Units, Math Numbers, and INSPIRE-HEP Citations",
+    "text": "Scientific Units, Math Numbers, and INSPIRE-HEP Citations\nThree specialized column tags support physical unit scaling, scientific notation in math mode, and automated bibliography management:\n\nunits(Unit1: factor1, Unit2: factor2, ...): Adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor and formats extreme magnitudes in exponential notation.\nlatexnum: Renders numeric cells—including scientific notation such as 1.0e-16 displayed as \\(1.00 \\times 10^{-16}\\)—in math mode, updating automatically whenever the user switches units.\ninspire: Treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP, formats them with the project’s CSL style, turns each key into a clickable [N] CitationKey link, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated.\n\n::: {.dynamic-table}\nsrc: data/example-table.csv\nper-page: 4\n\ncol 0: header=\"Channel\", dropdown\ncol 1: header=\"Operator\", latex\ncol 2: header=$E_{\\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)\ncol 3: header=\"References\", inspire, unsortable\n:::"
   }
 ]
