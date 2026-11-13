@@ -72,6 +72,7 @@ Three specialized column tags support physical unit scaling, LaTeX scientific no
 ```markdown
 ::: {.dynamic-table}
 src: data/example-table.csv
+searchable: true
 per-page: 4
 col 0: header="Channel", dropdown
 col 1: header="Operator", latex
@@ -82,6 +83,7 @@ col 3: header="References", inspire, unsortable
 
 ::: {.dynamic-table}
 src: data/example-table.csv
+searchable: true
 per-page: 4
 col 0: header="Channel", dropdown
 col 1: header="Operator", latex
