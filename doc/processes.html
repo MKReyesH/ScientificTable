@@ -425,29 +425,16 @@ window.Quarto = {
 
 
 <p>Standard Markdown tables, as shown in the <a href="../doc/Examples/example1.qmd">Quarto Markdown Guide</a>, work well for small static datasets. For larger scientific tables requiring live search, sorting, unit conversions, LaTeX math, or literature references, this template provides a custom <code>dynamic-tables</code> filter that renders interactive Tabulator tables directly from <code>.csv</code> files.</p>
-<div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Note
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>CSV files follow RFC-4180 formatting, so fields or headers containing commas can be enclosed in double quotes (e.g., <code>"Operator, Symbol"</code>), with doubled quotes (<code>""</code>) for literal quotes. Paths in <code>src</code> are resolved relative to the project root, the filter parent directory, or the current <code>.qmd</code> file.</p>
-</div>
-</div>
 <section id="quick-one-line-insertion" class="level1 page-columns page-full">
 <h1>Quick One-Line Insertion</h1>
 <p>To render a CSV file with default interactive settings, write a standalone paragraph starting with <code>!dynamic-table:</code> followed by the file path:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>!dynamic-table: data/example-table.csv</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>This enables clickable column sorting, pagination (15 rows per page, hidden automatically when all rows fit on a single page), automatic detection of numeric versus text columns, and centered content-adapted column sizing (with the search box disabled by default):</p>
+<p>This enables clickable column sorting and pagination (15 rows per page, hidden automatically when all rows fit on a single page):</p>
 <div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;fakeKey:2020&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;fakeKey:2020, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;string&quot;}]" data-searchable="false" data-perpage="15" data-sortable="true"></div>
 </section>
 <section id="fenced-block-configuration" class="level1 page-columns page-full">
 <h1>Fenced Block Configuration</h1>
-<p>For custom table settings and per-column rules, use a fenced <code>::: {.dynamic-table}</code> block. Lines starting with <code>#</code> inside the block are treated as comments and ignored.</p>
+<p>For custom table settings and per-column rules, use a fenced <code>::: {.dynamic-table}</code> block.</p>
 <section id="global-options" class="level2">
 <h2 class="anchored" data-anchor-id="global-options">Global Options</h2>
 <p>Global options are specified as <code>key: value</code> pairs at the top of the block:</p>
@@ -462,10 +449,10 @@ Note
 <h2 class="anchored" data-anchor-id="column-options">Column Options</h2>
 <p>Individual columns are configured with <code>col N:</code>, using a <strong>0-based index</strong> (<code>col 0:</code> is the first column, <code>col 1:</code> is the second, and so on). Multiple properties for the same column are separated by commas:</p>
 <ul>
-<li><code>header=...</code>: Replaces the CSV header title. Enclose the title in quotes (<code>"..."</code> or <code>'...'</code>) if it contains commas; inline math expressions (such as <code>header=$E_{\text{LIV}}^{(1)}$</code>) are also supported when <code>latex</code> or <code>latexnum</code> is active.</li>
+<li><code>header=...</code>: Replaces the CSV header title. Enclose the title in quotes (<code>"..."</code> or <code>'...'</code>) if it contains commas; inline math expressions (such as <code>header=$E_{\text{LIV}}^{(1)}$</code>) are also supported when <code>latex</code> or <code>latexnum</code> is active (see below).</li>
 <li><code>number</code> / <code>string</code>: Enforces numeric or alphabetical sorting instead of auto-detection (empty cells always sort to the bottom). Numeric columns automatically format extreme magnitudes (<span class="math inline">\(\vert{}x\vert{} &lt; 10^{-3}\)</span> or <span class="math inline">\(\vert{}x\vert{} \ge 10^4\)</span>) in exponential notation.</li>
 <li><code>sortable</code> / <code>unsortable</code>: Overrides the global <code>sortable</code> setting for that column.</li>
-<li><code>latex</code>: Passively typesets existing LaTeX math (<code>$ ... $</code>, <code>$$ ... $$</code>, <code>\( ... \)</code>, or <code>\[ ... \]</code>) in both the column header and cell text via MathJax or KaTeX, without altering plain numeric values.</li>
+<li><code>latex</code>: Renders any LaTeX math syntax (<code>$ ... $</code>, <code>$$ ... $$</code>, <code>\( ... \)</code>, or <code>\[ ... \]</code>) in both the column header and cell text via MathJax or KaTeX.</li>
 <li><code>dropdown</code>: Adds a filter menu in the column header populated with all unique values in that column.</li>
 </ul>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
@@ -481,13 +468,13 @@ Note
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;fakeKey:2020&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;fakeKey:2020, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Channel&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Operator&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Bound [GeV]&quot;,&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;header&quot;:&quot;Reference&quot;,&quot;index&quot;:3,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="4" data-sortable="true"></div>
 </section>
-<section id="scientific-units-math-numbers-and-inspire-hep-citations" class="level2 page-columns page-full">
-<h2 class="anchored" data-anchor-id="scientific-units-math-numbers-and-inspire-hep-citations">Scientific Units, Math Numbers, and INSPIRE-HEP Citations</h2>
-<p>Three specialized column tags support physical unit scaling, scientific notation in math mode, and automated bibliography management:</p>
+<section id="scientific-units-latex-math-numbers-and-inspire-hep-citations" class="level2 page-columns page-full">
+<h2 class="anchored" data-anchor-id="scientific-units-latex-math-numbers-and-inspire-hep-citations">Scientific Units, LaTeX Math Numbers, and INSPIRE-HEP Citations</h2>
+<p>Three specialized column tags support physical unit scaling, LaTeX scientific notation, and automated bibliography management:</p>
 <ul>
 <li><code>units(Unit1: factor1, Unit2: factor2, ...)</code>: Implies <code>number</code> and adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor.</li>
-<li><code>latexnum</code>: Implies both <code>number</code> and <code>latex</code>, converting numeric cells—including scaled unit values and scientific notation such as <code>1.0e-16</code> displayed as <span class="math inline">\(1.00 \times 10^{-16}\)</span>—into inline math expressions that update automatically whenever the user switches units.</li>
-<li><code>inspire</code>: Implies <code>string</code> and treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons, with or without a leading <code>@</code>). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP in batches, formats them with the project’s CSL style in CSV appearance order, turns each valid key into a clickable <code>[N] CitationKey</code> link that highlights the target entry on click, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated.</li>
+<li><code>latexnum</code>: Implies both <code>number</code> and <code>latex</code>, and transform numeric cells into inline math expressions (<code>1.0e-16</code> displayed as <span class="math inline">\(1.00 \times 10^{-16}\)</span>) that update automatically whenever the user switches units.</li>
+<li><code>inspire</code>: Implies <code>string</code> and treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons, with or without a leading <code>@</code>). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP in batches, turns each valid key into a clickable <code>[N] CitationKey</code> link that highlights the target entry on click, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated.</li>
 </ul>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
