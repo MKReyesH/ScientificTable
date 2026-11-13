@@ -1,5 +1,6 @@
 ---
 title: 'How to create dynamic tables from CSV files'
+mindmap-shape: 'square'
 ---
 
 Standard Markdown tables, as shown in the [Quarto Markdown Guide](/doc/Examples/example1.qmd), work well for small static datasets. However, scientific datasets often contain dozens of rows, numerical measurements across different physical units, LaTeX expressions, and literature references. To handle these cases, this template includes a custom `dynamic-tables` filter that reads external `.csv` files and renders interactive tables powered by Tabulator.
@@ -15,12 +16,12 @@ CSV files follow standard RFC-4180 formatting, meaning fields or headers contain
 To display a CSV file with default interactive settings, write a standalone paragraph starting with `!dynamic-table:` followed by the path to the file:
 
 ```markdown
-!dynamic-table: doc/Examples/example-table.csv
+!dynamic-table: data/example-table.csv
 ```
 
 This automatically generates an interactive table with a live search bar, clickable column sorting, pagination (15 rows per page), and automatic detection of numeric versus text columns:
 
-!dynamic-table: doc/Examples/example-table.csv
+!dynamic-table: data/example-table.csv
 
 # Customizing Tables and Columns
 
@@ -32,7 +33,7 @@ Global options are written as `key: value` pairs at the top of the `::: {.dynami
 
 ```markdown
 ::: {.dynamic-table}
-src: doc/Examples/example-table.csv
+src: data/example-table.csv
 searchable: false
 sortable: true
 per-page: 3
@@ -47,7 +48,7 @@ per-page: 3
 With `searchable: false` and `per-page: 3`, the table hides the search input and paginates the dataset into three rows per page:
 
 ::: {.dynamic-table}
-src: doc/Examples/example-table.csv
+src: data/example-table.csv
 searchable: false
 per-page: 3
 :::
@@ -58,7 +59,7 @@ Individual columns are configured using `col N:`, where `N` is the **0-indexed**
 
 ```markdown
 ::: {.dynamic-table}
-src: doc/Examples/example-table.csv
+src: data/example-table.csv
 col 0: header="Detection Channel", string
 col 1: header="Operator, Symbol", unsortable
 col 2: header="Energy Bound [GeV]", number
@@ -73,7 +74,7 @@ col 3: header="INSPIRE Key", unsortable
 Rendering this configuration updates all four column headers and disables sorting on the symbol and key columns:
 
 ::: {.dynamic-table}
-src: doc/Examples/example-table.csv
+src: data/example-table.csv
 col 0: header="Detection Channel", string
 col 1: header="Operator, Symbol", unsortable
 col 2: header="Energy Bound [GeV]", number
@@ -86,7 +87,7 @@ Columns with categorical values or physical quantities can include interactive c
 
 ```markdown
 ::: {.dynamic-table}
-src: doc/Examples/example-table.csv
+src: data/example-table.csv
 col 0: header="Channel", dropdown
 col 2: header="Energy Bound", units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)
 :::
@@ -98,7 +99,7 @@ col 2: header="Energy Bound", units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)
 Try filtering by `Channel` or switching units in the `Energy Bound` header below:
 
 ::: {.dynamic-table}
-src: doc/Examples/example-table.csv
+src: data/example-table.csv
 col 0: header="Channel", dropdown
 col 2: header="Energy Bound", units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)
 :::
@@ -109,19 +110,19 @@ Columns containing mathematical symbols or scientific numbers can be typeset usi
 
 ```markdown
 ::: {.dynamic-table}
-src: doc/Examples/example-table.csv
+src: data/example-table.csv
 col 1: header="Operator", latex
 col 2: header=$E_{\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)
 :::
 ```
 
 - `latex`: Renders LaTeX expressions (enclosed in `$ ... $`) inside both the column header and text cells.
-- `latexnum`: Typesets numeric cells—including scientific notation such as `1.0e-16` rendered as $1 \times 10^{-16}$—in math mode, updating automatically whenever the user switches units.
+- `latexnum`: Typesets numeric cells—including scientific notation such as `1.0e-16` rendered as $1.00 \times 10^{-16}$—in math mode, updating automatically whenever the user switches units.
 
 The rendered table typesets both the operator formulas and the scaled numeric bounds in math mode:
 
 ::: {.dynamic-table}
-src: doc/Examples/example-table.csv
+src: data/example-table.csv
 col 1: header="Operator", latex
 col 2: header=$E_{\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)
 :::
@@ -132,7 +133,7 @@ A column tagged with `inspire` automatically links INSPIRE-HEP citation keys to 
 
 ```markdown
 ::: {.dynamic-table}
-src: doc/Examples/example-table.csv
+src: data/example-table.csv
 per-page: 3
 col 3: header="References", inspire, unsortable
 :::
@@ -149,7 +150,7 @@ During site compilation, the filter automatically:
 Notice below how switching between page 1 and page 2—or typing in the search bar—updates the `References` list underneath the table automatically, and clicking any citation link highlights its corresponding entry:
 
 ::: {.dynamic-table}
-src: doc/Examples/example-table.csv
+src: data/example-table.csv
 per-page: 3
 col 3: header="References", inspire, unsortable
 :::
@@ -160,7 +161,7 @@ Combining dropdown filtering, unit scaling, LaTeX math formatting, and automated
 
 ```markdown
 ::: {.dynamic-table}
-src: doc/Examples/example-table.csv
+src: data/example-table.csv
 searchable: true
 per-page: 10
 
@@ -175,7 +176,7 @@ col 3: header="References", inspire, unsortable
 This produces the full interactive scientific table:
 
 ::: {.dynamic-table}
-src: doc/Examples/example-table.csv
+src: data/example-table.csv
 searchable: true
 per-page: 10
 
