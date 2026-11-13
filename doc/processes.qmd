@@ -6,7 +6,7 @@ mindmap-shape: 'square'
 Standard Markdown tables, as shown in the [Quarto Markdown Guide](/doc/Examples/example1.qmd), work well for small static datasets. For larger scientific tables requiring live search, sorting, unit conversions, LaTeX math, or literature references, this template provides a custom `dynamic-tables` filter that renders interactive Tabulator tables directly from `.csv` files.
 
 :::{.callout-note}
-CSV files follow RFC-4180 formatting, so fields or headers containing commas can be enclosed in double quotes (e.g., `"Operator, Symbol"`). Paths in `src` are resolved relative to the project root, the filter directory, or the current `.qmd` file.
+CSV files follow RFC-4180 formatting, so fields or headers containing commas can be enclosed in double quotes (e.g., `"Operator, Symbol"`), with doubled quotes (`""`) for literal quotes. Paths in `src` are resolved relative to the project root, the filter parent directory, or the current `.qmd` file.
 :::
 
 # Quick One-Line Insertion
@@ -17,7 +17,7 @@ To render a CSV file with default interactive settings, write a standalone parag
 !dynamic-table: data/example-table.csv
 ```
 
-This enables a live full-row search box, clickable column sorting, pagination (15 rows per page), and automatic detection of numeric versus text columns:
+This enables clickable column sorting, pagination (15 rows per page, hidden automatically when all rows fit on a single page), automatic detection of numeric versus text columns, and centered content-adapted column sizing (with the search box disabled by default):
 
 !dynamic-table: data/example-table.csv
 
@@ -30,18 +30,18 @@ For custom table settings and per-column rules, use a fenced `::: {.dynamic-tabl
 Global options are specified as `key: value` pairs at the top of the block:
 
 - `src`: Path to the input `.csv` file (required).
-- `searchable`: Shows or hides the search bar above the table (`true` or `false`, default `true`).
+- `searchable`: Shows or hides the full-row search bar above the table (`true` or `false`, default `false`).
 - `sortable`: Enables or disables sorting across all columns (`true` or `false`, default `true`).
-- `per-page`: Sets the initial number of rows per page (default `15`, with a selector for 10, 15, 25, and 50 rows).
+- `per-page`: Sets the initial number of rows per page (default `15`, with a selector for `10`, `15`, `25`, and `50` rows). The pagination footer hides automatically whenever the active row count fits within one page.
 
 ## Column Options
 
 Individual columns are configured with `col N:`, using a **0-based index** (`col 0:` is the first column, `col 1:` is the second, and so on). Multiple properties for the same column are separated by commas:
 
-- `header=...`: Replaces the CSV header title. Enclose the title in quotes if it contains commas.
-- `number` / `string`: Enforces numeric or alphabetical sorting instead of auto-detection (empty cells always sort to the bottom).
+- `header=...`: Replaces the CSV header title. Enclose the title in quotes (`"..."` or `'...'`) if it contains commas; inline math expressions (such as `header=$E_{\text{LIV}}^{(1)}$`) are also supported when `latex` or `latexnum` is active.
+- `number` / `string`: Enforces numeric or alphabetical sorting instead of auto-detection (empty cells always sort to the bottom). Numeric columns automatically format extreme magnitudes ($\vert{}x\vert{} < 10^{-3}$ or $\vert{}x\vert{} \ge 10^4$) in exponential notation.
 - `sortable` / `unsortable`: Overrides the global `sortable` setting for that column.
-- `latex`: Typesets LaTeX math (`$ ... $`) in both the column header and cell text via MathJax or KaTeX.
+- `latex`: Passively typesets existing LaTeX math (`$ ... $`, `$$ ... $$`, `\( ... \)`, or `\[ ... \]`) in both the column header and cell text via MathJax or KaTeX, without altering plain numeric values.
 - `dropdown`: Adds a filter menu in the column header populated with all unique values in that column.
 
 ```markdown
@@ -74,9 +74,9 @@ col 3: header="Reference", unsortable
 
 Three specialized column tags support physical unit scaling, scientific notation in math mode, and automated bibliography management:
 
-- `units(Unit1: factor1, Unit2: factor2, ...)`: Adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor and formats extreme magnitudes in exponential notation.
-- `latexnum`: Renders numeric cells—including scientific notation such as `1.0e-16` displayed as $1.00 \times 10^{-16}$—in math mode, updating automatically whenever the user switches units.
-- `inspire`: Treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP, formats them with the project's CSL style, turns each key into a clickable `[N] CitationKey` link, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated.
+- `units(Unit1: factor1, Unit2: factor2, ...)`: Implies `number` and adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor.
+- `latexnum`: Implies both `number` and `latex`, converting numeric cells—including scaled unit values and scientific notation such as `1.0e-16` displayed as $1.00 \times 10^{-16}$—into inline math expressions that update automatically whenever the user switches units.
+- `inspire`: Implies `string` and treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons, with or without a leading `@`). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP in batches, formats them with the project's CSL style in CSV appearance order, turns each valid key into a clickable `[N] CitationKey` link that highlights the target entry on click, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated.
 
 ```markdown
 ::: {.dynamic-table}
