@@ -1,5 +1,5 @@
 ---
-title: 'How to create dynamic tables from CSV files'
+title: 'How to create dynamic tables'
 ---
 
 Standard Markdown tables, as shown in the [Quarto Markdown Guide](/doc/Examples/example1.qmd), work well for small static datasets. For larger scientific tables requiring live search, sorting, unit conversions, LaTeX math, or literature references, this template provides a custom `dynamic-tables` filter that renders interactive Tabulator tables directly from `.csv` files.
