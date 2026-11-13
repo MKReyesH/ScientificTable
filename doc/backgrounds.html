@@ -379,12 +379,8 @@ window.Quarto = {
   .quarto-color-scheme-toggle[data-theme-mode] .bi::before {
     background-image: none !important;
     background-color: currentColor;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    mask-position: center;
-    -webkit-mask-size: 1rem 1rem;
-    mask-size: 1rem 1rem;
+    -webkit-mask: no-repeat center / 1rem 1rem;
+    mask: no-repeat center / 1rem 1rem;
   }
 
   /* Automatic (System) — half-circle */
@@ -408,7 +404,6 @@ window.Quarto = {
 
 <script>
 (() => {
-  const MODE_KEY = "quarto-theme-mode";
   const QUARTO_KEY = "quarto-color-scheme";
   const LABELS = {
     auto: "Theme: Automatic (System)",
@@ -420,14 +415,19 @@ window.Quarto = {
   const nativeToggle = window.quartoToggleColorScheme;
 
   const storage = {
-    get(key) { try { return localStorage.getItem(key); } catch { return null; } },
-    set(key, val) { try { localStorage.setItem(key, val); } catch {} },
-    remove(key) { try { localStorage.removeItem(key); } catch {} }
+    get() { try { return localStorage.getItem(QUARTO_KEY); } catch { return null; } },
+    set(val) { try { localStorage.setItem(QUARTO_KEY, val); } catch {} },
+    remove() { try { localStorage.removeItem(QUARTO_KEY); } catch {} }
   };
 
   const isPageDark = () => document.body.classList.contains("quarto-dark");
 
-  const setVisualDark = (wantDark) => {
+  const getMode = () => {
+    const val = storage.get();
+    return val === "alternate" ? "dark" : val === "default" ? "light" : "auto";
+  };
+
+  const syncVisual = (wantDark) => {
     if (typeof nativeToggle === "function") {
       if (isPageDark() !== wantDark) nativeToggle();
     } else {
@@ -435,16 +435,7 @@ window.Quarto = {
     }
   };
 
-  const getMode = () => {
-    const saved = storage.get(MODE_KEY);
-    if (saved === "auto" || saved === "light" || saved === "dark") return saved;
-    const quartoVal = storage.get(QUARTO_KEY);
-    if (quartoVal === "alternate") return "dark";
-    if (quartoVal === "default") return "light";
-    return "auto";
-  };
-
-  const updateToggleUI = (mode) => {
+  const syncButton = (mode) => {
     document.querySelectorAll(".quarto-color-scheme-toggle").forEach((el) => {
       el.dataset.themeMode = mode;
       el.setAttribute("title", LABELS[mode]);
@@ -453,18 +444,17 @@ window.Quarto = {
   };
 
   const applyMode = (mode) => {
-    storage.set(MODE_KEY, mode);
     if (mode === "dark") {
-      setVisualDark(true);
-      storage.set(QUARTO_KEY, "alternate");
+      syncVisual(true);
+      storage.set("alternate");
     } else if (mode === "light") {
-      setVisualDark(false);
-      storage.set(QUARTO_KEY, "default");
+      syncVisual(false);
+      storage.set("default");
     } else {
-      setVisualDark(mediaQuery.matches);
-      storage.remove(QUARTO_KEY);
+      syncVisual(mediaQuery.matches);
+      storage.remove();
     }
-    updateToggleUI(mode);
+    syncButton(mode);
   };
 
   window.quartoToggleColorScheme = () => {
@@ -481,12 +471,11 @@ window.Quarto = {
     if (getMode() === "auto") applyMode("auto");
   });
 
-  const init = () => applyMode(getMode());
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
-  }
+  window.addEventListener("storage", (e) => {
+    if (e.key === QUARTO_KEY) applyMode(getMode());
+  });
+
+  applyMode(getMode());
 })();
 </script>
 <script id="quarto-html-after-body" type="application/javascript">
