@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>How to create dynamic tables from CSV files</title>
+<title>How to create dynamic tables</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -407,7 +407,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">How to create dynamic tables from CSV files</h1>
+<h1 class="title">How to create dynamic tables</h1>
 </div>
 
 
@@ -492,7 +492,7 @@ window.Quarto = {
 <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
 
 <style>
-.tabulator-container-wrap {
+  .tabulator-container-wrap {
     margin: 1.5rem auto;
     justify-self: center;
     font-size: 0.9em;
@@ -631,6 +631,30 @@ window.Quarto = {
 </style>
 
 <script>
+// Waits for the Tabulator stylesheet and web fonts before measuring table dimensions
+const AssetsReady = (() => {
+  let promise = null;
+  return () => {
+    if (promise) return promise;
+
+    const link = document.querySelector('link[href*="tabulator"]');
+    const cssReady = (!link || link.sheet)
+      ? Promise.resolve()
+      : new Promise((resolve) => {
+          link.addEventListener("load", resolve, { once: true });
+          link.addEventListener("error", resolve, { once: true });
+          setTimeout(resolve, 2000);
+        });
+
+    const fontsReady = document.fonts?.ready
+      ? Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 1000))])
+      : Promise.resolve();
+
+    promise = Promise.all([cssReady, fontsReady]);
+    return promise;
+  };
+})();
+
 // Batches, normalizes, and caches off-screen MathJax or KaTeX rendering before Tabulator mounts
 const MathRenderer = {
   cache: new Map(),
@@ -1036,7 +1060,11 @@ class TabulatorTableController {
 
     const activeRows = this.table.getDataCount("active");
     const pageSize = this.table.getPageSize();
-    footer.style.display = activeRows > pageSize ? "" : "none";
+    const nextDisplay = activeRows > pageSize ? "" : "none";
+    if (footer.style.display !== nextDisplay) {
+      footer.style.display = nextDisplay;
+      requestAnimationFrame(() => this.table?.redraw());
+    }
   }
 
   // Updates reference visibility to match currently visible table rows
@@ -1072,7 +1100,10 @@ class TabulatorTableController {
 
   // Initializes math cache, bibliography bindings, Tabulator instance, and search filter
   async init() {
-    await MathRenderer.prepare(this.collectInitialLatexStrings());
+    await Promise.all([
+      MathRenderer.prepare(this.collectInitialLatexStrings()),
+      AssetsReady()
+    ]);
     this.container.innerHTML = "";
     this.initBibliography();
 

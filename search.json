@@ -23,28 +23,28 @@
   {
     "objectID": "doc/processes.html",
     "href": "doc/processes.html",
-    "title": "How to create dynamic tables from CSV files",
+    "title": "How to create dynamic tables",
     "section": "",
     "text": "Standard Markdown tables, as shown in the Quarto Markdown Guide, work well for small static datasets. For larger scientific tables requiring live search, sorting, unit conversions, LaTeX math, or literature references, this template provides a custom dynamic-tables filter that renders interactive Tabulator tables directly from .csv files."
   },
   {
     "objectID": "doc/processes.html#global-options",
     "href": "doc/processes.html#global-options",
-    "title": "How to create dynamic tables from CSV files",
+    "title": "How to create dynamic tables",
     "section": "Global Options",
     "text": "Global Options\nGlobal options are specified as key: value pairs at the top of the block:\n\nsrc: Path to the input .csv file (required).\nsearchable: Shows or hides the full-row search bar above the table (true or false, default false).\nsortable: Enables or disables sorting across all columns (true or false, default true).\nper-page: Sets the initial number of rows per page (default 15, with a selector for 10, 15, 25, and 50 rows). The pagination footer hides automatically whenever the active row count fits within one page."
   },
   {
     "objectID": "doc/processes.html#column-options",
     "href": "doc/processes.html#column-options",
-    "title": "How to create dynamic tables from CSV files",
+    "title": "How to create dynamic tables",
     "section": "Column Options",
     "text": "Column Options\nIndividual columns are configured with col N:, using a 0-based index (col 0: is the first column, col 1: is the second, and so on). Multiple properties for the same column are separated by commas:\n\nheader=...: Replaces the CSV header title. Enclose the title in quotes (\"...\" or '...') if it contains commas; inline math expressions (such as header=$E_{\\text{LIV}}^{(1)}$) are also supported when latex or latexnum is active (see below).\nnumber / string: Enforces numeric or alphabetical sorting instead of auto-detection (empty cells always sort to the bottom). Numeric columns automatically format extreme magnitudes (\\(\\vert{}x\\vert{} &lt; 10^{-3}\\) or \\(\\vert{}x\\vert{} \\ge 10^4\\)) in exponential notation.\nsortable / unsortable: Overrides the global sortable setting for that column.\nlatex: Renders any LaTeX math syntax ($ ... $, $$ ... $$, \\( ... \\), or \\[ ... \\]) in both the column header and cell text via MathJax or KaTeX.\ndropdown: Adds a filter menu in the column header populated with all unique values in that column.\n\n::: {.dynamic-table}\nsrc: data/example-table.csv\nsearchable: true\nper-page: 4\ncol 0: header=\"Channel\", dropdown\ncol 1: header=\"Operator\", latex\ncol 2: header=\"Bound [GeV]\", number\ncol 3: header=\"Reference\", unsortable\n:::"
   },
   {
     "objectID": "doc/processes.html#scientific-units-latex-math-numbers-and-inspire-hep-citations",
     "href": "doc/processes.html#scientific-units-latex-math-numbers-and-inspire-hep-citations",
-    "title": "How to create dynamic tables from CSV files",
+    "title": "How to create dynamic tables",
     "section": "Scientific Units, LaTeX Math Numbers, and INSPIRE-HEP Citations",
     "text": "Scientific Units, LaTeX Math Numbers, and INSPIRE-HEP Citations\nThree specialized column tags support physical unit scaling, LaTeX scientific notation, and automated bibliography management:\n\nunits(Unit1: factor1, Unit2: factor2, ...): Implies number and adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor.\nlatexnum: Implies both number and latex, and transform numeric cells into inline math expressions (1.0e-16 displayed as \\(1.00 \\times 10^{-16}\\)) that update automatically whenever the user switches units.\ninspire: Implies string and treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons, with or without a leading @). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP in batches, turns each valid key into a clickable [N] CitationKey link that highlights the target entry on click, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated.\n\n::: {.dynamic-table}\nsrc: data/example-table.csv\nsearchable: true\nper-page: 4\ncol 0: header=\"Channel\", dropdown\ncol 1: header=\"Operator\", latex\ncol 2: header=$E_{\\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)\ncol 3: header=\"References\", inspire, unsortable\n:::"
   }
