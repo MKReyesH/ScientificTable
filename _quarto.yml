@@ -32,8 +32,8 @@ format:
   html:
     respect-user-color-scheme: true
     theme: # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
-    	light: minty
-    	dark: [minty, include/dark-theme.scss]
+      light: minty
+      dark: [minty, include/dark-theme.scss]
     math: mathjax
     css: include/css-config.css
     
