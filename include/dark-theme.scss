@@ -1,11 +1,30 @@
 /*-- scss:defaults --*/
 $body-bg: #1e2226;
 $body-color: #dee2e6;
-$body-secondary-color: #adb5bd;
-$body-emphasis-color: #f8f9fa;
 
-$body-secondary-bg: #2f353b;
-$body-tertiary-bg: #262b30;
+// Derive all neutral surfaces, secondary text, headings, and borders from $body-bg and $body-color
+$body-secondary-bg: mix($body-color, $body-bg, 10%);
+$body-tertiary-bg: mix($body-color, $body-bg, 5%);
+$body-secondary-color: mix($body-color, $body-bg, 70%);
+$body-emphasis-color: mix(#ffffff, $body-color, 65%);
+$headings-color: $body-emphasis-color;
+$border-color: mix($body-color, $body-bg, 18%);
 
-$headings-color: #f8f9fa;
-$border-color: #3a4046;
+/*-- scss:rules --*/
+// Adapt the active base theme's $link-color for dark backgrounds regardless of theme choice
+$link-tint: if(lightness($link-color) < 35%, 60%, if(lightness($link-color) < 65%, 35%, 15%));
+$dark-link: tint-color($link-color, $link-tint);
+$dark-link-hover: tint-color($link-color, min($link-tint + 15%, 85%));
+
+:root {
+  --bs-link-color: #{$dark-link};
+  --bs-link-color-rgb: #{to-rgb($dark-link)};
+  --bs-link-hover-color: #{$dark-link-hover};
+  --bs-link-hover-color-rgb: #{to-rgb($dark-link-hover)};
+}
+
+.sidebar nav[role="doc-toc"] ul > li > a.active,
+.sidebar nav[role="doc-toc"] ul > li > ul > li > a.active {
+  color: #{$dark-link} !important;
+  border-left-color: #{$dark-link} !important;
+}
