@@ -61,7 +61,26 @@ div.sourceCode
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="../site_libs/quarto-nav/quarto-nav.js"></script>
@@ -383,7 +402,7 @@ window.Quarto = {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content" id="quarto-document-content" tabindex="-1">
+<main class="content page-columns page-full" id="quarto-document-content" tabindex="-1">
 
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -406,6 +425,7 @@ window.Quarto = {
 
 
 <p>Standard Markdown tables, as shown in the <a href="../doc/Examples/example1.qmd">Quarto Markdown Guide</a>, work well for small static datasets. However, scientific datasets often contain dozens of rows, numerical measurements across different physical units, LaTeX expressions, and literature references. To handle these cases, this template includes a custom <code>dynamic-tables</code> filter that reads external <code>.csv</code> files and renders interactive tables powered by Tabulator.</p>
+<p>This document serves as both a guide and a live test file for the dynamic table syntax. Each configuration snippet below is followed immediately by the rendered table it produces.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -416,26 +436,27 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>CSV files follow standard RFC-4180 formatting, meaning fields or headers containing commas can be enclosed in double quotes (e.g., <code>"Energy, $E$"</code>). File paths in <code>src</code> are resolved relative to the project root, the filter directory, or the current <code>.qmd</code> page.</p>
+<p>CSV files follow standard RFC-4180 formatting, meaning fields or headers containing commas can be enclosed in double quotes (e.g., <code>"Operator, Symbol"</code>). File paths in <code>src</code> are resolved relative to the project root, the filter directory, or the current <code>.qmd</code> page.</p>
 </div>
 </div>
-<section id="quick-table-insertion" class="level1">
+<section id="quick-table-insertion" class="level1 page-columns page-full">
 <h1>Quick Table Insertion</h1>
 <p>To display a CSV file with default interactive settings, write a standalone paragraph starting with <code>!dynamic-table:</code> followed by the path to the file:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>!dynamic-table: data/measurements.csv</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>This automatically generates an interactive table with a live search bar, clickable column sorting, pagination (15 rows per page), and automatic detection of numeric versus text columns.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>!dynamic-table: data/example-table.csv</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This automatically generates an interactive table with a live search bar, clickable column sorting, pagination (15 rows per page), and automatic detection of numeric versus text columns:</p>
+<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="15" data-sortable="true"></div>
 </section>
-<section id="customizing-tables-and-columns" class="level1">
+<section id="customizing-tables-and-columns" class="level1 page-columns page-full">
 <h1>Customizing Tables and Columns</h1>
 <p>For full control over table behavior and individual columns, use a fenced <code>::: {.dynamic-table}</code> block. Inside the block, lines starting with <code>#</code> are treated as comments and ignored during rendering.</p>
-<section id="global-table-options" class="level2">
+<section id="global-table-options" class="level2 page-columns page-full">
 <h2 class="anchored" data-anchor-id="global-table-options">Global Table Options</h2>
 <p>Global options are written as <code>key: value</code> pairs at the top of the <code>::: {.dynamic-table}</code> block:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>src: data/measurements.csv</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>searchable: true</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>searchable: false</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>sortable: true</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>per-page: 20</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>per-page: 3</span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <ul>
 <li><code>src</code>: Path to the input <code>.csv</code> file (required).</li>
@@ -443,88 +464,782 @@ Note
 <li><code>sortable</code>: Enables or disables sorting across all columns (<code>true</code> or <code>false</code>, default <code>true</code>).</li>
 <li><code>per-page</code>: Sets the initial number of rows displayed per page (default <code>15</code>, with a built-in selector for 10, 15, 25, and 50 rows).</li>
 </ul>
+<p>With <code>searchable: false</code> and <code>per-page: 3</code>, the table hides the search input and paginates the dataset into three rows per page:</p>
+<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;string&quot;}]" data-searchable="false" data-perpage="3" data-sortable="true"></div>
 </section>
-<section id="column-headers-types-and-sorting" class="level2">
+<section id="column-headers-types-and-sorting" class="level2 page-columns page-full">
 <h2 class="anchored" data-anchor-id="column-headers-types-and-sorting">Column Headers, Types, and Sorting</h2>
 <p>Individual columns are configured using <code>col N:</code>, where <code>N</code> is the <strong>0-indexed</strong> column position (<code>col 0:</code> refers to the first column, <code>col 1:</code> to the second, and so on). Multiple properties for the same column are separated by commas:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>src: data/measurements.csv</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>col 0: header="Particle Name", string</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>col 1: header="Mass, $m$", number</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>col 2: header="Notes", unsortable</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>col 0: header="Detection Channel", string</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>col 1: header="Operator, Symbol", unsortable</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>col 2: header="Energy Bound <span class="co">[</span><span class="ot">GeV</span><span class="co">]</span>", number</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>col 3: header="INSPIRE Key", unsortable</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <ul>
 <li><code>header=...</code>: Overrides the column title from the CSV header row. Enclose the title in quotes if it contains commas.</li>
 <li><code>number</code> / <code>string</code>: Overrides automatic column type detection to enforce numeric or alphabetical sorting (empty cells are always placed at the bottom).</li>
 <li><code>sortable</code> / <code>unsortable</code>: Overrides the global <code>sortable</code> setting for that specific column.</li>
 </ul>
+<p>Rendering this configuration updates all four column headers and disables sorting on the symbol and key columns:</p>
+<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;header&quot;:&quot;Detection Channel&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Operator, Symbol&quot;,&quot;index&quot;:1,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Energy Bound [GeV]&quot;,&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;header&quot;:&quot;INSPIRE Key&quot;,&quot;index&quot;:3,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="15" data-sortable="true"></div>
 </section>
-<section id="dropdown-filters-and-unit-conversions" class="level2">
+<section id="dropdown-filters-and-unit-conversions" class="level2 page-columns page-full">
 <h2 class="anchored" data-anchor-id="dropdown-filters-and-unit-conversions">Dropdown Filters and Unit Conversions</h2>
 <p>Columns with categorical values or physical quantities can include interactive controls directly in the column header:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>src: data/measurements.csv</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>col 0: dropdown</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>col 1: header="Energy Scale", units(GeV: 1, MeV: 1e3, TeV: 1e-3)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>col 0: header="Channel", dropdown</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>col 2: header="Energy Bound", units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)</span>
 <span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <ul>
 <li><code>dropdown</code>: Adds a dropdown menu in the column header populated automatically with all unique values present in that column.</li>
 <li><code>units(Unit1: factor1, Unit2: factor2, ...)</code>: Adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric value in the column by its corresponding conversion factor and formats extreme magnitudes in scientific notation.</li>
 </ul>
+<p>Try filtering by <code>Channel</code> or switching units in the <code>Energy Bound</code> header below:</p>
+<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Channel&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Energy Bound&quot;,&quot;index&quot;:2,&quot;map&quot;:{&quot;GeV&quot;:1,&quot;Planck units&quot;:8.19e-20,&quot;TeV&quot;:1.0e-3},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;GeV&quot;,&quot;TeV&quot;,&quot;Planck units&quot;]},{&quot;index&quot;:3,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="15" data-sortable="true"></div>
 </section>
-<section id="latex-math-formatting" class="level2">
+<section id="latex-math-formatting" class="level2 page-columns page-full">
 <h2 class="anchored" data-anchor-id="latex-math-formatting">LaTeX Math Formatting</h2>
 <p>Columns containing mathematical symbols or scientific numbers can be typeset using MathJax or KaTeX:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>src: data/measurements.csv</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>col 0: header=$E_{\text{LIV}}^{(1)}$, latex</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>col 1: header="Upper Bound", latexnum, units(GeV: 1, TeV: 1e-3)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>col 1: header="Operator", latex</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>col 2: header=$E_{\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <ul>
 <li><code>latex</code>: Renders LaTeX expressions (enclosed in <code>$ ... $</code>) inside both the column header and text cells.</li>
-<li><code>latexnum</code>: Typesets numeric cells—including scientific notation such as <code>1.2e-16</code> rendered as <span class="math inline">\(1.2 \times 10^{-16}\)</span>—in math mode, updating automatically whenever the user switches units.</li>
+<li><code>latexnum</code>: Typesets numeric cells—including scientific notation such as <code>1.0e-16</code> rendered as <span class="math inline">\(1.00 \times 10^{-16}\)</span>—in math mode, updating automatically whenever the user switches units.</li>
 </ul>
+<p>The rendered table typesets both the operator formulas and the scaled numeric bounds in math mode:</p>
+<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Operator&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;\\(E_{\\text{LIV}}^{(1)}\\)&quot;,&quot;index&quot;:2,&quot;latex&quot;:true,&quot;latexnum&quot;:true,&quot;map&quot;:{&quot;GeV&quot;:1,&quot;Planck units&quot;:8.19e-20,&quot;TeV&quot;:1.0e-3},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;GeV&quot;,&quot;TeV&quot;,&quot;Planck units&quot;]},{&quot;index&quot;:3,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="15" data-sortable="true"></div>
 </section>
 </section>
-<section id="automated-inspire-hep-citations" class="level1">
+<section id="automated-inspire-hep-citations" class="level1 page-columns page-full">
 <h1>Automated INSPIRE-HEP Citations</h1>
 <p>A column tagged with <code>inspire</code> automatically links INSPIRE-HEP citation keys to a live bibliography rendered directly underneath the table:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>src: data/bounds.csv</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>col 3: header="References", inspire, unsortable</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>In the CSV file, cells in an <code>inspire</code> column should contain valid INSPIRE-HEP TeX keys (e.g., <code>Gotz:2014vza</code>). Multiple keys in the same cell can be separated by commas or semicolons (e.g., <code>Cao:2021tat, Lang:2018yog</code>).</p>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>per-page: 3</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>col 3: header="References", inspire, unsortable</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>In the CSV file, cells in an <code>inspire</code> column should contain valid INSPIRE-HEP TeX keys (e.g., <code>Gotz:2014vza</code>). Multiple keys in the same cell can be separated by commas or semicolons (e.g., <code>"LHAASO:2021opi, Cao:2021tat"</code>).</p>
 <p>During site compilation, the filter automatically:</p>
 <ol type="1">
 <li>Queries the INSPIRE-HEP database for every unique citation key in the table.</li>
 <li>Formats the bibliography entries using the project’s CSL citation style and renders clickable <code>[N] CitationKey</code> links inside the table cells.</li>
 <li>Synchronizes the reference list below the table in real time so that only citations belonging to currently visible rows (after searching, filtering, or changing pages) are displayed.</li>
 </ol>
+<p>Notice below how switching between page 1 and page 2—or typing in the search bar—updates the <code>References</code> list underneath the table automatically, and clicking any citation link highlights its corresponding entry:</p>
+<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;header&quot;:&quot;References&quot;,&quot;index&quot;:3,&quot;inspire&quot;:true,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="3" data-sortable="true"></div>
+<div class="dynamic-table-refs" style="display:none;"></div>
 </section>
-<section id="complete-example" class="level1">
+<section id="complete-example" class="level1 page-columns page-full">
 <h1>Complete Example</h1>
-<p>Given a CSV file stored at <code>data/bounds.csv</code>:</p>
-<pre class="csv"><code>Messenger,Effect,Bound,Reference
-Gamma rays,Birefringence,1.0e-16,Gotz:2014vza
-Gamma rays,Time delays,9.02,"LHAASO:2021opi, Cao:2021tat"</code></pre>
-<p>The following block combines dropdown filtering, unit scaling, LaTeX math formatting, and automated INSPIRE-HEP references:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>src: data/bounds.csv</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>searchable: true</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>per-page: 10</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="fu"># Column rules (0-indexed)</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>col 0: header="Messenger", dropdown</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>col 1: header="Effect", dropdown</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>col 2: header=$E_{\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>col 3: header="References", inspire, unsortable</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Combining dropdown filtering, unit scaling, LaTeX math formatting, and automated INSPIRE-HEP references in a single block:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>searchable: true</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>per-page: 10</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu"># Column rules (0-indexed)</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>col 0: header="Channel", dropdown</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>col 1: header="Operator", latex</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>col 2: header=$E_{\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>col 3: header="References", inspire, unsortable</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This produces the full interactive scientific table:</p>
+<div class="tabulator-container-wrap column-page" data-headers="[&quot;Channel&quot;,&quot;Symbol&quot;,&quot;Bound&quot;,&quot;Reference&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;1.0e-16&quot;,&quot;col_3&quot;:&quot;Gotz:2014vza&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;9.02&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(2)}$&quot;,&quot;col_2&quot;:&quot;5.66e-8&quot;,&quot;col_3&quot;:&quot;LHAASO:2021opi, Cao:2021tat&quot;},{&quot;col_0&quot;:&quot;Cosmic rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.39e5&quot;,&quot;col_3&quot;:&quot;Lang:2018yog&quot;},{&quot;col_0&quot;:&quot;Neutrinos&quot;,&quot;col_1&quot;:&quot;$\\delta_{\\text{LIV}}^{(0)}$&quot;,&quot;col_2&quot;:&quot;2.5e-13&quot;,&quot;col_3&quot;:&quot;ReyesHung:2023udr&quot;},{&quot;col_0&quot;:&quot;Gamma rays&quot;,&quot;col_1&quot;:&quot;$E_{\\text{LIV}}^{(1)}$&quot;,&quot;col_2&quot;:&quot;1.16e5&quot;,&quot;col_3&quot;:&quot;Cao:2021tat&quot;}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Channel&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Operator&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;\\(E_{\\text{LIV}}^{(1)}\\)&quot;,&quot;index&quot;:2,&quot;latex&quot;:true,&quot;latexnum&quot;:true,&quot;map&quot;:{&quot;GeV&quot;:1,&quot;Planck units&quot;:8.19e-20,&quot;TeV&quot;:1.0e-3},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;GeV&quot;,&quot;TeV&quot;,&quot;Planck units&quot;]},{&quot;header&quot;:&quot;References&quot;,&quot;index&quot;:3,&quot;inspire&quot;:true,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="10" data-sortable="true"></div>
+<div class="dynamic-table-refs" style="display:none;"></div>
 
 
+
+<link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
+<script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
+<script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
+
+<style>
+  .tabulator-container-wrap {
+    margin: 1.5rem 0;
+    font-size: 0.9em;
+    width: 100%;
+  }
+
+  .tabulator {
+    border: 1px solid var(--bs-border-color);
+    background-color: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+    width: 100% !important;
+  }
+  .tabulator .tabulator-header {
+    background-color: var(--bs-tertiary-bg) !important;
+    border-bottom: 1px solid var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+  }
+  .tabulator .tabulator-header .tabulator-col {
+    background-color: transparent !important;
+    border-right-color: var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+    overflow: visible !important;
+  }
+  .tabulator .tabulator-header .tabulator-col.tabulator-sortable:hover {
+    background-color: var(--bs-secondary-bg) !important;
+  }
+  .tabulator .tabulator-header .tabulator-col .tabulator-col-sorter .tabulator-arrow {
+    border-bottom-color: var(--bs-secondary-color);
+  }
+  .tabulator .tabulator-header .tabulator-col[aria-sort="ascending"] .tabulator-col-sorter .tabulator-arrow {
+    border-bottom-color: var(--bs-body-color);
+  }
+  .tabulator .tabulator-header .tabulator-col[aria-sort="descending"] .tabulator-col-sorter .tabulator-arrow {
+    border-top-color: var(--bs-body-color);
+  }
+  .tabulator-col-content {
+    overflow: visible !important;
+  }
+  .tabulator-header .tabulator-col-title-holder {
+    align-items: flex-start !important;
+  }
+  .tabulator-header .tabulator-col-sorter {
+    align-self: flex-start !important;
+    margin-top: 2px !important;
+  }
+  .tabulator-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .tabulator-header-filter {
+    margin-top: 4px !important;
+  }
+
+  .tabulator .tabulator-tableholder .tabulator-table {
+    background-color: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+  }
+  .tabulator-row {
+    background-color: var(--bs-body-bg) !important;
+    border-bottom-color: var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+  }
+  .tabulator-row.tabulator-row-even {
+    background-color: var(--bs-tertiary-bg) !important;
+  }
+  .tabulator-row.tabulator-selectable:hover {
+    background-color: var(--bs-secondary-bg) !important;
+  }
+  .tabulator-row .tabulator-cell {
+    border-right-color: var(--bs-border-color) !important;
+  }
+
+  .tabulator-footer {
+    background-color: var(--bs-tertiary-bg) !important;
+    border-top: 1px solid var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+  }
+  .tabulator .tabulator-footer .tabulator-paginator {
+    color: var(--bs-body-color) !important;
+  }
+  .tabulator .tabulator-footer .tabulator-page,
+  .tabulator .tabulator-footer .tabulator-page-size {
+    background-color: var(--bs-body-bg) !important;
+    border: 1px solid var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+  }
+  .tabulator .tabulator-footer .tabulator-page.active {
+    background-color: var(--bs-primary) !important;
+    border-color: var(--bs-primary) !important;
+    color: #ffffff !important;
+  }
+  .tabulator .tabulator-footer .tabulator-page:not(.disabled):hover {
+    background-color: var(--bs-secondary-bg) !important;
+    color: var(--bs-body-color) !important;
+  }
+
+  .tabulator mjx-container {
+    margin: 0 !important;
+  }
+
+  .tabulator-unified-select {
+    display: block !important;
+    width: auto !important;
+    max-width: 100% !important;
+    font-size: 0.75rem !important;
+    padding: 0.2rem 1.6rem 0.2rem 0.4rem !important;
+    line-height: 1.2 !important;
+    cursor: pointer !important;
+  }
+
+  .dynamic-table-refs {
+    margin-top: 1.5rem;
+  }
+  .dynamic-table-refs .csl-entry {
+    border-radius: 0.25rem;
+    background-color: transparent;
+    transition: background-color 1.2s ease-out;
+  }
+  .dynamic-table-refs .csl-entry.is-highlighted {
+    background-color: var(--bs-tertiary-bg, rgba(128, 128, 128, 0.12));
+    background-color: color-mix(in srgb, var(--bs-link-color, currentColor) 50%, transparent);
+    transition: none;
+  }
+</style>
+
+<script>
+// Batches and caches off-screen MathJax or KaTeX rendering before Tabulator mounts
+const MathRenderer = {
+  cache: new Map(),
+  readyPromise: null,
+  queue: Promise.resolve(),
+
+  // Detects and awaits the active page math engine
+  waitForEngine() {
+    if (this.readyPromise) return this.readyPromise;
+
+    const hasMathScript = Boolean(
+      window.MathJax ||
+      typeof renderMathInElement === "function" ||
+      document.querySelector('script[src*="mathjax" i], script[src*="katex" i]')
+    );
+
+    if (!hasMathScript) {
+      return (this.readyPromise = Promise.resolve("none"));
+    }
+
+    this.readyPromise = new Promise((resolve) => {
+      let attempts = 0;
+      const check = () => {
+        if (window.MathJax?.startup?.promise) {
+          window.MathJax.startup.promise.then(() => resolve("mathjax")).catch(() => resolve("none"));
+        } else if (typeof window.MathJax?.typesetPromise === "function") {
+          resolve("mathjax");
+        } else if (typeof renderMathInElement === "function") {
+          resolve("katex");
+        } else if (attempts++ > 150) {
+          resolve("none");
+        } else {
+          setTimeout(check, 20);
+        }
+      };
+      check();
+    });
+
+    return this.readyPromise;
+  },
+
+  // Enqueues a batch of LaTeX strings for off-screen rendering
+  prepare(strings) {
+    this.queue = this.queue.then(() => this._renderBatch(strings));
+    return this.queue;
+  },
+
+  // Renders uncached LaTeX strings inside a hidden off-screen container
+  async _renderBatch(strings) {
+    const uncached = [...new Set(strings.filter(s => s !== null && s !== undefined && s !== "").map(String))]
+      .filter(s => !this.cache.has(s));
+    if (uncached.length === 0) return;
+
+    const engine = await this.waitForEngine();
+    if (engine === "none") {
+      uncached.forEach(s => this.cache.set(s, s));
+      return;
+    }
+
+    const sandbox = document.createElement("div");
+    sandbox.style.cssText = "position:absolute;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;";
+    const fragment = document.createDocumentFragment();
+    const items = uncached.map(str => {
+      const span = document.createElement("span");
+      span.textContent = str;
+      fragment.appendChild(span);
+      return { str, span };
+    });
+    sandbox.appendChild(fragment);
+    document.body.appendChild(sandbox);
+
+    try {
+      if (engine === "mathjax") {
+        await window.MathJax.typesetPromise([sandbox]);
+      } else if (engine === "katex") {
+        items.forEach(({ span }) => {
+          renderMathInElement(span, {
+            delimiters: [
+              { left: "$$", right: "$$", display: true },
+              { left: "\\(", right: "\\)", inline: true },
+              { left: "\\[", right: "\\]", display: true },
+              { left: "$", right: "$", inline: true }
+            ],
+            throwOnError: false
+          });
+        });
+      }
+      items.forEach(({ str, span }) => this.cache.set(str, span.innerHTML));
+    } finally {
+      sandbox.remove();
+    }
+  },
+
+  // Retrieves pre-rendered HTML for a cached LaTeX string
+  get(str) {
+    return (str === null || str === undefined || str === "") ? "" : (this.cache.get(String(str)) ?? "");
+  }
+};
+
+// Scales a numeric value and formats extreme magnitudes in exponential notation
+function formatScaledNumber(val, factor = 1) {
+  if (val === null || val === undefined || val === "") return "";
+  const num = Number(val);
+  if (isNaN(num)) return String(val);
+
+  const converted = num * factor;
+  const abs = Math.abs(converted);
+  return (abs > 0 && (abs < 1e-3 || abs >= 1e4))
+    ? converted.toExponential(2)
+    : Number(converted.toFixed(4)).toString();
+}
+
+// Formats a scaled number as an inline LaTeX math string
+function toLatexNumberString(val, factor = 1) {
+  if (val === null || val === undefined || val === "" || isNaN(Number(val))) return "";
+  const formatted = formatScaledNumber(val, factor);
+  if (formatted.includes("e")) {
+    const [mantissa, exponent] = formatted.split("e");
+    return `\\(${mantissa} \\times 10^{${parseInt(exponent, 10)}}\\)`;
+  }
+  return `\\(${formatted}\\)`;
+}
+
+// Parses comma- or semicolon-separated citation keys from a cell value
+function parseCitationKeys(raw) {
+  if (raw === null || raw === undefined) return [];
+  return String(raw)
+    .split(/[,;]+/)
+    .map(k => k.trim().replace(/^@/, ""))
+    .filter(Boolean);
+}
+
+const highlightTimers = new WeakMap();
+
+// Temporarily highlights a target bibliography entry when clicked from the table
+function highlightReference(entryEl) {
+  if (!entryEl) return;
+  clearTimeout(highlightTimers.get(entryEl));
+  entryEl.classList.remove("is-highlighted");
+  void entryEl.offsetWidth;
+  entryEl.classList.add("is-highlighted");
+
+  highlightTimers.set(entryEl, setTimeout(() => {
+    entryEl.classList.remove("is-highlighted");
+  }, 1600));
+}
+
+// Builds a unified Bootstrap-styled select control for header filters and unit switchers
+function createSelectMenu(options, onChange, selectedValue = "") {
+  const select = document.createElement("select");
+  select.className = "form-select form-select-sm tabulator-unified-select";
+
+  options.forEach(opt => {
+    const optionEl = document.createElement("option");
+    const val = typeof opt === "object" ? opt.value : opt;
+    const lbl = typeof opt === "object" ? opt.label : opt;
+    optionEl.value = val;
+    optionEl.textContent = lbl;
+    if (String(val) === String(selectedValue)) optionEl.selected = true;
+    select.appendChild(optionEl);
+  });
+
+  select.addEventListener("click", e => e.stopPropagation());
+  select.addEventListener("change", e => onChange(e.target.value));
+  return select;
+}
+
+// Registry of column cell formatters and header controls
+const ColumnFeatures = {
+  number: (colDef, colCfg, ctx) => {
+    colDef.formatter = (cell) => formatScaledNumber(cell.getValue(), ctx.unitFactors[colCfg.index]);
+  },
+
+  latexnum: (colDef, colCfg, ctx) => {
+    colDef.formatter = (cell) => {
+      const val = cell.getValue();
+      const latex = toLatexNumberString(val, ctx.unitFactors[colCfg.index]);
+      return latex ? MathRenderer.get(latex) : (val ?? "");
+    };
+  },
+
+  latex: (colDef) => {
+    colDef.formatter = (cell) => MathRenderer.get(cell.getValue());
+  },
+
+  inspire: (colDef, colCfg, ctx) => {
+    colDef.formatter = (cell) => {
+      const keys = parseCitationKeys(cell.getValue());
+      if (keys.length === 0) return "";
+      const frag = document.createDocumentFragment();
+      keys.forEach((key, idx) => {
+        if (idx > 0) frag.appendChild(document.createTextNode(", "));
+        const targetId = ctx.refTargetIds.get(key);
+        if (targetId) {
+          const label = ctx.refLabels.get(key);
+          const link = document.createElement("a");
+          link.href = `#${targetId}`;
+          link.textContent = label ? `${label} ${key}` : key;
+          link.addEventListener("click", () => highlightReference(ctx.refEntries.get(key)));
+          frag.appendChild(link);
+        } else {
+          frag.appendChild(document.createTextNode(key));
+        }
+      });
+      return frag;
+    };
+  },
+
+  dropdown: (colDef, colCfg, ctx) => {
+    const rawValues = [...new Set(ctx.rows.map(r => r[colCfg.field]).filter(v => v !== null && v !== undefined && v !== ""))].sort();
+    const options = [{ label: "All", value: "" }, ...rawValues.map(v => ({ label: v, value: v }))];
+    colDef.headerFilter = (cell, onRendered, success) => createSelectMenu(options, success);
+  },
+
+  units: (colDef, colCfg, ctx) => {
+    if (!colCfg.units || !colCfg.map) return;
+
+    colDef.titleFormatter = () => {
+      const wrap = document.createElement("div");
+      wrap.className = "tabulator-title-wrap";
+
+      const label = document.createElement("span");
+      label.className = "fw-bold";
+      if (colCfg.isLatex) {
+        label.innerHTML = MathRenderer.get(colCfg.name);
+      } else {
+        label.textContent = colCfg.name;
+      }
+      wrap.appendChild(label);
+
+      const select = createSelectMenu(
+        colCfg.units,
+        async (val) => {
+          const factor = colCfg.map[val];
+          if (factor === undefined) return;
+          ctx.unitFactors[colCfg.index] = factor;
+
+          if (colCfg.latexnum) {
+            await MathRenderer.prepare(ctx.rows.map(r => toLatexNumberString(r[colCfg.field], factor)));
+          }
+          ctx.table.redraw(true);
+        },
+        colCfg.units[0]
+      );
+
+      wrap.appendChild(select);
+      return wrap;
+    };
+  }
+};
+
+let tableInstanceCounter = 0;
+
+// Controller managing Tabulator lifecycle, math pre-rendering, row-height sync, and live bibliography filtering
+class TabulatorTableController {
+  constructor(container) {
+    this.instanceId = ++tableInstanceCounter;
+    this.container = container;
+    this.headers = JSON.parse(container.dataset.headers || "[]");
+    this.rows = JSON.parse(container.dataset.rows || "[]");
+    this.perPage = parseInt(container.dataset.perpage || "15", 10);
+    this.searchable = container.dataset.searchable !== "false";
+    this.sortable = container.dataset.sortable !== "false";
+
+    const rawConfig = JSON.parse(container.dataset.columns || "[]");
+    this.unitFactors = {};
+    this.columnConfigs = this.headers.map((h, idx) => {
+      const cfg = rawConfig.find(c => c.index === idx) || {};
+      this.unitFactors[idx] = (cfg.units && cfg.map) ? (cfg.map[cfg.units[0]] ?? 1) : 1;
+      return {
+        ...cfg,
+        index: idx,
+        name: cfg.header || h,
+        field: "col_" + idx,
+        isLatex: Boolean(cfg.latex || cfg.latexnum)
+      };
+    });
+
+    this.inspireFields = this.columnConfigs.filter(c => c.inspire).map(c => c.field);
+    this.refsWrap = (this.inspireFields.length > 0 && container.nextElementSibling?.classList.contains("dynamic-table-refs"))
+      ? container.nextElementSibling
+      : null;
+    this.refEntries = new Map();
+    this.refTargetIds = new Map();
+    this.refLabels = new Map();
+    this.rowKeysCache = new WeakMap();
+
+    this.table = null;
+    this.heightSyncRaf = null;
+    this.init();
+  }
+
+  // Collects all initial LaTeX strings across headers and cells for batch rendering
+  collectInitialLatexStrings() {
+    const strings = [];
+    this.columnConfigs.forEach(cfg => {
+      if (cfg.isLatex) strings.push(cfg.name);
+      if (cfg.latexnum) {
+        const factor = this.unitFactors[cfg.index];
+        this.rows.forEach(r => strings.push(toLatexNumberString(r[cfg.field], factor)));
+      } else if (cfg.latex) {
+        this.rows.forEach(r => strings.push(r[cfg.field]));
+      }
+    });
+    return strings;
+  }
+
+  // Relocates Pandoc-rendered references below the table using native Quarto bibliography classes
+  initBibliography() {
+    if (!this.refsWrap || this.inspireFields.length === 0) return;
+
+    const allKeys = [];
+    const seen = new Set();
+    this.rows.forEach(row => {
+      const rowKeys = [];
+      this.inspireFields.forEach(field => {
+        parseCitationKeys(row[field]).forEach(key => {
+          rowKeys.push(key);
+          if (!seen.has(key)) {
+            seen.add(key);
+            allKeys.push(key);
+          }
+        });
+      });
+      this.rowKeysCache.set(row, rowKeys);
+    });
+
+    const globalRefs = document.getElementById("refs");
+    const globalHeading = document.querySelector("#quarto-bibliography .quarto-appendix-heading");
+
+    const heading = document.createElement("h4");
+    heading.textContent = globalHeading?.textContent.trim() || "References";
+    this.refsWrap.appendChild(heading);
+
+    // Mirror Pandoc's native bibliography container classes and attributes so Quarto theme styles apply
+    const listContainer = document.createElement("div");
+    listContainer.className = globalRefs?.className || "references csl-bib-body hanging-indent";
+    listContainer.setAttribute("role", "list");
+    if (globalRefs?.dataset.entrySpacing !== undefined) {
+      listContainer.dataset.entrySpacing = globalRefs.dataset.entrySpacing;
+    }
+    this.refsWrap.appendChild(listContainer);
+
+    allKeys.forEach(key => {
+      const sourceEl = document.getElementById(`ref-${key}`);
+      if (!sourceEl) return;
+
+      const labelText = sourceEl.querySelector(".csl-left-margin")?.textContent.trim() || "";
+      if (labelText) this.refLabels.set(key, labelText);
+
+      // Clone with a table-scoped ID if an earlier table on the page already claimed this entry
+      let entryEl;
+      if (sourceEl.closest(".dynamic-table-refs")) {
+        const scopedId = `ref-t${this.instanceId}-${key}`;
+        entryEl = sourceEl.cloneNode(true);
+        entryEl.id = scopedId;
+        entryEl.classList.remove("is-highlighted");
+        entryEl.style.display = "";
+        this.refTargetIds.set(key, scopedId);
+      } else {
+        entryEl = sourceEl;
+        this.refTargetIds.set(key, `ref-${key}`);
+      }
+
+      listContainer.appendChild(entryEl);
+      this.refEntries.set(key, entryEl);
+    });
+
+    // Hide Pandoc's global bibliography container when no non-table citations remain
+    if (globalRefs && !globalRefs.querySelector(".csl-entry")) {
+      globalRefs.style.display = "none";
+      const quartoAppendix = globalRefs.closest("#quarto-appendix");
+      if (quartoAppendix) {
+        const hasOtherEntries = Array.from(quartoAppendix.querySelectorAll(".csl-entry"))
+          .some(el => !el.closest(".dynamic-table-refs"));
+        if (!hasOtherEntries) {
+          quartoAppendix.style.display = "none";
+        }
+      }
+    }
+  }
+
+  // Updates reference visibility to match currently visible table rows
+  syncBibliography() {
+    if (!this.refsWrap || this.refEntries.size === 0 || !this.table) return;
+
+    const visibleKeys = new Set();
+    this.table.getRows("visible").forEach(row => {
+      const keys = this.rowKeysCache.get(row.getData());
+      if (keys) {
+        for (let i = 0; i < keys.length; i++) visibleKeys.add(keys[i]);
+      }
+    });
+
+    let visibleCount = 0;
+    this.refEntries.forEach((entryEl, key) => {
+      const show = visibleKeys.has(key);
+      entryEl.style.display = show ? "" : "none";
+      if (show) visibleCount++;
+    });
+
+    this.refsWrap.style.display = visibleCount > 0 ? "" : "none";
+  }
+
+  // Coalesces row height normalization onto the next animation frame
+  scheduleHeightSync() {
+    cancelAnimationFrame(this.heightSyncRaf);
+    this.heightSyncRaf = requestAnimationFrame(() => {
+      if (!this.table) return;
+      this.table.getRows("visible").forEach(row => row.normalizeHeight(true));
+    });
+  }
+
+  // Initializes math cache, bibliography bindings, Tabulator instance, and search filter
+  async init() {
+    await MathRenderer.prepare(this.collectInitialLatexStrings());
+    this.container.innerHTML = "";
+    this.initBibliography();
+
+    let searchInput = null;
+    if (this.searchable) {
+      const topBar = document.createElement("div");
+      topBar.className = "d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2";
+      topBar.innerHTML = '<input type="text" class="form-control form-control-sm tabulator-search-input" style="width:220px;" placeholder="Search table...">';
+      this.container.appendChild(topBar);
+      searchInput = topBar.querySelector(".tabulator-search-input");
+    }
+
+    const scrollWrap = document.createElement("div");
+    scrollWrap.style.cssText = "overflow-x:auto;width:100%;";
+    const tableDiv = document.createElement("div");
+    scrollWrap.appendChild(tableDiv);
+    this.container.appendChild(scrollWrap);
+
+    const columns = this.columnConfigs.map(colCfg => {
+      const colDef = {
+        title: colCfg.name,
+        field: colCfg.field,
+        headerSort: colCfg.sortable !== undefined ? colCfg.sortable : this.sortable,
+        sorter: colCfg.type === "number" ? "number" : "string",
+        sorterParams: { alignEmptyValues: "bottom" },
+        headerHozAlign: "left"
+      };
+
+      if (colCfg.isLatex && !colCfg.units) {
+        colDef.titleFormatter = () => MathRenderer.get(colCfg.name);
+      }
+
+      const formatFeature = colCfg.inspire
+        ? "inspire"
+        : colCfg.latexnum
+          ? "latexnum"
+          : colCfg.latex
+            ? "latex"
+            : colCfg.type === "number"
+              ? "number"
+              : null;
+      if (formatFeature) ColumnFeatures[formatFeature](colDef, colCfg, this);
+      if (colCfg.dropdown) ColumnFeatures.dropdown(colDef, colCfg, this);
+      if (colCfg.units) ColumnFeatures.units(colDef, colCfg, this);
+
+      return colDef;
+    });
+
+    this.table = new Tabulator(tableDiv, {
+      data: this.rows,
+      columns: columns,
+      layout: "fitDataFill",
+      responsiveLayout: false,
+      pagination: "local",
+      paginationSize: this.perPage,
+      paginationSizeSelector: [10, 15, 25, 50],
+      movableColumns: false
+    });
+
+    // Sync row heights whenever column widths resize or rows re-render
+    const columnObserver = new ResizeObserver(() => this.scheduleHeightSync());
+
+    this.table.on("tableBuilt", () => {
+      tableDiv.querySelectorAll(".tabulator-col").forEach(col => columnObserver.observe(col));
+      this.syncBibliography();
+      this.scheduleHeightSync();
+    });
+
+    this.table.on("renderComplete", () => {
+      this.syncBibliography();
+      this.scheduleHeightSync();
+    });
+
+    // Debounced full-row search using cached lowercase text index
+    if (searchInput) {
+      let searchTimer = null;
+      const fields = this.columnConfigs.map(c => c.field);
+      const rowSearchIndex = new WeakMap();
+      const getRowText = (row) => {
+        let text = rowSearchIndex.get(row);
+        if (text === undefined) {
+          text = fields.map(f => row[f] ?? "").join("\0").toLowerCase();
+          rowSearchIndex.set(row, text);
+        }
+        return text;
+      };
+
+      searchInput.addEventListener("input", (e) => {
+        clearTimeout(searchTimer);
+        const query = e.target.value.toLowerCase().trim();
+        searchTimer = setTimeout(() => {
+          if (query === "") {
+            this.table.clearFilter();
+          } else {
+            this.table.setFilter(data => getRowText(data).includes(query));
+          }
+        }, 150);
+      });
+    }
+  }
+}
+
+// Mounts Tabulator controllers on all dynamic table containers
+function initDynamicTables() {
+  document.querySelectorAll(".tabulator-container-wrap").forEach(el => {
+    if (!el.dataset.initialized) {
+      el.dataset.initialized = "true";
+      new TabulatorTableController(el);
+    }
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDynamicTables);
+} else {
+  initDynamicTables();
+}
+</script>
 
 </section>
 
-</main> <!-- /main -->
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body" role="list">
+<div id="ref-Gotz:2014vza" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[1] </div><div class="csl-right-inline">Gotz D, Laurent P, Antier S, Covino S, D’Avanzo P, D’Elia V and Melandri A 2014 <a href="https://doi.org/10.1093/mnras/stu1634"><span class="nocase">GRB 140206A: the most distant polarized Gamma-Ray Burst</span></a> <em>Mon. Not. Roy. Astron. Soc.</em> <strong>444</strong> 2776–82</div>
+</div>
+<div id="ref-Cao:2021tat" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[2] </div><div class="csl-right-inline"><span class="nocase">Cao Z et al</span> 2022 <a href="https://doi.org/10.1103/PhysRevLett.128.051102"><span class="nocase">Exploring Lorentz Invariance Violation from Ultrahigh-Energy <span><span class="math inline">\(\gamma\)</span></span> Rays Observed by LHAASO</span></a> <em>Phys. Rev. Lett.</em> <strong>128</strong> 051102</div>
+</div>
+<div id="ref-Lang:2018yog" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[3] </div><div class="csl-right-inline">Lang R G, Martı́nez-Huerta H and Souza V de 2019 <a href="https://doi.org/10.1103/PhysRevD.99.043015"><span class="nocase">Improved limits on Lorentz invariance violation from astrophysical gamma-ray sources</span></a> <em>Phys. Rev. D</em> <strong>99</strong> 043015</div>
+</div>
+<div id="ref-ReyesHung:2023udr" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[4] </div><div class="csl-right-inline">Reyes Hung M A 2023 <em><a href="https://arxiv.org/abs/2307.03462"><span class="nocase">Exploration of possible signals beyond special relativity using high-energy astroparticle physics</span></a></em> PhD thesis (U. Zaragoza (main))</div>
+</div>
+</div></section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     // Ensure there is a toggle, if there isn't float one in the top right
