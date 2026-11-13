@@ -1,0 +1,7 @@
+Channel,Symbol,Bound,Reference
+Gamma rays,"$\delta_{\text{LIV}}^{(0)}$",1.0e-16,Gotz:2014vza
+Gamma rays,"$E_{\text{LIV}}^{(1)}$",9.02,LHAASO:2021opi
+Gamma rays,"$E_{\text{LIV}}^{(2)}$",5.66e-8,"LHAASO:2021opi, Cao:2021tat"
+Cosmic rays,"$E_{\text{LIV}}^{(1)}$",1.39e5,Lang:2018yog
+Neutrinos,"$\delta_{\text{LIV}}^{(0)}$",2.5e-13,ReyesHung:2023udr
+Gamma rays,"$E_{\text{LIV}}^{(1)}$",1.16e5,Cao:2021tat
