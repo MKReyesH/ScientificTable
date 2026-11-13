@@ -70,7 +70,6 @@
   .tabulator .tabulator-tableholder {
     height: auto !important;
     min-height: 0 !important;
-    max-height: 75vh;
   }
   .tabulator .tabulator-tableholder .tabulator-table {
     background-color: var(--bs-body-bg) !important;
@@ -633,6 +632,7 @@ class TabulatorTableController {
       data: this.rows,
       columns: columns,
       layout: "fitData",
+      renderVertical: "basic",
       responsiveLayout: false,
       pagination: "local",
       paginationSize: this.perPage,
