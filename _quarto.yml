@@ -37,4 +37,4 @@ format:
       dark: [minty, include/dark-theme.scss]
     css: include/css-config.css
     include-after-body:
-      - include/theme-toggle.html
+      - include/dark-theme-toggle.html
