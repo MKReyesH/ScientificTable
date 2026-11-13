@@ -526,6 +526,17 @@ class TabulatorTableController {
     }
   }
 
+  // Hides the pagination footer when all active rows fit within the current page size
+  syncPagination() {
+    if (!this.table) return;
+    const footer = this.table.element?.querySelector(".tabulator-footer");
+    if (!footer) return;
+
+    const activeRows = this.table.getDataCount("active");
+    const pageSize = this.table.getPageSize();
+    footer.style.display = activeRows > pageSize ? "" : "none";
+  }
+
   // Updates reference visibility to match currently visible table rows
   syncBibliography() {
     if (!this.refsWrap || this.refEntries.size === 0 || !this.table) return;
@@ -621,11 +632,13 @@ class TabulatorTableController {
 
     this.table.on("tableBuilt", () => {
       tableDiv.querySelectorAll(".tabulator-col").forEach(col => columnObserver.observe(col));
+      this.syncPagination();
       this.syncBibliography();
       this.scheduleHeightSync();
     });
 
     this.table.on("renderComplete", () => {
+      this.syncPagination();
       this.syncBibliography();
       this.scheduleHeightSync();
     });
