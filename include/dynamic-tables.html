@@ -1,23 +1,46 @@
 <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
 <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
 
+<link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
+<script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
+
 <style>
   .tabulator-container-wrap {
     margin: 1.5rem 0;
     font-size: 0.9em;
     width: 100%;
   }
+
   .tabulator {
-    border: 1px solid #dee2e6;
-    background-color: transparent !important;
+    border: 1px solid var(--bs-border-color);
+    background-color: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
     width: 100% !important;
   }
-  .tabulator-footer {
-    background-color: transparent !important;
-    border-top: 1px solid #dee2e6 !important;
+  .tabulator .tabulator-header {
+    background-color: var(--bs-tertiary-bg) !important;
+    border-bottom: 1px solid var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
   }
-
-  .tabulator-col, .tabulator-col-content {
+  .tabulator .tabulator-header .tabulator-col {
+    background-color: transparent !important;
+    border-right-color: var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+    overflow: visible !important;
+  }
+  .tabulator .tabulator-header .tabulator-col.tabulator-sortable:hover {
+    background-color: var(--bs-secondary-bg) !important;
+  }
+  .tabulator .tabulator-header .tabulator-col .tabulator-col-sorter .tabulator-arrow {
+    border-bottom-color: var(--bs-secondary-color);
+  }
+  .tabulator .tabulator-header .tabulator-col[aria-sort="ascending"] .tabulator-col-sorter .tabulator-arrow {
+    border-bottom-color: var(--bs-body-color);
+  }
+  .tabulator .tabulator-header .tabulator-col[aria-sort="descending"] .tabulator-col-sorter .tabulator-arrow {
+    border-top-color: var(--bs-body-color);
+  }
+  .tabulator-col-content {
     overflow: visible !important;
   }
   .tabulator-header .tabulator-col-title-holder {
@@ -36,32 +59,62 @@
     margin-top: 4px !important;
   }
 
+  .tabulator .tabulator-tableholder .tabulator-table {
+    background-color: var(--bs-body-bg) !important;
+    color: var(--bs-body-color) !important;
+  }
+  .tabulator-row {
+    background-color: var(--bs-body-bg) !important;
+    border-bottom-color: var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+  }
+  .tabulator-row.tabulator-row-even {
+    background-color: var(--bs-tertiary-bg) !important;
+  }
+  .tabulator-row.tabulator-selectable:hover {
+    background-color: var(--bs-secondary-bg) !important;
+  }
+  .tabulator-row .tabulator-cell {
+    border-right-color: var(--bs-border-color) !important;
+  }
+
+  .tabulator-footer {
+    background-color: var(--bs-tertiary-bg) !important;
+    border-top: 1px solid var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+  }
+  .tabulator .tabulator-footer .tabulator-paginator {
+    color: var(--bs-body-color) !important;
+  }
+  .tabulator .tabulator-footer .tabulator-page,
+  .tabulator .tabulator-footer .tabulator-page-size {
+    background-color: var(--bs-body-bg) !important;
+    border: 1px solid var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+  }
+  .tabulator .tabulator-footer .tabulator-page.active {
+    background-color: var(--bs-primary) !important;
+    border-color: var(--bs-primary) !important;
+    color: #ffffff !important;
+  }
+  .tabulator .tabulator-footer .tabulator-page:not(.disabled):hover {
+    background-color: var(--bs-secondary-bg) !important;
+    color: var(--bs-body-color) !important;
+  }
+
   .tabulator mjx-container {
     margin: 0 !important;
   }
 
+  /* Compact sizing only; colors and light/dark chevron inherit natively from Bootstrap .form-select */
   .tabulator-unified-select {
     display: block !important;
     width: auto !important;
     max-width: 100% !important;
     font-size: 0.75rem !important;
-    padding: 0.2rem 1.4rem 0.2rem 0.4rem !important;
+    padding: 0.2rem 1.6rem 0.2rem 0.4rem !important;
     line-height: 1.2 !important;
-    color: #212529 !important;
-    background-color: #ffffff !important;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 0.35rem center !important;
-    background-size: 9px 9px !important;
-    border: 1px solid #ced4da !important;
-    border-radius: 0.2rem !important;
-    appearance: none !important;
     cursor: pointer !important;
-  }
-  .tabulator-unified-select:focus {
-    outline: none !important;
-    border-color: #86b7fe !important;
-    box-shadow: inset 0 0 0 1px #86b7fe !important;
   }
 
   .dynamic-table-refs {

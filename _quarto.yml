@@ -30,7 +30,10 @@ filters:
 
 format:
   html:
-    theme: minty # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
+    theme: # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
+      respect-user-color-scheme: true
+    	light: minty
+    	dark: [minty, include/dark-theme.css]
     math: mathjax
     css: include/css-config.css
     
