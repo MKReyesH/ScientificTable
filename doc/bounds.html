@@ -415,6 +415,7 @@ window.Quarto = {
     color: var(--bs-body-color) !important;
     width: fit-content !important;
     max-width: 100% !important;
+    height: auto !important;
   }
   .tabulator .tabulator-header {
     background-color: var(--bs-tertiary-bg) !important;
@@ -462,6 +463,11 @@ window.Quarto = {
     margin-top: 4px !important;
   }
 
+  .tabulator .tabulator-tableholder {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 75vh;
+  }
   .tabulator .tabulator-tableholder .tabulator-table {
     background-color: var(--bs-body-bg) !important;
     color: var(--bs-body-color) !important;
@@ -798,7 +804,7 @@ const ColumnFeatures = {
 
 let tableInstanceCounter = 0;
 
-// Controller managing Tabulator lifecycle, math pre-rendering, row-height sync, and live bibliography filtering
+// Controller managing Tabulator lifecycle, math pre-rendering, and live bibliography filtering
 class TabulatorTableController {
   constructor(container) {
     this.instanceId = ++tableInstanceCounter;
@@ -833,7 +839,6 @@ class TabulatorTableController {
     this.rowKeysCache = new WeakMap();
 
     this.table = null;
-    this.heightSyncRaf = null;
     this.init();
   }
 
@@ -967,20 +972,11 @@ class TabulatorTableController {
     this.refsWrap.style.display = visibleCount > 0 ? "" : "none";
   }
 
-  // Coalesces row height normalization onto the next animation frame
-  scheduleHeightSync() {
-    cancelAnimationFrame(this.heightSyncRaf);
-    this.heightSyncRaf = requestAnimationFrame(() => {
-      if (!this.table) return;
-      this.table.getRows("visible").forEach(row => row.normalizeHeight(true));
-    });
-  }
-
-  // Synchronizes pagination visibility, bibliography filtering, and wrapped row heights
+  // Synchronizes pagination visibility, bibliography filtering, and multi-line row borders
   syncUI() {
     this.syncPagination();
     this.syncBibliography();
-    this.scheduleHeightSync();
+    this.table?.getRows("visible").forEach(row => row.normalizeHeight(true));
   }
 
   // Initializes math cache, bibliography bindings, Tabulator instance, and search filter
@@ -1033,7 +1029,6 @@ class TabulatorTableController {
       data: this.rows,
       columns: columns,
       layout: "fitData",
-      renderVertical: "basic",
       responsiveLayout: false,
       pagination: "local",
       paginationSize: this.perPage,
