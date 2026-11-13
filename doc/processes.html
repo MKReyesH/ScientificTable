@@ -631,30 +631,6 @@ window.Quarto = {
 </style>
 
 <script>
-// Waits for the Tabulator stylesheet and web fonts before measuring table dimensions
-const AssetsReady = (() => {
-  let promise = null;
-  return () => {
-    if (promise) return promise;
-
-    const link = document.querySelector('link[href*="tabulator"]');
-    const cssReady = (!link || link.sheet)
-      ? Promise.resolve()
-      : new Promise((resolve) => {
-          link.addEventListener("load", resolve, { once: true });
-          link.addEventListener("error", resolve, { once: true });
-          setTimeout(resolve, 2000);
-        });
-
-    const fontsReady = document.fonts?.ready
-      ? Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 1000))])
-      : Promise.resolve();
-
-    promise = Promise.all([cssReady, fontsReady]);
-    return promise;
-  };
-})();
-
 // Batches, normalizes, and caches off-screen MathJax or KaTeX rendering before Tabulator mounts
 const MathRenderer = {
   cache: new Map(),
@@ -1060,11 +1036,7 @@ class TabulatorTableController {
 
     const activeRows = this.table.getDataCount("active");
     const pageSize = this.table.getPageSize();
-    const nextDisplay = activeRows > pageSize ? "" : "none";
-    if (footer.style.display !== nextDisplay) {
-      footer.style.display = nextDisplay;
-      requestAnimationFrame(() => this.table?.redraw());
-    }
+    footer.style.display = activeRows > pageSize ? "" : "none";
   }
 
   // Updates reference visibility to match currently visible table rows
@@ -1098,12 +1070,16 @@ class TabulatorTableController {
     });
   }
 
+  // Synchronizes pagination visibility, bibliography filtering, and wrapped row heights
+  syncUI() {
+    this.syncPagination();
+    this.syncBibliography();
+    this.scheduleHeightSync();
+  }
+
   // Initializes math cache, bibliography bindings, Tabulator instance, and search filter
   async init() {
-    await Promise.all([
-      MathRenderer.prepare(this.collectInitialLatexStrings()),
-      AssetsReady()
-    ]);
+    await MathRenderer.prepare(this.collectInitialLatexStrings());
     this.container.innerHTML = "";
     this.initBibliography();
 
@@ -1116,11 +1092,8 @@ class TabulatorTableController {
       searchInput = topBar.querySelector(".tabulator-search-input");
     }
 
-    const scrollWrap = document.createElement("div");
-    scrollWrap.style.cssText = "max-width:100%;";
     const tableDiv = document.createElement("div");
-    scrollWrap.appendChild(tableDiv);
-    this.container.appendChild(scrollWrap);
+    this.container.appendChild(tableDiv);
 
     const columns = this.columnConfigs.map(colCfg => {
       const colDef = {
@@ -1154,6 +1127,7 @@ class TabulatorTableController {
       data: this.rows,
       columns: columns,
       layout: "fitData",
+      renderVertical: "basic",
       responsiveLayout: false,
       pagination: "local",
       paginationSize: this.perPage,
@@ -1161,21 +1135,8 @@ class TabulatorTableController {
       movableColumns: false
     });
 
-    // Sync row heights whenever column widths resize or rows re-render
-    const columnObserver = new ResizeObserver(() => this.scheduleHeightSync());
-
-    this.table.on("tableBuilt", () => {
-      tableDiv.querySelectorAll(".tabulator-col").forEach(col => columnObserver.observe(col));
-      this.syncPagination();
-      this.syncBibliography();
-      this.scheduleHeightSync();
-    });
-
-    this.table.on("renderComplete", () => {
-      this.syncPagination();
-      this.syncBibliography();
-      this.scheduleHeightSync();
-    });
+    this.table.on("tableBuilt", () => this.syncUI());
+    this.table.on("renderComplete", () => this.syncUI());
 
     // Debounced full-row search using cached lowercase text index
     if (searchInput) {
