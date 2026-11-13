@@ -397,9 +397,6 @@ window.Quarto = {
 <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
 <script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
 
-<link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
-<script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
-
 <style>
   .tabulator-container-wrap {
     margin: 1.5rem 0;
@@ -528,11 +525,19 @@ window.Quarto = {
 </style>
 
 <script>
-// Batches and caches off-screen MathJax or KaTeX rendering before Tabulator mounts
+// Batches, normalizes, and caches off-screen MathJax or KaTeX rendering before Tabulator mounts
 const MathRenderer = {
   cache: new Map(),
   readyPromise: null,
   queue: Promise.resolve(),
+
+  // Normalizes $...$ and $$...$$ into \(...\) and \[...\] for MathJax 3 and KaTeX compatibility
+  normalize(str) {
+    if (str === null || str === undefined || str === "") return "";
+    return String(str)
+      .replace(/(^|[^\\])\$\$([\s\S]+?)\$\$/g, "$1\\[$2\\]")
+      .replace(/(^|[^\\])\$([^$\n]+?)\$/g, "$1\\($2\\)");
+  },
 
   // Detects and awaits the active page math engine
   waitForEngine() {
@@ -577,8 +582,10 @@ const MathRenderer = {
 
   // Renders uncached LaTeX strings inside a hidden off-screen container
   async _renderBatch(strings) {
-    const uncached = [...new Set(strings.filter(s => s !== null && s !== undefined && s !== "").map(String))]
-      .filter(s => !this.cache.has(s));
+    const normalized = strings
+      .filter(s => s !== null && s !== undefined && s !== "")
+      .map(s => this.normalize(s));
+    const uncached = [...new Set(normalized)].filter(s => !this.cache.has(s));
     if (uncached.length === 0) return;
 
     const engine = await this.waitForEngine();
@@ -623,7 +630,8 @@ const MathRenderer = {
 
   // Retrieves pre-rendered HTML for a cached LaTeX string
   get(str) {
-    return (str === null || str === undefined || str === "") ? "" : (this.cache.get(String(str)) ?? "");
+    const norm = this.normalize(str);
+    return norm === "" ? "" : (this.cache.get(norm) ?? norm);
   }
 };
 
@@ -642,13 +650,14 @@ function formatScaledNumber(val, factor = 1) {
 
 // Formats a scaled number as an inline LaTeX math string
 function toLatexNumberString(val, factor = 1) {
-  if (val === null || val === undefined || val === "" || isNaN(Number(val))) return "";
+  if (val === null || val === undefined || val === "") return "";
+  if (isNaN(Number(val))) return String(val);
   const formatted = formatScaledNumber(val, factor);
   if (formatted.includes("e")) {
     const [mantissa, exponent] = formatted.split("e");
-    return `\\(${mantissa} \\times 10^{${parseInt(exponent, 10)}}\\)`;
+    return `$${mantissa} \\times 10^{${parseInt(exponent, 10)}}$`;
   }
-  return `\\(${formatted}\\)`;
+  return `$${formatted}$`;
 }
 
 // Parses comma- or semicolon-separated citation keys from a cell value
@@ -695,22 +704,18 @@ function createSelectMenu(options, onChange, selectedValue = "") {
   return select;
 }
 
-// Registry of column cell formatters and header controls
+// Composable registry of column cell formatters and header controls
 const ColumnFeatures = {
   number: (colDef, colCfg, ctx) => {
-    colDef.formatter = (cell) => formatScaledNumber(cell.getValue(), ctx.unitFactors[colCfg.index]);
-  },
-
-  latexnum: (colDef, colCfg, ctx) => {
-    colDef.formatter = (cell) => {
-      const val = cell.getValue();
-      const latex = toLatexNumberString(val, ctx.unitFactors[colCfg.index]);
-      return latex ? MathRenderer.get(latex) : (val ?? "");
-    };
+    colDef.formatter = (cell) => ctx.formatValue(colCfg, cell.getValue());
   },
 
   latex: (colDef) => {
-    colDef.formatter = (cell) => MathRenderer.get(cell.getValue());
+    const baseFormatter = colDef.formatter;
+    colDef.formatter = (cell, formatterParams, onRendered) => {
+      const raw = baseFormatter ? baseFormatter(cell, formatterParams, onRendered) : cell.getValue();
+      return MathRenderer.get(raw);
+    };
   },
 
   inspire: (colDef, colCfg, ctx) => {
@@ -765,8 +770,8 @@ const ColumnFeatures = {
           if (factor === undefined) return;
           ctx.unitFactors[colCfg.index] = factor;
 
-          if (colCfg.latexnum) {
-            await MathRenderer.prepare(ctx.rows.map(r => toLatexNumberString(r[colCfg.field], factor)));
+          if (colCfg.isLatex) {
+            await MathRenderer.prepare(ctx.rows.map(r => ctx.formatValue(colCfg, r[colCfg.field])));
           }
           ctx.table.redraw(true);
         },
@@ -820,17 +825,24 @@ class TabulatorTableController {
     this.init();
   }
 
+  // Computes a cell's pre-LaTeX display string based on column type and active unit factor
+  formatValue(colCfg, rawVal) {
+    if (colCfg.type === "number") {
+      const factor = this.unitFactors[colCfg.index];
+      return colCfg.latexnum
+        ? toLatexNumberString(rawVal, factor)
+        : formatScaledNumber(rawVal, factor);
+    }
+    return rawVal ?? "";
+  }
+
   // Collects all initial LaTeX strings across headers and cells for batch rendering
   collectInitialLatexStrings() {
     const strings = [];
     this.columnConfigs.forEach(cfg => {
-      if (cfg.isLatex) strings.push(cfg.name);
-      if (cfg.latexnum) {
-        const factor = this.unitFactors[cfg.index];
-        this.rows.forEach(r => strings.push(toLatexNumberString(r[cfg.field], factor)));
-      } else if (cfg.latex) {
-        this.rows.forEach(r => strings.push(r[cfg.field]));
-      }
+      if (!cfg.isLatex) return;
+      strings.push(cfg.name);
+      this.rows.forEach(r => strings.push(this.formatValue(cfg, r[cfg.field])));
     });
     return strings;
   }
@@ -976,16 +988,13 @@ class TabulatorTableController {
         colDef.titleFormatter = () => MathRenderer.get(colCfg.name);
       }
 
-      const formatFeature = colCfg.inspire
-        ? "inspire"
-        : colCfg.latexnum
-          ? "latexnum"
-          : colCfg.latex
-            ? "latex"
-            : colCfg.type === "number"
-              ? "number"
-              : null;
-      if (formatFeature) ColumnFeatures[formatFeature](colDef, colCfg, this);
+      if (colCfg.inspire) {
+        ColumnFeatures.inspire(colDef, colCfg, this);
+      } else {
+        if (colCfg.type === "number") ColumnFeatures.number(colDef, colCfg, this);
+        if (colCfg.isLatex) ColumnFeatures.latex(colDef, colCfg, this);
+      }
+
       if (colCfg.dropdown) ColumnFeatures.dropdown(colDef, colCfg, this);
       if (colCfg.units) ColumnFeatures.units(colDef, colCfg, this);
 
