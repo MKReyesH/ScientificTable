@@ -44,8 +44,6 @@ Individual columns are configured with `col N:`, using a **0-based index** (`col
 src: data/example-table.csv
 searchable: true
 per-page: 4
-
-# Column rules (0-indexed)
 col 0: header="Channel", dropdown
 col 1: header="Operator", latex
 col 2: header="Bound [GeV]", number
@@ -57,8 +55,6 @@ col 3: header="Reference", unsortable
 src: data/example-table.csv
 searchable: true
 per-page: 4
-
-# Column rules (0-indexed)
 col 0: header="Channel", dropdown
 col 1: header="Operator", latex
 col 2: header="Bound [GeV]", number
@@ -77,7 +73,6 @@ Three specialized column tags support physical unit scaling, LaTeX scientific no
 ::: {.dynamic-table}
 src: data/example-table.csv
 per-page: 4
-
 col 0: header="Channel", dropdown
 col 1: header="Operator", latex
 col 2: header=$E_{\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)
@@ -88,7 +83,6 @@ col 3: header="References", inspire, unsortable
 ::: {.dynamic-table}
 src: data/example-table.csv
 per-page: 4
-
 col 0: header="Channel", dropdown
 col 1: header="Operator", latex
 col 2: header=$E_{\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)
