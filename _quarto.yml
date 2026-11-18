@@ -2,7 +2,9 @@ website:
   search: true
   navbar:
     background: primary
-    logo: "img/logo/logo.png"
+    logo:
+      - light: img/logo/logo_black.png
+      - dark: img/logo/logo_white.png
     left:
       - text: "Home"
         href: index.qmd
