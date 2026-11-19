@@ -1,7 +1,6 @@
-<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-
 <style>
   .dynamic-plot-wrap {
+    position: relative;
     margin: 1.5rem auto;
     width: 100%;
     border: 1px solid var(--bs-border-color);
@@ -13,6 +12,25 @@
 
   .dynamic-plot-canvas {
     width: 100%;
+  }
+
+  .dynamic-plot-math-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .dynamic-plot-math-label {
+    position: absolute;
+    color: var(--bs-body-color);
+    white-space: nowrap;
+    line-height: 1;
+    user-select: none;
+  }
+
+  .dynamic-plot-math-label mjx-container {
+    margin: 0 !important;
   }
 
   .dynamic-plot-error {
@@ -30,12 +48,145 @@
 
 <script>
 (() => {
-  // Awaits MathJax startup when present so Plotly renders LaTeX axis labels cleanly
-  function waitForMathJax() {
-    if (window.MathJax?.startup?.promise) {
-      return window.MathJax.startup.promise.catch(() => {});
+  const PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js";
+
+  // Downloads the full Plotly bundle asynchronously so it loads in parallel with MathJax
+  function loadPlotly() {
+    if (window.Plotly) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = PLOTLY_CDN;
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error(`Failed to load Plotly from ${PLOTLY_CDN}`));
+      document.head.appendChild(script);
+    });
+  }
+
+  // Reuses window.MathRenderer when dynamic-tables is loaded, or initializes the native Quarto MathJax/KaTeX renderer
+  const PlotMathRenderer = window.MathRenderer || {
+    cache: new Map(),
+    readyPromise: null,
+    queue: Promise.resolve(),
+
+    // Normalizes $...$ and $$...$$ into \(...\) and \[...\] for MathJax 3 and KaTeX compatibility
+    normalize(str) {
+      if (str === null || str === undefined || str === "") return "";
+      return String(str)
+        .replace(/(^|[^\\])\$\$([\s\S]+?)\$\$/g, "$1\\[$2\\]")
+        .replace(/(^|[^\\])\$([^$\n]+?)\$/g, "$1\\($2\\)");
+    },
+
+    // Detects and awaits the active page math engine
+    waitForEngine() {
+      if (this.readyPromise) return this.readyPromise;
+
+      const hasMathScript = Boolean(
+        window.MathJax ||
+        typeof renderMathInElement === "function" ||
+        document.querySelector('script[src*="mathjax" i], script[src*="katex" i]')
+      );
+
+      if (!hasMathScript) {
+        return (this.readyPromise = Promise.resolve("none"));
+      }
+
+      this.readyPromise = new Promise((resolve) => {
+        let attempts = 0;
+        const check = () => {
+          if (window.MathJax?.startup?.promise) {
+            window.MathJax.startup.promise.then(() => resolve("mathjax")).catch(() => resolve("none"));
+          } else if (typeof window.MathJax?.typesetPromise === "function") {
+            resolve("mathjax");
+          } else if (typeof renderMathInElement === "function") {
+            resolve("katex");
+          } else if (attempts++ > 150) {
+            resolve("none");
+          } else {
+            setTimeout(check, 20);
+          }
+        };
+        check();
+      });
+
+      return this.readyPromise;
+    },
+
+    // Enqueues a batch of LaTeX strings for off-screen rendering
+    prepare(strings) {
+      this.queue = this.queue.then(() => this._renderBatch(strings));
+      return this.queue;
+    },
+
+    // Renders uncached LaTeX strings inside a hidden off-screen container
+    async _renderBatch(strings) {
+      const normalized = strings
+        .filter((s) => s !== null && s !== undefined && s !== "")
+        .map((s) => this.normalize(s));
+      const uncached = [...new Set(normalized)].filter((s) => !this.cache.has(s));
+      if (uncached.length === 0) return;
+
+      const engine = await this.waitForEngine();
+      if (engine === "none") {
+        uncached.forEach((s) => this.cache.set(s, s));
+        return;
+      }
+
+      const sandbox = document.createElement("div");
+      sandbox.style.cssText = "position:absolute;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;";
+      const fragment = document.createDocumentFragment();
+      const items = uncached.map((str) => {
+        const span = document.createElement("span");
+        span.textContent = str;
+        fragment.appendChild(span);
+        return { str, span };
+      });
+      sandbox.appendChild(fragment);
+      document.body.appendChild(sandbox);
+
+      try {
+        if (engine === "mathjax") {
+          await window.MathJax.typesetPromise([sandbox]);
+        } else if (engine === "katex") {
+          items.forEach(({ span }) => {
+            renderMathInElement(span, {
+              delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "\\(", right: "\\)", inline: true },
+                { left: "\\[", right: "\\]", display: true },
+                { left: "$", right: "$", inline: true }
+              ],
+              throwOnError: false
+            });
+          });
+        }
+        items.forEach(({ str, span }) => this.cache.set(str, span.innerHTML));
+      } finally {
+        sandbox.remove();
+      }
+    },
+
+    // Retrieves pre-rendered HTML for a cached LaTeX string
+    get(str) {
+      const norm = this.normalize(str);
+      return norm === "" ? "" : (this.cache.get(norm) ?? norm);
     }
-    return Promise.resolve();
+  };
+
+  // Checks whether a label contains inline or display LaTeX delimiters
+  function hasMathDelimiters(str) {
+    return typeof str === "string" && /(\$\$?[\s\S]+?\$\$?|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/.test(str);
+  }
+
+  // Produces a compact plain-text sizing string so Plotly reserves accurate margin and legend space
+  function toSizingText(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/\\\(|\\\)|\\\[|\\\]|\$\$/g, "")
+      .replace(/\$([^$]+)\$/g, "$1")
+      .replace(/\\[a-zA-Z]+\{([^}]*)\}/g, "$1")
+      .replace(/\\[a-zA-Z]+/g, "x")
+      .replace(/[{}^_]/g, "");
   }
 
   // Recursive-descent math parser and compiler supporting implicit multiplication and scientific functions
@@ -349,6 +500,7 @@
           dim: hasY ? "3d" : "2d",
           subtype: hasY ? "3d-explicit" : "2d-explicit",
           isSweep: false,
+          rawLabel: def.label,
           def,
           compiled
         };
@@ -360,6 +512,7 @@
         dim: hasZ ? "3d" : "2d",
         subtype: hasZ ? "3d-implicit" : "2d-implicit",
         isSweep: false,
+        rawLabel: def.label,
         def,
         compiled
       };
@@ -370,6 +523,7 @@
       const { def, compiled, subtype } = spec;
       const { xrange, yrange, zrange } = domains;
       const env = { x: 0, y: 0, z: 0 };
+      const sizingName = toSizingText(def.label);
 
       if (subtype === "2d-explicit") {
         const n = def.points || 100;
@@ -382,7 +536,7 @@
         const smooth = def.smooth !== null && def.smooth !== undefined ? def.smooth : true;
         return {
           type: "scatter",
-          name: def.label,
+          name: sizingName,
           x: xs,
           y: ys,
           mode: def.mode,
@@ -405,7 +559,7 @@
         });
         return {
           type: "contour",
-          name: def.label,
+          name: sizingName,
           x: xs,
           y: ys,
           z: zGrid,
@@ -435,7 +589,7 @@
         });
         return {
           type: "surface",
-          name: def.label,
+          name: sizingName,
           x: xs,
           y: ys,
           z: zGrid,
@@ -474,7 +628,7 @@
 
       return {
         type: "isosurface",
-        name: def.label,
+        name: sizingName,
         x: flatX,
         y: flatY,
         z: flatZ,
@@ -576,6 +730,7 @@
       const numCols = rows[0].length;
       const colVars = buildColumnVars(numCols);
       const xExpr = MathExpr.compile(def.x, { allowedVars: colVars, allowEquals: false });
+      const sizingName = toSizingText(def.label);
 
       const env = {};
       const xs = rows.map((r) => {
@@ -618,12 +773,14 @@
           kind: "file",
           dim: "2d",
           isSweep: true,
+          rawLabel: def.label,
+          rawParamLabel: def.paramLabel,
           xs,
           ys: ySeries.flat(),
           zs: null,
           initialTrace: {
             type: "scatter",
-            name: def.label,
+            name: sizingName,
             x: xs,
             y: ySeries[0],
             mode: def.mode,
@@ -631,7 +788,7 @@
           },
           frames,
           params: params.map(formatParamLabel),
-          paramLabel: def.paramLabel,
+          paramLabel: toSizingText(def.paramLabel),
           play: def.play
         };
       }
@@ -655,12 +812,13 @@
           kind: "file",
           dim: "3d",
           isSweep: false,
+          rawLabel: def.label,
           xs,
           ys,
           zs,
           trace: {
             type: "scatter3d",
-            name: def.label,
+            name: sizingName,
             x: xs,
             y: ys,
             z: zs,
@@ -675,12 +833,13 @@
         kind: "file",
         dim: "2d",
         isSweep: false,
+        rawLabel: def.label,
         xs,
         ys,
         zs: null,
         trace: {
           type: "scatter",
-          name: def.label,
+          name: sizingName,
           x: xs,
           y: ys,
           mode: def.mode,
@@ -713,7 +872,7 @@
         zerolinecolor: p.borderColor,
         tickfont: { color: p.textColor }
       };
-      if (titleText) axis.title = { text: titleText, font: { color: p.textColor } };
+      if (titleText) axis.title = { text: toSizingText(titleText), font: { color: p.textColor } };
       if (range) {
         axis.range = scale === "log" ? [Math.log10(range[0]), Math.log10(range[1])] : range;
         axis.autorange = false;
@@ -756,15 +915,17 @@
     }
   };
 
-  // Controller managing Plotly canvas composition, zoom resampling, and theme synchronization
+  // Controller managing Plotly canvas composition, native MathJax overlays, zoom resampling, and theme sync
   class DynamicPlotController {
     constructor(wrapEl, registry) {
       this.wrapEl = wrapEl;
       this.registry = registry;
       this.cfg = JSON.parse(wrapEl.dataset.plotConfig || "{}");
       this.canvas = null;
+      this.mathLayer = null;
       this.is3d = false;
       this.hasSlider = false;
+      this.activeStepIdx = 0;
       this.isResampling = false;
       this.homeDomains = null;
       this.specs = [];
@@ -854,11 +1015,11 @@
     buildLayout(palette) {
       const layout = {
         height: this.cfg.height,
-        margin: this.is3d ? { l: 10, r: 10, t: 25, b: 10 } : { l: 60, r: 25, t: 25, b: 55 },
+        margin: this.is3d ? { l: 10, r: 10, t: 25, b: 10 } : { l: 65, r: 25, t: 25, b: 58 },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
         font: { color: palette.textColor },
-        showlegend: this.specs.length > 1 || this.specs[0].def?.label !== this.specs[0].id,
+        showlegend: this.specs.length > 1 || this.specs[0].rawLabel !== this.specs[0].id,
         legend: { font: { color: palette.textColor } },
         hoverlabel: {
           bgcolor: palette.bgColor,
@@ -945,48 +1106,125 @@
       return layout;
     }
 
+    // Positions a single Quarto-rendered MathJax/KaTeX overlay element over an SVG text node
+    placeMathNode(svgEl, htmlContent, { align = "center", rotate = 0, opacity = "1" } = {}) {
+      if (!svgEl) return;
+      const wrapRect = this.wrapEl.getBoundingClientRect();
+      const rect = svgEl.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) return;
+
+      svgEl.style.opacity = "0";
+      const span = document.createElement("span");
+      span.className = "dynamic-plot-math-label";
+      span.innerHTML = htmlContent;
+      span.style.opacity = opacity;
+      span.style.fontSize = getComputedStyle(svgEl).fontSize || "12px";
+
+      const midY = rect.top + rect.height / 2 - wrapRect.top;
+      if (align === "left") {
+        span.style.left = `${rect.left - wrapRect.left}px`;
+        span.style.top = `${midY}px`;
+        span.style.transform = rotate ? `translate(0, -50%) rotate(${rotate}deg)` : "translate(0, -50%)";
+      } else {
+        const midX = rect.left + rect.width / 2 - wrapRect.left;
+        span.style.left = `${midX}px`;
+        span.style.top = `${midY}px`;
+        span.style.transform = rotate ? `translate(-50%, -50%) rotate(${rotate}deg)` : "translate(-50%, -50%)";
+      }
+
+      this.mathLayer.appendChild(span);
+    }
+
+    // Synchronizes native Quarto MathJax/KaTeX overlays for axis titles, legend items, and slider labels
+    syncMathOverlays() {
+      if (!this.mathLayer || !this.canvas) return;
+      this.mathLayer.innerHTML = "";
+
+      if (hasMathDelimiters(this.cfg.xlabel)) {
+        this.placeMathNode(this.canvas.querySelector("text.xtitle"), PlotMathRenderer.get(this.cfg.xlabel));
+      }
+
+      if (hasMathDelimiters(this.cfg.ylabel)) {
+        this.placeMathNode(this.canvas.querySelector("text.ytitle"), PlotMathRenderer.get(this.cfg.ylabel), { rotate: -90 });
+      }
+
+      const traceGroups = this.canvas.querySelectorAll(".legend g.traces");
+      traceGroups.forEach((group, idx) => {
+        const spec = this.specs[idx];
+        if (!spec || !hasMathDelimiters(spec.rawLabel)) return;
+        const textEl = group.querySelector("text.legendtext");
+        const groupOpacity = group.style.opacity || "1";
+        this.placeMathNode(textEl, PlotMathRenderer.get(spec.rawLabel), {
+          align: "left",
+          opacity: groupOpacity
+        });
+      });
+
+      if (this.hasSlider && hasMathDelimiters(this.specs[0].rawParamLabel)) {
+        const sweepSpec = this.specs[0];
+        const stepVal = sweepSpec.params[this.activeStepIdx] ?? sweepSpec.params[0];
+        const sliderTextEl = this.canvas.querySelector("text.slider-label");
+        this.placeMathNode(sliderTextEl, `${PlotMathRenderer.get(sweepSpec.rawParamLabel)}: ${stepVal}`, {
+          align: "left"
+        });
+      }
+    }
+
     // Re-evaluates 2D analytical curves across visible bounds on user zoom or pan
-    attachZoomResampler() {
-      if (this.is3d || !this.specs.some((s) => s.kind === "function")) return;
-
+    attachEvents() {
       this.canvas.on("plotly_relayout", (ev) => {
-        if (this.isResampling || !ev) return;
+        if (!this.is3d && this.specs.some((s) => s.kind === "function") && !this.isResampling && ev) {
+          let nextX = null;
+          let nextY = null;
 
-        let nextX = null;
-        let nextY = null;
-
-        if (ev["xaxis.autorange"] || ev["yaxis.autorange"]) {
-          nextX = this.homeDomains.xrange;
-          nextY = this.homeDomains.yrange;
-        } else if (ev["xaxis.range[0]"] !== undefined && ev["xaxis.range[1]"] !== undefined) {
-          const r0 = Number(ev["xaxis.range[0]"]);
-          const r1 = Number(ev["xaxis.range[1]"]);
-          nextX = this.cfg.xscale === "log" ? [Math.pow(10, r0), Math.pow(10, r1)] : [r0, r1];
-
-          if (ev["yaxis.range[0]"] !== undefined && ev["yaxis.range[1]"] !== undefined) {
-            const y0 = Number(ev["yaxis.range[0]"]);
-            const y1 = Number(ev["yaxis.range[1]"]);
-            nextY = this.cfg.yscale === "log" ? [Math.pow(10, y0), Math.pow(10, y1)] : [y0, y1];
-          } else {
+          if (ev["xaxis.autorange"] || ev["yaxis.autorange"]) {
+            nextX = this.homeDomains.xrange;
             nextY = this.homeDomains.yrange;
+          } else if (ev["xaxis.range[0]"] !== undefined && ev["xaxis.range[1]"] !== undefined) {
+            const r0 = Number(ev["xaxis.range[0]"]);
+            const r1 = Number(ev["xaxis.range[1]"]);
+            nextX = this.cfg.xscale === "log" ? [Math.pow(10, r0), Math.pow(10, r1)] : [r0, r1];
+
+            if (ev["yaxis.range[0]"] !== undefined && ev["yaxis.range[1]"] !== undefined) {
+              const y0 = Number(ev["yaxis.range[0]"]);
+              const y1 = Number(ev["yaxis.range[1]"]);
+              nextY = this.cfg.yscale === "log" ? [Math.pow(10, y0), Math.pow(10, y1)] : [y0, y1];
+            } else {
+              nextY = this.homeDomains.yrange;
+            }
           }
-        } else {
-          return;
-        }
 
-        if (!Number.isFinite(nextX[0]) || !Number.isFinite(nextX[1]) || nextX[0] >= nextX[1]) return;
-
-        this.isResampling = true;
-        try {
-          const updatedTraces = this.buildTraces({ xrange: nextX, yrange: nextY, zrange: null });
-          Plotly.react(this.canvas, updatedTraces, this.canvas.layout, { responsive: true });
-        } finally {
-          this.isResampling = false;
+          if (nextX && Number.isFinite(nextX[0]) && Number.isFinite(nextX[1]) && nextX[0] < nextX[1]) {
+            this.isResampling = true;
+            try {
+              const updatedTraces = this.buildTraces({ xrange: nextX, yrange: nextY, zrange: null });
+              Plotly.react(this.canvas, updatedTraces, this.canvas.layout, { responsive: true });
+            } finally {
+              this.isResampling = false;
+            }
+          }
         }
+        this.syncMathOverlays();
+      });
+
+      this.canvas.on("plotly_restyle", () => this.syncMathOverlays());
+
+      this.canvas.on("plotly_sliderchange", (ev) => {
+        if (ev?.slider && typeof ev.slider.active === "number") {
+          this.activeStepIdx = ev.slider.active;
+        }
+        this.syncMathOverlays();
+      });
+
+      this.canvas.on("plotly_animatingframe", (ev) => {
+        if (ev?.name !== undefined) {
+          this.activeStepIdx = parseInt(ev.name, 10) || 0;
+        }
+        this.syncMathOverlays();
       });
     }
 
-    // Mounts the Plotly graph into the container
+    // Mounts the Plotly graph and native MathJax overlay layer into the container
     mount() {
       this.resolveSpecs();
       this.homeDomains = this.computeInitialDomains();
@@ -994,6 +1232,10 @@
       this.canvas = document.createElement("div");
       this.canvas.className = "dynamic-plot-canvas";
       this.wrapEl.appendChild(this.canvas);
+
+      this.mathLayer = document.createElement("div");
+      this.mathLayer.className = "dynamic-plot-math-layer";
+      this.wrapEl.appendChild(this.mathLayer);
 
       const palette = ThemeSync.getPalette();
       const traces = this.buildTraces(this.homeDomains);
@@ -1008,22 +1250,26 @@
         Plotly.addFrames(this.canvas, this.specs[0].frames);
       }
 
-      this.attachZoomResampler();
+      this.attachEvents();
+      this.syncMathOverlays();
     }
 
     // Updates Plotly colors when the page theme switches between light and dark mode
     syncTheme() {
       if (!this.canvas || !this.canvas.layout) return;
       Plotly.relayout(this.canvas, ThemeSync.buildThemeRelayout(this.hasSlider, this.is3d));
+      this.syncMathOverlays();
     }
   }
 
-  // Indexes plot definitions, mounts all dynamic plot containers, and observes theme changes
+  // Indexes plot definitions, loads Plotly and MathJax in parallel, mounts canvases, and observes theme changes
   async function initDynamicPlots() {
-    if (typeof Plotly === "undefined") return;
-    await waitForMathJax();
+    const wraps = Array.from(document.querySelectorAll(".dynamic-plot-wrap"));
+    if (wraps.length === 0) return;
 
     const registry = new Map();
+    const mathStrings = [];
+
     document.querySelectorAll("script.dynamic-plot-def").forEach((el) => {
       try {
         const def = JSON.parse(el.textContent);
@@ -1031,10 +1277,25 @@
           ? FunctionBuilder.prepare(def)
           : FileBuilder.prepare(def);
         registry.set(def.id, prepared);
+        if (hasMathDelimiters(def.label)) mathStrings.push(def.label);
+        if (hasMathDelimiters(def.paramLabel)) mathStrings.push(def.paramLabel);
       } catch (err) {
         registry.set(el.dataset.id, { __error: err.message || String(err) });
       }
     });
+
+    wraps.forEach((wrap) => {
+      try {
+        const cfg = JSON.parse(wrap.dataset.plotConfig || "{}");
+        if (hasMathDelimiters(cfg.xlabel)) mathStrings.push(cfg.xlabel);
+        if (hasMathDelimiters(cfg.ylabel)) mathStrings.push(cfg.ylabel);
+      } catch (_) {}
+    });
+
+    await Promise.all([
+      loadPlotly(),
+      PlotMathRenderer.prepare(mathStrings)
+    ]);
 
     const checkedRegistry = {
       get(id) {
@@ -1045,7 +1306,7 @@
     };
 
     const controllers = [];
-    document.querySelectorAll(".dynamic-plot-wrap").forEach((wrap) => {
+    wraps.forEach((wrap) => {
       if (!wrap.dataset.initialized) {
         wrap.dataset.initialized = "true";
         controllers.push(new DynamicPlotController(wrap, checkedRegistry));

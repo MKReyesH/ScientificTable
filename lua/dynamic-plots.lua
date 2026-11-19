@@ -95,9 +95,9 @@ local function stringify_inline_with_math(inline)
 
     if inline.t == "Math" then
         if inline.mathtype == "DisplayMath" or inline.mathtype == pandoc.DisplayMath then
-            return "$$" .. inline.text .. "$$"
+            return "\\[" .. inline.text .. "\\]"
         end
-        return "$" .. inline.text .. "$"
+        return "\\(" .. inline.text .. "\\)"
     elseif inline.t == "Quoted" then
         local q_char = (inline.quotetype == "SingleQuote" or inline.quotetype == pandoc.SingleQuote) and "'" or '"'
         local inner = {}
@@ -374,6 +374,15 @@ local function render_plot_canvas(el)
         html_escape(pandoc.json.encode(cfg))
     )
     return pandoc.RawBlock("html", html)
+end
+
+-- Detects malformed fenced divs that Pandoc left as raw paragraphs (e.g. missing blank line or space after ':::')
+function Para(p)
+    local txt = trim(pandoc.utils.stringify(p))
+    if txt:match(":::%s*{%.plot%-function") or txt:match(":::%s*{%.plot%-file") or txt:match(":::%s*{%.dynamic%-plot") then
+        error("[dynamic-plots.lua] Error: Malformed fenced block (ensure a blank line before ':::' and a space after ':::'): " .. txt)
+    end
+    return nil
 end
 
 -- Pandoc filter hook for '.plot-function', '.plot-file', and '.dynamic-plot' fenced divs
