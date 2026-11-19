@@ -10,6 +10,55 @@
     overflow: hidden;
   }
 
+  .dynamic-plot-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.25rem;
+    padding: 0.55rem 0.9rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    background-color: var(--bs-tertiary-bg);
+    font-size: 0.875rem;
+  }
+
+  .dynamic-plot-curve-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+    color: var(--bs-body-color);
+    transition: opacity 0.15s ease;
+  }
+
+  .dynamic-plot-curve-toggle.is-hidden {
+    opacity: 0.5;
+  }
+
+  .dynamic-plot-curve-checkbox {
+    margin: 0 !important;
+    cursor: pointer;
+  }
+
+  .dynamic-plot-curve-swatch {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+
+  .dynamic-plot-curve-label mjx-container {
+    margin: 0 !important;
+  }
+
+  .dynamic-plot-stage {
+    position: relative;
+    width: 100%;
+  }
+
   .dynamic-plot-canvas {
     width: 100%;
   }
@@ -53,6 +102,11 @@
 
   const PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js";
 
+  const TRACE_COLORWAY = [
+    "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+    "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
+  ];
+
   // Downloads the full Plotly bundle asynchronously so it loads in parallel with MathJax
   function loadPlotly() {
     if (window.Plotly) return Promise.resolve();
@@ -70,7 +124,7 @@
     return store.plotly;
   }
 
-  // Reuses window.MathRenderer or initializes the shared Quarto MathJax/KaTeX renderer
+  // Reuses window.MathRenderer when dynamic-tables is loaded, or initializes the shared Quarto MathJax/KaTeX renderer
   const PlotMathRenderer = window.MathRenderer || (window.MathRenderer = {
     cache: new Map(),
     readyPromise: null,
@@ -185,7 +239,7 @@
     return typeof str === "string" && /(\$\$?[\s\S]+?\$\$?|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/.test(str);
   }
 
-  // Produces a compact plain-text sizing string so Plotly reserves accurate margin and legend space
+  // Produces a compact plain-text sizing string so Plotly reserves accurate margin space
   function toSizingText(str) {
     if (!str) return "";
     return String(str)
@@ -194,6 +248,19 @@
       .replace(/\\[a-zA-Z]+\{([^}]*)\}/g, "$1")
       .replace(/\\[a-zA-Z]+/g, "x")
       .replace(/[{}^_]/g, "");
+  }
+
+  // Applies a deterministic palette color to a trace object
+  function applyTraceColor(trace, color) {
+    if (trace.type === "scatter" || trace.type === "scatter3d") {
+      trace.line = { ...(trace.line || {}), color };
+      trace.marker = { ...(trace.marker || {}), color };
+    } else if (trace.type === "contour") {
+      trace.line = { ...(trace.line || {}), color };
+    } else if (trace.type === "isosurface") {
+      trace.colorscale = [[0, color], [1, color]];
+    }
+    return trace;
   }
 
   // Recursive-descent math parser and compiler supporting implicit multiplication and scientific functions
@@ -272,7 +339,6 @@
       const consume = () => tokens[pos++];
       const isOp = (tok, val) => tok && tok.type === "op" && tok.value === val;
 
-      // Checks whether the next token begins an implicit multiplication factor (e.g. 2x or 2(x+1))
       function startsImplicitFactor(tok) {
         if (!tok) return false;
         return tok.type === "id" || isOp(tok, "(");
@@ -506,6 +572,7 @@
           kind: "function",
           dim: hasY ? "3d" : "2d",
           subtype: hasY ? "3d-explicit" : "2d-explicit",
+          mode: def.mode,
           isSweep: false,
           rawLabel: def.label,
           def,
@@ -518,6 +585,7 @@
         kind: "function",
         dim: hasZ ? "3d" : "2d",
         subtype: hasZ ? "3d-implicit" : "2d-implicit",
+        mode: "lines",
         isSweep: false,
         rawLabel: def.label,
         def,
@@ -577,8 +645,7 @@
             size: 1
           },
           line: { width: 2.5 },
-          showscale: false,
-          showlegend: true
+          showscale: false
         };
       }
 
@@ -600,8 +667,7 @@
           x: xs,
           y: ys,
           z: zGrid,
-          showscale: false,
-          showlegend: true
+          showscale: false
         };
       }
 
@@ -644,8 +710,7 @@
         isomax: 0,
         surface: { count: 1 },
         caps: { x: { show: false }, y: { show: false }, z: { show: false } },
-        showscale: false,
-        showlegend: true
+        showscale: false
       };
     }
 
@@ -779,6 +844,7 @@
           id: def.id,
           kind: "file",
           dim: "2d",
+          mode: def.mode,
           isSweep: true,
           rawLabel: def.label,
           rawParamLabel: def.paramLabel,
@@ -818,6 +884,7 @@
           id: def.id,
           kind: "file",
           dim: "3d",
+          mode: def.mode,
           isSweep: false,
           rawLabel: def.label,
           xs,
@@ -839,6 +906,7 @@
         id: def.id,
         kind: "file",
         dim: "2d",
+        mode: def.mode,
         isSweep: false,
         rawLabel: def.label,
         xs,
@@ -879,7 +947,9 @@
         zerolinecolor: p.borderColor,
         tickfont: { color: p.textColor }
       };
-      if (titleText) axis.title = { text: toSizingText(titleText), font: { color: p.textColor } };
+      if (titleText) {
+        axis.title = { text: toSizingText(titleText), font: { color: p.textColor } };
+      }
       if (range) {
         axis.range = scale === "log" ? [Math.log10(range[0]), Math.log10(range[1])] : range;
         axis.autorange = false;
@@ -887,11 +957,10 @@
       return axis;
     },
 
-    buildThemeRelayout(hasSlider, is3d) {
+    buildThemeRelayout(hasSlider, hasPlayButton, is3d) {
       const p = this.getPalette();
       const base = {
         "font.color": p.textColor,
-        "legend.font.color": p.textColor,
         "hoverlabel.bgcolor": p.bgColor,
         "hoverlabel.bordercolor": p.borderColor,
         "hoverlabel.font.color": p.textColor
@@ -900,6 +969,8 @@
       if (is3d) {
         for (const ax of ["xaxis", "yaxis", "zaxis"]) {
           base[`scene.${ax}.color`] = p.textColor;
+          base[`scene.${ax}.tickfont.color`] = p.textColor;
+          base[`scene.${ax}.title.font.color`] = p.textColor;
           base[`scene.${ax}.gridcolor`] = p.gridColor;
           base[`scene.${ax}.linecolor`] = p.borderColor;
           base[`scene.${ax}.backgroundcolor`] = "rgba(0,0,0,0)";
@@ -907,6 +978,8 @@
       } else {
         for (const ax of ["xaxis", "yaxis"]) {
           base[`${ax}.color`] = p.textColor;
+          base[`${ax}.tickfont.color`] = p.textColor;
+          base[`${ax}.title.font.color`] = p.textColor;
           base[`${ax}.gridcolor`] = p.gridColor;
           base[`${ax}.linecolor`] = p.borderColor;
           base[`${ax}.zerolinecolor`] = p.borderColor;
@@ -915,27 +988,54 @@
 
       if (hasSlider) {
         base["sliders[0].font.color"] = p.textColor;
+        base["sliders[0].currentvalue.font.color"] = p.textColor;
         base["sliders[0].bordercolor"] = p.borderColor;
         base["sliders[0].bgcolor"] = p.bgColor;
       }
+
+      if (hasPlayButton) {
+        base["updatemenus[0].font.color"] = p.textColor;
+        base["updatemenus[0].bordercolor"] = p.borderColor;
+        base["updatemenus[0].bgcolor"] = p.bgColor;
+      }
+
       return base;
     }
   };
 
-  // Controller managing Plotly canvas composition, native MathJax overlays, zoom resampling, and theme sync
+  // Builds a compact SVG line/marker swatch matching a curve's mode and color
+  function createCurveSwatch(mode, color) {
+    const span = document.createElement("span");
+    span.className = "dynamic-plot-curve-swatch";
+    const showLine = mode !== "markers";
+    const showMarker = mode === "markers" || mode === "lines+markers";
+    const lineSvg = showLine
+      ? `<line x1="1" y1="6" x2="21" y2="6" stroke="${color}" stroke-width="2.2" stroke-linecap="round"/>`
+      : "";
+    const markerSvg = showMarker
+      ? `<circle cx="11" cy="6" r="3.2" fill="${color}"/>`
+      : "";
+    span.innerHTML = `<svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true">${lineSvg}${markerSvg}</svg>`;
+    return span;
+  }
+
+  // Controller managing Plotly canvas composition, curve visibility checkboxes, native MathJax overlays, zoom resampling, and theme sync
   class DynamicPlotController {
     constructor(wrapEl, registry) {
       this.wrapEl = wrapEl;
       this.registry = registry;
       this.cfg = JSON.parse(wrapEl.dataset.plotConfig || "{}");
+      this.stageEl = null;
       this.canvas = null;
       this.mathLayer = null;
       this.is3d = false;
       this.hasSlider = false;
+      this.hasPlayButton = false;
       this.activeStepIdx = 0;
       this.isResampling = false;
       this.homeDomains = null;
       this.specs = [];
+      this.traceVisible = [];
 
       try {
         this.mount();
@@ -979,6 +1079,8 @@
       this.specs = this.hasSlider
         ? [sweeps[0], ...specs.filter((s) => !s.isSweep)]
         : specs;
+      this.hasPlayButton = Boolean(this.hasSlider && this.specs[0].play);
+      this.traceVisible = this.specs.map(() => true);
     }
 
     // Resolves initial x, y, and z domains across plot config, function overrides, and file bounds
@@ -1003,19 +1105,69 @@
       };
     }
 
-    // Evaluates analytical traces and collects pre-built file traces
+    // Evaluates analytical traces and collects pre-built file traces with consistent colors and visibility state
     buildTraces(domains) {
       const scales = {
         xscale: this.cfg.xscale,
         yscale: this.cfg.yscale,
         zscale: this.cfg.zscale
       };
-      return this.specs.map((spec) => {
-        if (spec.kind === "function") {
-          return FunctionBuilder.evaluate(spec, domains, scales);
-        }
-        return spec.isSweep ? spec.initialTrace : spec.trace;
+      return this.specs.map((spec, idx) => {
+        const color = TRACE_COLORWAY[idx % TRACE_COLORWAY.length];
+        const rawTrace = spec.kind === "function"
+          ? FunctionBuilder.evaluate(spec, domains, scales)
+          : (spec.isSweep ? { ...spec.initialTrace } : { ...spec.trace });
+        applyTraceColor(rawTrace, color);
+        rawTrace.visible = this.traceVisible[idx] ? true : "legendonly";
+        return rawTrace;
       });
+    }
+
+    // Builds the interactive checkbox legend bar for toggling individual curves
+    buildCurveToggleBar() {
+      if (this.cfg.legend === false) return;
+
+      const bar = document.createElement("div");
+      bar.className = "dynamic-plot-legend";
+
+      this.specs.forEach((spec, idx) => {
+        const color = TRACE_COLORWAY[idx % TRACE_COLORWAY.length];
+        const item = document.createElement("label");
+        item.className = "dynamic-plot-curve-toggle";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "form-check-input dynamic-plot-curve-checkbox";
+        checkbox.checked = true;
+        checkbox.style.accentColor = color;
+
+        checkbox.addEventListener("change", async () => {
+          const show = checkbox.checked;
+          this.traceVisible[idx] = show;
+          item.classList.toggle("is-hidden", !show);
+          if (this.canvas) {
+            await Plotly.restyle(this.canvas, { visible: show ? true : "legendonly" }, [idx]);
+            this.syncMathOverlays();
+          }
+        });
+
+        const swatch = createCurveSwatch(spec.mode, color);
+
+        const labelSpan = document.createElement("span");
+        labelSpan.className = "dynamic-plot-curve-label";
+        if (hasMathDelimiters(spec.rawLabel)) {
+          labelSpan.innerHTML = PlotMathRenderer.get(spec.rawLabel);
+        } else {
+          labelSpan.textContent = spec.rawLabel;
+        }
+
+        item.appendChild(checkbox);
+        item.appendChild(swatch);
+        item.appendChild(labelSpan);
+        bar.appendChild(item);
+      });
+
+      this.wrapEl.appendChild(bar);
     }
 
     // Constructs the Plotly layout object including axes, theme colors, and optional sweep slider
@@ -1025,9 +1177,9 @@
         margin: this.is3d ? { l: 10, r: 10, t: 25, b: 10 } : { l: 65, r: 25, t: 25, b: 58 },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
+        colorway: TRACE_COLORWAY,
         font: { color: palette.textColor },
-        showlegend: this.specs.length > 1 || this.specs[0].rawLabel !== this.specs[0].id,
-        legend: { font: { color: palette.textColor } },
+        showlegend: false,
         hoverlabel: {
           bgcolor: palette.bgColor,
           bordercolor: palette.borderColor,
@@ -1048,12 +1200,12 @@
 
       if (this.hasSlider) {
         const sweepSpec = this.specs[0];
-        layout.margin.b = sweepSpec.play ? 115 : 95;
+        layout.margin.b = this.hasPlayButton ? 115 : 95;
         layout.sliders = [{
           active: 0,
           pad: { t: 35, b: 5 },
-          len: sweepSpec.play ? 0.82 : 1.0,
-          x: sweepSpec.play ? 0.18 : 0.0,
+          len: this.hasPlayButton ? 0.82 : 1.0,
+          x: this.hasPlayButton ? 0.18 : 0.0,
           currentvalue: {
             visible: true,
             prefix: `${sweepSpec.paramLabel}: `,
@@ -1073,7 +1225,7 @@
           }))
         }];
 
-        if (sweepSpec.play) {
+        if (this.hasPlayButton) {
           layout.updatemenus = [{
             type: "buttons",
             showactive: false,
@@ -1115,8 +1267,8 @@
 
     // Positions a single Quarto-rendered MathJax/KaTeX overlay element over an SVG text node
     placeMathNode(svgEl, htmlContent, { align = "center", rotate = 0, opacity = "1" } = {}) {
-      if (!svgEl) return;
-      const wrapRect = this.wrapEl.getBoundingClientRect();
+      if (!svgEl || !this.stageEl) return;
+      const stageRect = this.stageEl.getBoundingClientRect();
       const rect = svgEl.getBoundingClientRect();
       if (rect.width === 0 && rect.height === 0) return;
 
@@ -1127,13 +1279,13 @@
       span.style.opacity = opacity;
       span.style.fontSize = getComputedStyle(svgEl).fontSize || "12px";
 
-      const midY = rect.top + rect.height / 2 - wrapRect.top;
+      const midY = rect.top + rect.height / 2 - stageRect.top;
       if (align === "left") {
-        span.style.left = `${rect.left - wrapRect.left}px`;
+        span.style.left = `${rect.left - stageRect.left}px`;
         span.style.top = `${midY}px`;
         span.style.transform = rotate ? `translate(0, -50%) rotate(${rotate}deg)` : "translate(0, -50%)";
       } else {
-        const midX = rect.left + rect.width / 2 - wrapRect.left;
+        const midX = rect.left + rect.width / 2 - stageRect.left;
         span.style.left = `${midX}px`;
         span.style.top = `${midY}px`;
         span.style.transform = rotate ? `translate(-50%, -50%) rotate(${rotate}deg)` : "translate(-50%, -50%)";
@@ -1142,7 +1294,7 @@
       this.mathLayer.appendChild(span);
     }
 
-    // Synchronizes native Quarto MathJax/KaTeX overlays for axis titles, legend items, and slider labels
+    // Synchronizes native Quarto MathJax/KaTeX overlays for axis titles and slider labels
     syncMathOverlays() {
       if (!this.mathLayer || !this.canvas) return;
       this.mathLayer.innerHTML = "";
@@ -1154,18 +1306,6 @@
       if (hasMathDelimiters(this.cfg.ylabel)) {
         this.placeMathNode(this.canvas.querySelector("text.ytitle"), PlotMathRenderer.get(this.cfg.ylabel), { rotate: -90 });
       }
-
-      const traceGroups = this.canvas.querySelectorAll(".legend g.traces");
-      traceGroups.forEach((group, idx) => {
-        const spec = this.specs[idx];
-        if (!spec || !hasMathDelimiters(spec.rawLabel)) return;
-        const textEl = group.querySelector("text.legendtext");
-        const groupOpacity = group.style.opacity || "1";
-        this.placeMathNode(textEl, PlotMathRenderer.get(spec.rawLabel), {
-          align: "left",
-          opacity: groupOpacity
-        });
-      });
 
       if (this.hasSlider && hasMathDelimiters(this.specs[0].rawParamLabel)) {
         const sweepSpec = this.specs[0];
@@ -1231,18 +1371,24 @@
       });
     }
 
-    // Mounts the Plotly graph and native MathJax overlay layer into the container
+    // Mounts the curve toggle bar, Plotly graph, and native MathJax overlay layer into the container
     mount() {
       this.resolveSpecs();
       this.homeDomains = this.computeInitialDomains();
 
+      this.buildCurveToggleBar();
+
+      this.stageEl = document.createElement("div");
+      this.stageEl.className = "dynamic-plot-stage";
+      this.wrapEl.appendChild(this.stageEl);
+
       this.canvas = document.createElement("div");
       this.canvas.className = "dynamic-plot-canvas";
-      this.wrapEl.appendChild(this.canvas);
+      this.stageEl.appendChild(this.canvas);
 
       this.mathLayer = document.createElement("div");
       this.mathLayer.className = "dynamic-plot-math-layer";
-      this.wrapEl.appendChild(this.mathLayer);
+      this.stageEl.appendChild(this.mathLayer);
 
       const palette = ThemeSync.getPalette();
       const traces = this.buildTraces(this.homeDomains);
@@ -1261,10 +1407,13 @@
       this.syncMathOverlays();
     }
 
-    // Updates Plotly colors when the page theme switches between light and dark mode
-    syncTheme() {
+    // Updates all Plotly axis, tick, title, and control colors when the page theme switches
+    async syncTheme() {
       if (!this.canvas || !this.canvas.layout) return;
-      Plotly.relayout(this.canvas, ThemeSync.buildThemeRelayout(this.hasSlider, this.is3d));
+      await Plotly.relayout(
+        this.canvas,
+        ThemeSync.buildThemeRelayout(this.hasSlider, this.hasPlayButton, this.is3d)
+      );
       this.syncMathOverlays();
     }
   }
@@ -1322,17 +1471,36 @@
 
     if (controllers.length === 0) return;
 
-    let lastDark = document.body.classList.contains("quarto-dark");
-    const syncAllThemes = () => {
-      const isDark = document.body.classList.contains("quarto-dark");
+    const detectDark = () =>
+      document.body.classList.contains("quarto-dark") ||
+      document.documentElement.getAttribute("data-bs-theme") === "dark";
+
+    let lastDark = detectDark();
+    let syncTimer = null;
+
+    const scheduleThemeSync = () => {
+      const isDark = detectDark();
       if (isDark === lastDark) return;
       lastDark = isDark;
-      controllers.forEach((ctrl) => ctrl.syncTheme());
+
+      clearTimeout(syncTimer);
+      requestAnimationFrame(() => {
+        controllers.forEach((ctrl) => ctrl.syncTheme());
+        // Re-sync shortly after in case an alternate Bootstrap stylesheet finished applying asynchronously
+        syncTimer = setTimeout(() => {
+          controllers.forEach((ctrl) => ctrl.syncTheme());
+        }, 80);
+      });
     };
 
-    new MutationObserver(syncAllThemes).observe(document.body, {
+    const observer = new MutationObserver(scheduleThemeSync);
+    observer.observe(document.body, {
       attributes: true,
-      attributeFilter: ["class"]
+      attributeFilter: ["class", "data-bs-theme"]
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "data-bs-theme"]
     });
   }
 

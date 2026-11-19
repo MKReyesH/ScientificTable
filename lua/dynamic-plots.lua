@@ -26,7 +26,8 @@ local DEFAULTS = {
     xscale = "linear",
     yscale = "linear",
     zscale = "linear",
-    play   = false
+    play   = false,
+    legend = true
 }
 
 local PATHS = {
@@ -51,7 +52,8 @@ local FILE_KEYS = {
 local PLOT_KEYS = {
     curves = true, xlabel = true, ylabel = true, zlabel = true,
     xscale = true, yscale = true, zscale = true,
-    xrange = true, yrange = true, zrange = true, height = true
+    xrange = true, yrange = true, zrange = true, height = true,
+    legend = true
 }
 
 local has_dynamic_plot = false
@@ -285,6 +287,11 @@ local function render_plot_canvas(el)
     track_math(kv.ylabel)
     track_math(kv.zlabel)
 
+    local legend_opt = parse_bool(kv.legend, "legend", context)
+    if legend_opt == nil then
+        legend_opt = DEFAULTS.legend
+    end
+
     local cfg = {
         curves = curves,
         xlabel = kv.xlabel,
@@ -296,7 +303,8 @@ local function render_plot_canvas(el)
         xrange = parse_range(kv.xrange, "xrange", context),
         yrange = parse_range(kv.yrange, "yrange", context),
         zrange = parse_range(kv.zrange, "zrange", context),
-        height = parse_int(kv.height, "height", 200, context) or DEFAULTS.height
+        height = parse_int(kv.height, "height", 200, context) or DEFAULTS.height,
+        legend = legend_opt
     }
 
     has_dynamic_plot = true
