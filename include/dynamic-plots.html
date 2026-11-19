@@ -27,15 +27,24 @@
     width: 100%;
   }
 
-  .dynamic-plot-legend {
+  .dynamic-plot-sidebar {
     flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 0.75rem;
+    max-width: 270px;
+    padding: 1rem 1.1rem 1rem 0.25rem;
+    font-size: 0.875rem;
+  }
+
+  .dynamic-plot-legend {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
-    max-width: 270px;
-    padding: 1.4rem 1.1rem 1rem 0.25rem;
-    font-size: 0.875rem;
+    width: 100%;
   }
 
   .dynamic-plot-curve-toggle {
@@ -78,12 +87,15 @@
       flex-direction: column;
     }
 
-    .dynamic-plot-legend {
-      flex-direction: row;
-      flex-wrap: wrap;
+    .dynamic-plot-sidebar {
       max-width: 100%;
       padding: 0.55rem 0.9rem 0.85rem;
       border-top: 1px solid var(--bs-border-color);
+    }
+
+    .dynamic-plot-legend {
+      flex-direction: row;
+      flex-wrap: wrap;
     }
   }
 
@@ -965,6 +977,7 @@
     buildAxisTheme(titleText, scale, range, p) {
       const axis = {
         type: scale,
+        automargin: true,
         color: p.textColor,
         gridcolor: p.gridColor,
         linecolor: p.borderColor,
@@ -972,7 +985,11 @@
         tickfont: { color: p.textColor }
       };
       if (titleText) {
-        axis.title = { text: toSizingText(titleText), font: { color: p.textColor } };
+        axis.title = {
+          text: toSizingText(titleText),
+          font: { color: p.textColor },
+          standoff: 12
+        };
       }
       if (range) {
         axis.range = scale === "log" ? [Math.log10(range[0]), Math.log10(range[1])] : range;
@@ -1148,9 +1165,12 @@
       });
     }
 
-    // Builds the right-hand legend with checkboxes for toggling individual curves
-    buildCurveLegend() {
+    // Builds the vertically centered right-hand sidebar containing curve checkboxes
+    buildSidebar() {
       if (this.cfg.legend === false) return;
+
+      const sidebarEl = document.createElement("div");
+      sidebarEl.className = "dynamic-plot-sidebar";
 
       const legendEl = document.createElement("div");
       legendEl.className = "dynamic-plot-legend";
@@ -1192,14 +1212,15 @@
         legendEl.appendChild(item);
       });
 
-      this.bodyEl.appendChild(legendEl);
+      sidebarEl.appendChild(legendEl);
+      this.bodyEl.appendChild(sidebarEl);
     }
 
     // Constructs the Plotly layout object including axes, theme colors, and optional sweep slider
     buildLayout(palette) {
       const layout = {
         height: this.cfg.height,
-        margin: this.is3d ? { l: 10, r: 10, t: 25, b: 10 } : { l: 65, r: 20, t: 25, b: 58 },
+        margin: this.is3d ? { l: 10, r: 10, t: 25, b: 10 } : { l: 55, r: 20, t: 25, b: 50 },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
         colorway: TRACE_COLORWAY,
@@ -1225,8 +1246,8 @@
 
       if (this.hasSlider) {
         const sweepSpec = this.specs[0];
-        const sliderPadT = this.cfg.xlabel ? 76 : 42;
-        layout.margin.b = sliderPadT + 70;
+        const sliderPadT = this.cfg.xlabel ? 60 : 32;
+        layout.margin.b = sliderPadT + 60;
 
         layout.sliders = [{
           active: 0,
@@ -1416,7 +1437,7 @@
       }
     }
 
-    // Mounts the Plotly graph, native MathJax overlay layer, and right-hand checkbox legend
+    // Mounts the Plotly graph, native MathJax overlay layer, and right-hand sidebar
     mount() {
       this.resolveSpecs();
       this.homeDomains = this.computeInitialDomains();
@@ -1437,7 +1458,7 @@
       this.mathLayer.className = "dynamic-plot-math-layer";
       this.stageEl.appendChild(this.mathLayer);
 
-      this.buildCurveLegend();
+      this.buildSidebar();
 
       const palette = ThemeSync.getPalette();
       const traces = this.buildTraces(this.homeDomains);
