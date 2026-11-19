@@ -2,6 +2,23 @@
 -- Dynamic Plots Lua Filter
 -- =============================================================================
 
+local TAG = "dynamic-plots.lua"
+local SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
+
+local U
+do
+    local orig_path = package.path
+    if SCRIPT_DIR ~= "" then
+        package.path = SCRIPT_DIR .. "?.lua;" .. orig_path
+    end
+    local ok, mod = pcall(require, "shared-utils")
+    package.path = orig_path
+    if not ok then
+        error(string.format("[%s] Error: Required module 'shared-utils.lua' not found in '%s': %s", TAG, SCRIPT_DIR, tostring(mod)))
+    end
+    U = mod
+end
+
 local DEFAULTS = {
     height = 480,
     points = 100,
@@ -38,107 +55,13 @@ local PLOT_KEYS = {
 }
 
 local has_dynamic_plot = false
-local cached_assets_html = nil
+local has_plot_math = false
 local plot_defs = {}
 
-local SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
-
--- Loads and caches the client-side Plotly HTML/CSS/JS template
-local function load_assets_html()
-    if cached_assets_html then return cached_assets_html end
-
-    local html_path = PANDOC_SCRIPT_FILE:gsub(PATHS.filter_rel .. "$", PATHS.template_rel)
-    local file = io.open(html_path, "r")
-    if not file then
-        error("[dynamic-plots.lua] Error: Cannot open template at '" .. html_path .. "'. Check file path.")
+local function track_math(str)
+    if U.has_math(str) then
+        has_plot_math = true
     end
-
-    cached_assets_html = file:read("*a")
-    file:close()
-    return cached_assets_html
-end
-
--- Trims leading and trailing whitespace
-local function trim(s)
-    return s and s:match("^%s*(.-)%s*$") or ""
-end
-
--- Escapes special HTML characters for safe attribute injection
-local function html_escape(s)
-    return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
-end
-
--- Opens a data file relative to working directory, filter directory, or input document
-local function open_data_file(src)
-    local file = io.open(src, "r")
-    if file then return file end
-
-    if SCRIPT_DIR ~= "" then
-        file = io.open(SCRIPT_DIR .. "../" .. src, "r")
-        if file then return file end
-    end
-
-    if PANDOC_STATE and PANDOC_STATE.input_files and #PANDOC_STATE.input_files > 0 then
-        local doc_dir = PANDOC_STATE.input_files[1]:match("(.*[/\\])")
-        if doc_dir then
-            file = io.open(doc_dir .. src, "r")
-            if file then return file end
-        end
-    end
-
-    return nil
-end
-
--- Serializes Pandoc inline nodes while preserving LaTeX math delimiters and quotes
-local function stringify_inline_with_math(inline)
-    if not inline then return "" end
-
-    if inline.t == "Math" then
-        if inline.mathtype == "DisplayMath" or inline.mathtype == pandoc.DisplayMath then
-            return "\\[" .. inline.text .. "\\]"
-        end
-        return "\\(" .. inline.text .. "\\)"
-    elseif inline.t == "Quoted" then
-        local q_char = (inline.quotetype == "SingleQuote" or inline.quotetype == pandoc.SingleQuote) and "'" or '"'
-        local inner = {}
-        for _, child in ipairs(inline.content or inline.c or {}) do
-            table.insert(inner, stringify_inline_with_math(child))
-        end
-        return q_char .. table.concat(inner) .. q_char
-    elseif inline.c or inline.content then
-        local children = inline.content or inline.c
-        if type(children) == "table" then
-            local res = {}
-            for _, child in ipairs(children) do
-                table.insert(res, stringify_inline_with_math(child))
-            end
-            return table.concat(res)
-        end
-    end
-
-    return pandoc.utils.stringify(inline)
-end
-
--- Extracts logical configuration lines from a Pandoc Div block
-local function extract_lines_from_div(el)
-    local lines = {}
-    for _, block in ipairs(el.content) do
-        if block.content then
-            local current = {}
-            for _, inline in ipairs(block.content) do
-                if inline.t == "SoftBreak" or inline.t == "LineBreak" then
-                    local l = trim(table.concat(current))
-                    if l ~= "" then table.insert(lines, l) end
-                    current = {}
-                else
-                    table.insert(current, stringify_inline_with_math(inline))
-                end
-            end
-            local final = trim(table.concat(current))
-            if final ~= "" then table.insert(lines, final) end
-        end
-    end
-    return lines
 end
 
 -- Parses key-value lines and enforces allowed and required key schemas
@@ -147,21 +70,21 @@ local function parse_kv(lines, allowed_keys, required_keys, context)
     for _, line in ipairs(lines) do
         local k, v = line:match("^([%w_%-]+)%s*:%s*(.+)$")
         if not k then
-            error("[dynamic-plots.lua] Error: Invalid line in " .. context .. " (expected 'key: value'): " .. line)
+            error(string.format("[%s] Error: Invalid line in %s (expected 'key: value'): %s", TAG, context, line))
         end
         k = k:lower()
         if not allowed_keys[k] then
-            error("[dynamic-plots.lua] Error: Unknown key '" .. k .. "' in " .. context)
+            error(string.format("[%s] Error: Unknown key '%s' in %s", TAG, k, context))
         end
         if kv[k] ~= nil then
-            error("[dynamic-plots.lua] Error: Duplicate key '" .. k .. "' in " .. context)
+            error(string.format("[%s] Error: Duplicate key '%s' in %s", TAG, k, context))
         end
-        kv[k] = trim(v)
+        kv[k] = U.trim(v)
     end
 
     for _, req in ipairs(required_keys) do
         if not kv[req] or kv[req] == "" then
-            error("[dynamic-plots.lua] Error: Missing required key '" .. req .. "' in " .. context)
+            error(string.format("[%s] Error: Missing required key '%s' in %s", TAG, req, context))
         end
     end
     return kv
@@ -173,7 +96,7 @@ local function parse_bool(val, key, context)
     local lower = val:lower()
     if lower == "true" then return true end
     if lower == "false" then return false end
-    error("[dynamic-plots.lua] Error: Key '" .. key .. "' in " .. context .. " must be 'true' or 'false' (got '" .. val .. "')")
+    error(string.format("[%s] Error: Key '%s' in %s must be 'true' or 'false' (got '%s')", TAG, key, context, val))
 end
 
 -- Parses an integer option string with a lower bound
@@ -181,7 +104,7 @@ local function parse_int(val, key, min_val, context)
     if val == nil then return nil end
     local n = tonumber(val)
     if not n or math.floor(n) ~= n or n < min_val then
-        error("[dynamic-plots.lua] Error: Key '" .. key .. "' in " .. context .. " must be an integer >= " .. tostring(min_val) .. " (got '" .. val .. "')")
+        error(string.format("[%s] Error: Key '%s' in %s must be an integer >= %d (got '%s')", TAG, key, context, min_val, val))
     end
     return n
 end
@@ -189,17 +112,17 @@ end
 -- Parses a numeric axis range '[min, max]'
 local function parse_range(val, key, context)
     if val == nil then return nil end
-    local inner = trim(val:match("^%[?%s*(.-)%s*%]?$"))
+    local inner = U.trim(val:match("^%[?%s*(.-)%s*%]?$"))
     local parts = {}
     for item in inner:gmatch("[^,]+") do
-        local num = tonumber(trim(item))
+        local num = tonumber(U.trim(item))
         if not num then
-            error("[dynamic-plots.lua] Error: Invalid numeric bound in '" .. key .. "' of " .. context .. ": " .. val)
+            error(string.format("[%s] Error: Invalid numeric bound in '%s' of %s: %s", TAG, key, context, val))
         end
         table.insert(parts, num)
     end
     if #parts ~= 2 or parts[1] >= parts[2] then
-        error("[dynamic-plots.lua] Error: Key '" .. key .. "' in " .. context .. " must be '[min, max]' with min < max (got '" .. val .. "')")
+        error(string.format("[%s] Error: Key '%s' in %s must be '[min, max]' with min < max (got '%s')", TAG, key, context, val))
     end
     return parts
 end
@@ -208,16 +131,16 @@ end
 local function parse_enum(val, key, valid_map, context)
     if val == nil then return nil end
     if not valid_map[val] then
-        error("[dynamic-plots.lua] Error: Invalid value '" .. val .. "' for '" .. key .. "' in " .. context)
+        error(string.format("[%s] Error: Invalid value '%s' for '%s' in %s", TAG, val, key, context))
     end
     return val
 end
 
 -- Reads a comma-, tab-, or whitespace-delimited numeric matrix after stripping comments and skipped lines
 local function read_numeric_matrix(src, skip, context)
-    local file = open_data_file(src)
+    local file = U.open_data_file(src, SCRIPT_DIR)
     if not file then
-        error("[dynamic-plots.lua] Error: Cannot open data file at '" .. src .. "' in " .. context .. ". Check file path.")
+        error(string.format("[%s] Error: Cannot open data file at '%s' in %s. Check file path.", TAG, src, context))
     end
 
     local rows = {}
@@ -227,7 +150,7 @@ local function read_numeric_matrix(src, skip, context)
 
     for line in file:lines() do
         line_num = line_num + 1
-        local trimmed = trim(line:gsub("\r$", ""))
+        local trimmed = U.trim(line:gsub("\r$", ""))
         if trimmed ~= "" and not trimmed:match("^#") and not trimmed:match("^%%") and not trimmed:match("^//") then
             if skipped < skip then
                 skipped = skipped + 1
@@ -235,13 +158,13 @@ local function read_numeric_matrix(src, skip, context)
                 local sep = trimmed:find(",") and "[^,]+" or "%S+"
                 local row = {}
                 for tok in trimmed:gmatch(sep) do
-                    local clean = trim(tok)
+                    local clean = U.trim(tok)
                     local num = tonumber(clean)
                     if not num then
                         file:close()
                         error(string.format(
-                            "[dynamic-plots.lua] Error: Non-numeric value '%s' at line %d of '%s' in %s (use 'skip: N' to skip header rows)",
-                            clean, line_num, src, context
+                            "[%s] Error: Non-numeric value '%s' at line %d of '%s' in %s (use 'skip: N' to skip header rows)",
+                            TAG, clean, line_num, src, context
                         ))
                     end
                     table.insert(row, num)
@@ -252,8 +175,8 @@ local function read_numeric_matrix(src, skip, context)
                     elseif #row ~= expected_cols then
                         file:close()
                         error(string.format(
-                            "[dynamic-plots.lua] Error: Inconsistent column count at line %d of '%s' in %s (expected %d, got %d)",
-                            line_num, src, context, expected_cols, #row
+                            "[%s] Error: Inconsistent column count at line %d of '%s' in %s (expected %d, got %d)",
+                            TAG, line_num, src, context, expected_cols, #row
                         ))
                     end
                     table.insert(rows, row)
@@ -264,25 +187,27 @@ local function read_numeric_matrix(src, skip, context)
     file:close()
 
     if #rows == 0 then
-        error("[dynamic-plots.lua] Error: No numeric data rows found in '" .. src .. "' for " .. context)
+        error(string.format("[%s] Error: No numeric data rows found in '%s' for %s", TAG, src, context))
     end
     return rows
 end
 
 -- Registers an analytical function definition block
 local function register_function_def(el)
-    local id = trim(el.identifier)
+    local id = U.trim(el.identifier)
     if id == "" then
-        error("[dynamic-plots.lua] Error: '.plot-function' block requires an 'id' attribute (e.g. ::: {.plot-function id=\"f1\"})")
+        error(string.format("[%s] Error: '.plot-function' block requires an 'id' attribute (e.g. ::: {.plot-function id=\"f1\"})", TAG))
     end
     local context = ".plot-function#" .. id
-    local kv = parse_kv(extract_lines_from_div(el), FUNCTION_KEYS, { "expr" }, context)
+    local kv = parse_kv(U.extract_lines_from_div(el), FUNCTION_KEYS, { "expr" }, context)
+    local label = kv.label or id
+    track_math(label)
 
     table.insert(plot_defs, {
         kind   = "function",
         id     = id,
         expr   = kv.expr,
-        label  = kv.label or id,
+        label  = label,
         xrange = parse_range(kv.xrange, "xrange", context),
         yrange = parse_range(kv.yrange, "yrange", context),
         zrange = parse_range(kv.zrange, "zrange", context),
@@ -296,27 +221,31 @@ end
 
 -- Registers a file-backed curve or parameter-sweep definition block
 local function register_file_def(el)
-    local id = trim(el.identifier)
+    local id = U.trim(el.identifier)
     if id == "" then
-        error("[dynamic-plots.lua] Error: '.plot-file' block requires an 'id' attribute (e.g. ::: {.plot-file id=\"data1\"})")
+        error(string.format("[%s] Error: '.plot-file' block requires an 'id' attribute (e.g. ::: {.plot-file id=\"data1\"})", TAG))
     end
     local context = ".plot-file#" .. id
-    local kv = parse_kv(extract_lines_from_div(el), FILE_KEYS, { "src", "x", "y" }, context)
+    local kv = parse_kv(U.extract_lines_from_div(el), FILE_KEYS, { "src", "x", "y" }, context)
 
     if kv.param ~= nil then
         if kv.z ~= nil then
-            error("[dynamic-plots.lua] Error: Key 'z' is not allowed in parameter-sweep mode in " .. context)
+            error(string.format("[%s] Error: Key 'z' is not allowed in parameter-sweep mode in %s", TAG, context))
         end
     else
         for _, sweep_only in ipairs({ "transform", "param-label", "play" }) do
             if kv[sweep_only] ~= nil then
-                error("[dynamic-plots.lua] Error: Key '" .. sweep_only .. "' requires 'param' in " .. context)
+                error(string.format("[%s] Error: Key '%s' requires 'param' in %s", TAG, sweep_only, context))
             end
         end
     end
 
     local skip = parse_int(kv.skip, "skip", 0, context) or DEFAULTS.skip
     local rows = read_numeric_matrix(kv.src, skip, context)
+    local label = kv.label or id
+    local param_label = kv["param-label"] or "Parameter"
+    track_math(label)
+    track_math(param_label)
 
     table.insert(plot_defs, {
         kind       = "file",
@@ -326,10 +255,10 @@ local function register_file_def(el)
         y          = kv.y,
         z          = kv.z,
         param      = kv.param,
-        paramLabel = kv["param-label"] or "Parameter",
+        paramLabel = param_label,
         transform  = kv.transform,
         play       = parse_bool(kv.play, "play", context) or DEFAULTS.play,
-        label      = kv.label or id,
+        label      = label,
         mode       = parse_enum(kv.mode, "mode", MODES, context) or "lines+markers",
         smooth     = parse_bool(kv.smooth, "smooth", context) or false
     })
@@ -339,18 +268,22 @@ end
 
 -- Builds the HTML mount container for a dynamic-plot canvas
 local function render_plot_canvas(el)
-    local id = trim(el.identifier)
+    local id = U.trim(el.identifier)
     local context = (id ~= "") and (".dynamic-plot#" .. id) or ".dynamic-plot"
-    local kv = parse_kv(extract_lines_from_div(el), PLOT_KEYS, { "curves" }, context)
+    local kv = parse_kv(U.extract_lines_from_div(el), PLOT_KEYS, { "curves" }, context)
 
     local curves = {}
     for item in kv.curves:gmatch("[^,]+") do
-        local cid = trim(item)
+        local cid = U.trim(item)
         if cid ~= "" then table.insert(curves, cid) end
     end
     if #curves == 0 then
-        error("[dynamic-plots.lua] Error: Key 'curves' in " .. context .. " must list at least one curve ID")
+        error(string.format("[%s] Error: Key 'curves' in %s must list at least one curve ID", TAG, context))
     end
+
+    track_math(kv.xlabel)
+    track_math(kv.ylabel)
+    track_math(kv.zlabel)
 
     local cfg = {
         curves = curves,
@@ -367,20 +300,20 @@ local function render_plot_canvas(el)
     }
 
     has_dynamic_plot = true
-    local id_attr = (id ~= "") and string.format(' id="%s"', html_escape(id)) or ""
+    local id_attr = (id ~= "") and string.format(' id="%s"', U.html_escape(id)) or ""
     local html = string.format(
         '<div%s class="dynamic-plot-wrap" data-plot-config="%s"></div>',
         id_attr,
-        html_escape(pandoc.json.encode(cfg))
+        U.html_escape(pandoc.json.encode(cfg))
     )
     return pandoc.RawBlock("html", html)
 end
 
 -- Detects malformed fenced divs that Pandoc left as raw paragraphs (e.g. missing blank line or space after ':::')
 function Para(p)
-    local txt = trim(pandoc.utils.stringify(p))
+    local txt = U.trim(pandoc.utils.stringify(p))
     if txt:match(":::%s*{%.plot%-function") or txt:match(":::%s*{%.plot%-file") or txt:match(":::%s*{%.dynamic%-plot") then
-        error("[dynamic-plots.lua] Error: Malformed fenced block (ensure a blank line before ':::' and a space after ':::'): " .. txt)
+        error(string.format("[%s] Error: Malformed fenced block (ensure a blank line before ':::' and a space after ':::'): %s", TAG, txt))
     end
     return nil
 end
@@ -403,18 +336,25 @@ function Pandoc(doc)
         return doc
     end
 
-    for _, def in ipairs(plot_defs) do
-        local safe_json = pandoc.json.encode(def):gsub("</script>", "<\\/script>")
-        local tag = string.format(
-            '<script type="application/json" class="dynamic-plot-def" data-id="%s">%s</script>',
-            html_escape(def.id),
-            safe_json
-        )
-        table.insert(doc.blocks, pandoc.RawBlock("html", tag))
+    if has_plot_math then
+        U.ensure_quarto_math(doc)
     end
 
-    table.insert(doc.blocks, pandoc.RawBlock("html", load_assets_html()))
+    local payload = {}
+    for _, def in ipairs(plot_defs) do
+        local safe_json = pandoc.json.encode(def):gsub("</script>", "<\\/script>")
+        table.insert(payload, string.format(
+            '<script type="application/json" class="dynamic-plot-def" data-id="%s">%s</script>',
+            U.html_escape(def.id),
+            safe_json
+        ))
+    end
+    table.insert(payload, U.load_template(PATHS.filter_rel, PATHS.template_rel, TAG, PANDOC_SCRIPT_FILE))
+
+    U.inject_after_body(doc, table.concat(payload, "\n"))
+
     has_dynamic_plot = false
+    has_plot_math = false
     plot_defs = {}
     return doc
 end

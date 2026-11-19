@@ -48,12 +48,18 @@
 
 <script>
 (() => {
+  if (window.__quartoDynamicPlotsInit) return;
+  window.__quartoDynamicPlotsInit = true;
+
   const PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js";
 
   // Downloads the full Plotly bundle asynchronously so it loads in parallel with MathJax
   function loadPlotly() {
     if (window.Plotly) return Promise.resolve();
-    return new Promise((resolve, reject) => {
+    const store = (window.__quartoWidgetLibs = window.__quartoWidgetLibs || {});
+    if (store.plotly) return store.plotly;
+
+    store.plotly = new Promise((resolve, reject) => {
       const script = document.createElement("script");
       script.src = PLOTLY_CDN;
       script.async = true;
@@ -61,10 +67,11 @@
       script.onerror = () => reject(new Error(`Failed to load Plotly from ${PLOTLY_CDN}`));
       document.head.appendChild(script);
     });
+    return store.plotly;
   }
 
-  // Reuses window.MathRenderer when dynamic-tables is loaded, or initializes the native Quarto MathJax/KaTeX renderer
-  const PlotMathRenderer = window.MathRenderer || {
+  // Reuses window.MathRenderer or initializes the shared Quarto MathJax/KaTeX renderer
+  const PlotMathRenderer = window.MathRenderer || (window.MathRenderer = {
     cache: new Map(),
     readyPromise: null,
     queue: Promise.resolve(),
@@ -171,7 +178,7 @@
       const norm = this.normalize(str);
       return norm === "" ? "" : (this.cache.get(norm) ?? norm);
     }
-  };
+  });
 
   // Checks whether a label contains inline or display LaTeX delimiters
   function hasMathDelimiters(str) {

@@ -2,6 +2,23 @@
 -- Dynamic Tables Lua Filter
 -- =============================================================================
 
+local TAG = "dynamic-tables.lua"
+local SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
+
+local U
+do
+    local orig_path = package.path
+    if SCRIPT_DIR ~= "" then
+        package.path = SCRIPT_DIR .. "?.lua;" .. orig_path
+    end
+    local ok, mod = pcall(require, "shared-utils")
+    package.path = orig_path
+    if not ok then
+        error(string.format("[%s] Error: Required module 'shared-utils.lua' not found in '%s': %s", TAG, SCRIPT_DIR, tostring(mod)))
+    end
+    U = mod
+end
+
 local DEFAULTS = {
     searchable = false,
     sortable   = true,
@@ -15,36 +32,9 @@ local PATHS = {
 }
 
 local has_dynamic_table = false
-local cached_assets_html = nil
+local has_table_math = false
 local inspire_keys = {}
 local inspire_keys_seen = {}
-
-local SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
-
--- Loads and caches the client-side Tabulator HTML/CSS/JS template
-local function load_assets_html()
-    if cached_assets_html then return cached_assets_html end
-
-    local html_path = PANDOC_SCRIPT_FILE:gsub(PATHS.filter_rel .. "$", PATHS.template_rel)
-    local file = io.open(html_path, "r")
-    if not file then
-        error("[dynamic-tables.lua] Error: Cannot open template at '" .. html_path .. "'. Check file path.")
-    end
-
-    cached_assets_html = file:read("*a")
-    file:close()
-    return cached_assets_html
-end
-
--- Trims leading and trailing whitespace
-local function trim(s)
-    return s and s:match("^%s*(.-)%s*$") or ""
-end
-
--- Escapes special HTML characters for safe attribute injection
-local function html_escape(s)
-    return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
-end
 
 -- Percent-encodes URL query strings
 local function url_encode(str)
@@ -58,7 +48,7 @@ local function split_citation_keys(raw)
     local keys = {}
     if not raw or raw == "" then return keys end
     for token in raw:gmatch("[^,;]+") do
-        local key = trim(token):gsub("^@", "")
+        local key = U.trim(token):gsub("^@", "")
         if key ~= "" then table.insert(keys, key) end
     end
     return keys
@@ -79,7 +69,7 @@ local function index_bibtex_entries(raw_bib, entries_by_key)
         local start_idx, end_idx = raw_bib:find("@[%w_%-]+%s*%b{}", pos)
         if not start_idx then break end
 
-        local entry_text = trim(raw_bib:sub(start_idx, end_idx))
+        local entry_text = U.trim(raw_bib:sub(start_idx, end_idx))
         local entry_key = entry_text:match("^@[%w_%-]+%s*{%s*([^,%s]+)%s*,")
         if entry_key then
             entries_by_key[entry_key] = entry_text
@@ -109,7 +99,7 @@ local function write_temp_inspire_bibtex(keys)
         if ok and body and body:match("@%w+%s*{") then
             index_bibtex_entries(body, entries_by_key)
         else
-            io.stderr:write("[dynamic-tables.lua] Warning: Failed to fetch INSPIRE BibTeX batch (" .. tostring(i) .. "-" .. tostring(upper) .. ").\n")
+            io.stderr:write(string.format("[%s] Warning: Failed to fetch INSPIRE BibTeX batch (%d-%d).\n", TAG, i, upper))
         end
     end
 
@@ -128,7 +118,7 @@ local function write_temp_inspire_bibtex(keys)
 
     local out = io.open(tmp_bib, "w")
     if not out then
-        io.stderr:write("[dynamic-tables.lua] Warning: Could not create temporary BibTeX file '" .. tmp_bib .. "'.\n")
+        io.stderr:write(string.format("[%s] Warning: Could not create temporary BibTeX file '%s'.\n", TAG, tmp_bib))
         return nil
     end
 
@@ -143,7 +133,7 @@ local function append_meta_bibliography(meta, bib_path)
     local existing = {}
 
     local function add_entry(val)
-        local str = trim(pandoc.utils.stringify(val))
+        local str = U.trim(pandoc.utils.stringify(val))
         if str ~= "" and not existing[str] then
             existing[str] = true
             list:insert(pandoc.MetaString(str))
@@ -176,15 +166,15 @@ local function parse_csv_line(line)
                     else pos = pos + 1; break end
                 else val = val .. c; pos = pos + 1 end
             end
-            table.insert(res, trim(val))
+            table.insert(res, U.trim(val))
             if line:sub(pos, pos) == ',' then pos = pos + 1 end
         else
             local comma_pos = line:find(",", pos)
             if not comma_pos then
-                table.insert(res, trim(line:sub(pos)))
+                table.insert(res, U.trim(line:sub(pos)))
                 break
             else
-                table.insert(res, trim(line:sub(pos, comma_pos - 1)))
+                table.insert(res, U.trim(line:sub(pos, comma_pos - 1)))
                 pos = comma_pos + 1
             end
         end
@@ -192,32 +182,11 @@ local function parse_csv_line(line)
     return res
 end
 
--- Opens a CSV file relative to working directory, filter directory, or input document
-local function open_csv_file(src)
-    local file = io.open(src, "r")
-    if file then return file end
-
-    if SCRIPT_DIR ~= "" then
-        file = io.open(SCRIPT_DIR .. "../" .. src, "r")
-        if file then return file end
-    end
-
-    if PANDOC_STATE and PANDOC_STATE.input_files and #PANDOC_STATE.input_files > 0 then
-        local doc_dir = PANDOC_STATE.input_files[1]:match("(.*[/\\])")
-        if doc_dir then
-            file = io.open(doc_dir .. src, "r")
-            if file then return file end
-        end
-    end
-
-    return nil
-end
-
 -- Infers numeric vs string column type from non-empty cell values
 local function auto_detect_column_type(rows, col_index)
     local has_numeric = false
     for _, r in ipairs(rows) do
-        local val = trim(r["col_" .. tostring(col_index - 1)] or "")
+        local val = U.trim(r["col_" .. tostring(col_index - 1)] or "")
         if val ~= "" then
             if not tonumber(val) then return "string" end
             has_numeric = true
@@ -226,63 +195,11 @@ local function auto_detect_column_type(rows, col_index)
     return has_numeric and "number" or "string"
 end
 
--- Serializes Pandoc inline nodes while preserving LaTeX math delimiters and quotes
-local function stringify_inline_with_math(inline)
-    if not inline then return "" end
-
-    if inline.t == "Math" then
-        if inline.mathtype == "DisplayMath" or inline.mathtype == pandoc.DisplayMath then
-            return "\\[" .. inline.text .. "\\]"
-        end
-        return "\\(" .. inline.text .. "\\)"
-    elseif inline.t == "Quoted" then
-        local q_char = (inline.quotetype == "SingleQuote" or inline.quotetype == pandoc.SingleQuote) and "'" or '"'
-        local inner = {}
-        for _, child in ipairs(inline.content or inline.c or {}) do
-            table.insert(inner, stringify_inline_with_math(child))
-        end
-        return q_char .. table.concat(inner) .. q_char
-    elseif inline.c or inline.content then
-        local children = inline.content or inline.c
-        if type(children) == "table" then
-            local res = {}
-            for _, child in ipairs(children) do
-                table.insert(res, stringify_inline_with_math(child))
-            end
-            return table.concat(res)
-        end
-    end
-
-    return pandoc.utils.stringify(inline)
-end
-
--- Extracts logical configuration lines from a Pandoc Div block
-local function extract_lines_from_div(el)
-    local lines = {}
-    for _, block in ipairs(el.content) do
-        if block.content then
-            local current = {}
-            for _, inline in ipairs(block.content) do
-                if inline.t == "SoftBreak" or inline.t == "LineBreak" then
-                    local l = trim(table.concat(current))
-                    if l ~= "" then table.insert(lines, l) end
-                    current = {}
-                else
-                    table.insert(current, stringify_inline_with_math(inline))
-                end
-            end
-            local final = trim(table.concat(current))
-            if final ~= "" then table.insert(lines, final) end
-        end
-    end
-    return lines
-end
-
 -- Parses per-column directives (header, unit conversions, formatting tags)
 local function parse_column_rule(line)
     local col_idx = tonumber(line:match("^col%a*%s+(%d+)"))
     if not col_idx then return nil end
-    local body = trim(line:match(":%s*(.*)$") or "")
+    local body = U.trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
     -- Extract quoted or unquoted header title before comma-splitting flags
@@ -291,7 +208,7 @@ local function parse_column_rule(line)
         or body:match('header%s*=%s*(.-)%s*,')
         or body:match('header%s*=%s*(.*)$')
     if raw_header then
-        local clean_hdr = trim(raw_header):gsub('^["\'“]+', ''):gsub('["\'”]+$', '')
+        local clean_hdr = U.trim(raw_header):gsub('^["\'“]+', ''):gsub('["\'”]+$', '')
         if clean_hdr ~= "" then rule.header = clean_hdr end
         body = body:gsub('header%s*=%s*%b""%s*,?', '', 1)
                    :gsub("header%s*=%s*%b''%s*,?", '', 1)
@@ -314,7 +231,7 @@ local function parse_column_rule(line)
     end
 
     for tag in body:gmatch("[^,]+") do
-        tag = trim(tag)
+        tag = U.trim(tag)
         if tag == "unsortable" then
             rule.sortable = false
         elseif tag == "sortable" then
@@ -327,10 +244,12 @@ local function parse_column_rule(line)
             rule.type = "number"
         elseif tag == "latex" then
             rule.latex = true
+            has_table_math = true
         elseif tag == "latexnum" then
             rule.latexnum = true
             rule.latex = true
             rule.type = "number"
+            has_table_math = true
         elseif tag == "inspire" then
             rule.inspire = true
             rule.type = "string"
@@ -339,6 +258,9 @@ local function parse_column_rule(line)
 
     -- Normalize math delimiters based on whether header LaTeX rendering is active
     if rule.header then
+        if U.has_math(rule.header) then
+            has_table_math = true
+        end
         if rule.latex then
             rule.header = rule.header:gsub("%$([^%$]+)%$", "\\(%1\\)")
         else
@@ -361,8 +283,8 @@ end
 
 -- Applies a key-value option to a table options object
 local function apply_table_option(opts, key, val)
-    key = trim(key):lower()
-    val = trim(val)
+    key = U.trim(key):lower()
+    val = U.trim(val)
     if val == "" then return end
     if key == "src" then opts.src = val
     elseif key == "searchable" then opts.searchable = val
@@ -372,9 +294,9 @@ end
 
 -- Builds the HTML mount container and optional bibliography placeholder for a CSV table
 local function render_table(opts, columns_meta)
-    local file = open_csv_file(opts.src)
+    local file = U.open_data_file(opts.src, SCRIPT_DIR)
     if not file then
-        error("[dynamic-tables.lua] Error: Cannot open CSV file at '" .. opts.src .. "'. Check file path.")
+        error(string.format("[%s] Error: Cannot open CSV file at '%s'. Check file path.", TAG, opts.src))
     end
 
     local lines = {}
@@ -389,14 +311,14 @@ local function render_table(opts, columns_meta)
 
     local raw_headers = parse_csv_line(lines[1])
     local headers = {}
-    for _, h in ipairs(raw_headers) do table.insert(headers, trim(h)) end
+    for _, h in ipairs(raw_headers) do table.insert(headers, U.trim(h)) end
 
     local rows = {}
     for i = 2, #lines do
         local raw_row = parse_csv_line(lines[i])
         local row_obj = {}
         for j = 1, #headers do
-            row_obj["col_" .. tostring(j - 1)] = trim(raw_row[j] or "")
+            row_obj["col_" .. tostring(j - 1)] = U.trim(raw_row[j] or "")
         end
         table.insert(rows, row_obj)
     end
@@ -430,28 +352,28 @@ local function render_table(opts, columns_meta)
 
     local html = string.format(
         '<div class="tabulator-container-wrap column-page" data-headers="%s" data-rows="%s" data-columns="%s" data-searchable="%s" data-perpage="%s" data-sortable="%s"></div>',
-        html_escape(pandoc.json.encode(headers)),
-        html_escape(pandoc.json.encode(rows)),
-        html_escape(pandoc.json.encode(final_columns_meta)),
-        html_escape(opts.searchable),
-        html_escape(opts.per_page),
-        html_escape(opts.sortable)
+        U.html_escape(pandoc.json.encode(headers)),
+        U.html_escape(pandoc.json.encode(rows)),
+        U.html_escape(pandoc.json.encode(final_columns_meta)),
+        U.html_escape(opts.searchable),
+        U.html_escape(opts.per_page),
+        U.html_escape(opts.sortable)
     )
 
     if has_inspire then
         html = html .. '\n<div class="dynamic-table-refs" style="display:none;"></div>'
     end
 
-    return pandoc.RawBlock('html', html)
+    return pandoc.RawBlock("html", html)
 end
 
 -- Pandoc filter hook for shorthand '!dynamic-table: path.csv' paragraphs
 function Para(p)
-    local txt = trim(pandoc.utils.stringify(p))
+    local txt = U.trim(pandoc.utils.stringify(p))
     local src = txt:match("^%!dynamic%-table:%s*(.+)$")
     if not src then return nil end
     local opts = default_table_options()
-    opts.src = trim(src)
+    opts.src = U.trim(src)
     return render_table(opts, {})
 end
 
@@ -465,7 +387,7 @@ function Div(el)
         apply_table_option(opts, k, v)
     end
 
-    for _, line in ipairs(extract_lines_from_div(el)) do
+    for _, line in ipairs(U.extract_lines_from_div(el)) do
         if not line:match("^#") then
             local key, val = line:match("^([%w_%-]+):%s*(.*)$")
             if key and val then
@@ -528,8 +450,12 @@ function Pandoc(doc)
     end
 
     if has_dynamic_table then
-        table.insert(doc.blocks, pandoc.RawBlock('html', load_assets_html()))
+        if has_table_math then
+            U.ensure_quarto_math(doc)
+        end
+        U.inject_after_body(doc, U.load_template(PATHS.filter_rel, PATHS.template_rel, TAG, PANDOC_SCRIPT_FILE))
         has_dynamic_table = false
+        has_table_math = false
     end
     return doc
 end
