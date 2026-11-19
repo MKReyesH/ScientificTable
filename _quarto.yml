@@ -8,12 +8,12 @@ website:
     left:
       - text: "Home"
         href: index.qmd
-      - text: "Bounds"
-        href: "doc/bounds.qmd"
-      - text: "Processes"
-        href: "doc/processes.qmd"
-      - text: "Backgrounds"
-        href: "doc/backgrounds.qmd"
+      - text: "Tables"
+        href: "doc/tables.qmd"
+      - text: "Plots"
+        href: "doc/plots.qmd"
+      - text: "Mindmaps"
+        href: "doc/mindmaps.qmd"
       - text: "GitHub Project"
         href: https://github.com/MKReyesH/ScientificTable
       - text: "About"
@@ -28,6 +28,7 @@ project:
 filters:
   - lua/latex-to-quarto.lua
   - lua/dynamic-tables.lua
+  - lua/dynamic-plots.lua
   - lua/mindmap-graph.lua
 
 format:
@@ -35,8 +36,8 @@ format:
     math: mathjax
     respect-user-color-scheme: true
     theme: # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
-      light: minty
-      dark: [minty, include/dark-theme.scss]
+      light: flatly
+      dark: [flatly, include/dark-theme.scss]
     css: include/css-config.css
     include-after-body:
       - include/dark-theme-toggle.html

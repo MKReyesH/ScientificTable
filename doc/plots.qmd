@@ -1,0 +1,38 @@
+---
+title: Dynamic plots
+---
+
+::: {.plot-file id="channel-a"}
+src: data/liv_bounds.dat
+x: c0
+y: c0^2 * c1
+label: Channel A ($E^2 \cdot \text{Bound}$)
+:::
+
+::: {.plot-function id="theory-scaling"}
+expr: 1e-19 * x^2.4
+label: Theoretical scaling
+:::
+
+::: {.dynamic-plot}
+curves: channel-a, theory-scaling
+xlabel: $E$ [GeV]
+ylabel: Rescaled Bound
+xscale: log
+yscale: log
+:::
+
+::: {.plot-file id="wave-sweep"}
+src: data/wave_evolution.dat
+x: c0
+y: c1..c4
+param: 0..3
+param-label: $t$ [s]
+label: Wave amplitude
+:::
+
+::: {.dynamic-plot}
+curves: wave-sweep
+xlabel: $x$ [m]
+ylabel: $\psi(x, t)$
+:::
