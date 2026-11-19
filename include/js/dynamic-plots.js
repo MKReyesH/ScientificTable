@@ -3,7 +3,6 @@
   window.__quartoDynamicPlotsInit = true;
 
   const PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js";
-  const PLAY_INTERVAL_MS = 250;
   const TRACE_COLORWAY = [
     "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
     "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
@@ -264,6 +263,7 @@
         return {
           ...def, rawLabel: def.label, rawParamLabel: def.paramLabel,
           xs, ys: ySeries.flat(), zs: null,
+          paramLabel: toSizingText(def.paramLabel),
           initialTrace: { type: "scatter", name, x: xs, y: ySeries[0], mode: def.mode, line },
           frames: ySeries.map((y, idx) => ({ name: String(idx), data: [{ x: xs, y }] }))
         };
@@ -285,7 +285,7 @@
     }
   };
 
-  // Synchronizes Plotly axis and font colors with active Bootstrap CSS variables
+  // Synchronizes Plotly axis, font, and control colors with active Bootstrap CSS variables
   const ThemeSync = {
     getPalette() {
       const s = getComputedStyle(document.body);
@@ -308,7 +308,7 @@
       return axis;
     },
 
-    getThemeRelayout(is3d) {
+    getThemeRelayout(hasSlider, hasPlayButton, is3d) {
       const p = this.getPalette();
       const u = {
         "font.color": p.textColor,
@@ -329,6 +329,21 @@
             : { [`${prefix}${ax}.zerolinecolor`]: p.borderColor })
         });
       }
+      if (hasSlider) {
+        Object.assign(u, {
+          "sliders[0].font.color": p.textColor,
+          "sliders[0].currentvalue.font.color": p.textColor,
+          "sliders[0].bordercolor": p.borderColor,
+          "sliders[0].bgcolor": p.bgColor
+        });
+      }
+      if (hasPlayButton) {
+        Object.assign(u, {
+          "updatemenus[0].font.color": p.textColor,
+          "updatemenus[0].bordercolor": p.borderColor,
+          "updatemenus[0].bgcolor": p.bgColor
+        });
+      }
       return u;
     }
   };
@@ -347,7 +362,6 @@
       this.traceVisible = this.specs.map(() => true);
       this.activeStepIdx = 0;
       this.isPlaying = false;
-      this.playTimer = null;
       this.isResampling = false;
 
       this.mount();
@@ -380,57 +394,8 @@
       });
     }
 
-    setStep(idx) {
-      const sweepSpec = this.specs[0];
-      if (!sweepSpec || !Number.isFinite(idx)) return;
-      this.activeStepIdx = idx;
-      if (this.sliderInput) this.sliderInput.value = String(idx);
-      if (this.sliderValueEl) this.sliderValueEl.textContent = sweepSpec.params[idx] ?? "";
-      Plotly.animate(this.canvas, [String(idx)], {
-        mode: "immediate",
-        transition: { duration: 0 },
-        frame: { duration: 0, redraw: false }
-      });
-    }
-
-    updatePlayButtonUI() {
-      if (!this.playBtn) return;
-      this.playBtn.innerHTML = this.isPlaying ? "&#10074;&#10074; Pause" : "&#9654; Play";
-      this.playBtn.classList.toggle("btn-primary", this.isPlaying);
-      this.playBtn.classList.toggle("btn-outline-secondary", !this.isPlaying);
-      this.playBtn.setAttribute("aria-pressed", String(this.isPlaying));
-    }
-
-    startPlay() {
-      if (this.isPlaying || !this.hasSlider) return;
-      const total = this.specs[0].params.length;
-      if (total < 2) return;
-
-      this.isPlaying = true;
-      this.updatePlayButtonUI();
-      this.playTimer = setInterval(() => {
-        if (!this.wrapEl.isConnected) {
-          this.stopPlay();
-          return;
-        }
-        this.setStep((this.activeStepIdx + 1) % total);
-      }, PLAY_INTERVAL_MS);
-    }
-
-    stopPlay() {
-      if (this.playTimer !== null) {
-        clearInterval(this.playTimer);
-        this.playTimer = null;
-      }
-      if (this.isPlaying) {
-        this.isPlaying = false;
-        this.updatePlayButtonUI();
-      }
-    }
-
     buildSidebar(bodyEl) {
-      const showLegend = this.cfg.legend !== false;
-      if (!showLegend && !this.hasSlider) return;
+      if (this.cfg.legend === false) return;
 
       const wrap = document.createElement("div");
       wrap.className = "dynamic-plot-sidebar-wrap";
@@ -438,7 +403,7 @@
       const toggleBtn = document.createElement("button");
       toggleBtn.type = "button";
       toggleBtn.className = "dynamic-plot-sidebar-toggle";
-      toggleBtn.title = "Toggle controls";
+      toggleBtn.title = "Toggle legend";
       toggleBtn.setAttribute("aria-expanded", "true");
       toggleBtn.addEventListener("click", () => {
         const collapsed = wrap.classList.toggle("is-collapsed");
@@ -448,96 +413,36 @@
       const sidebar = document.createElement("div");
       sidebar.className = "dynamic-plot-sidebar";
 
-      if (showLegend) {
-        this.specs.forEach((spec, idx) => {
-          const color = TRACE_COLORWAY[idx % TRACE_COLORWAY.length];
-          const item = document.createElement("label");
-          item.className = "dynamic-plot-curve-toggle";
+      this.specs.forEach((spec, idx) => {
+        const color = TRACE_COLORWAY[idx % TRACE_COLORWAY.length];
+        const item = document.createElement("label");
+        item.className = "dynamic-plot-curve-toggle";
 
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.className = "form-check-input dynamic-plot-curve-checkbox";
-          checkbox.checked = true;
-          checkbox.style.accentColor = color;
-          checkbox.addEventListener("change", async () => {
-            this.traceVisible[idx] = checkbox.checked;
-            item.classList.toggle("is-hidden", !checkbox.checked);
-            await Plotly.restyle(this.canvas, { visible: checkbox.checked ? true : "legendonly" }, [idx]);
-            this.syncMathOverlays();
-          });
-
-          const swatch = document.createElement("span");
-          swatch.className = "dynamic-plot-swatch";
-          swatch.dataset.mode = spec.mode;
-          swatch.style.setProperty("--swatch-color", color);
-
-          const labelSpan = document.createElement("span");
-          labelSpan.className = "dynamic-plot-curve-label";
-          if (hasMathDelimiters(spec.rawLabel)) labelSpan.innerHTML = MathRenderer.get(spec.rawLabel);
-          else labelSpan.textContent = spec.rawLabel;
-
-          item.append(checkbox, swatch, labelSpan);
-          sidebar.appendChild(item);
-        });
-      }
-
-      if (this.hasSlider) {
-        if (showLegend) {
-          const divider = document.createElement("hr");
-          divider.className = "dynamic-plot-sidebar-divider";
-          sidebar.appendChild(divider);
-        }
-
-        const sweepSpec = this.specs[0];
-        const controls = document.createElement("div");
-        controls.className = "dynamic-plot-controls";
-
-        const paramRow = document.createElement("div");
-        paramRow.className = "dynamic-plot-param-label";
-        const nameSpan = document.createElement("span");
-        if (hasMathDelimiters(sweepSpec.rawParamLabel)) nameSpan.innerHTML = MathRenderer.get(sweepSpec.rawParamLabel);
-        else nameSpan.textContent = sweepSpec.rawParamLabel;
-
-        this.sliderValueEl = document.createElement("span");
-        this.sliderValueEl.textContent = sweepSpec.params[0] ?? "";
-        paramRow.append(nameSpan, document.createTextNode(": "), this.sliderValueEl);
-
-        this.sliderInput = document.createElement("input");
-        this.sliderInput.type = "range";
-        this.sliderInput.className = "form-range dynamic-plot-slider";
-        this.sliderInput.min = "0";
-        this.sliderInput.max = String(Math.max(0, sweepSpec.params.length - 1));
-        this.sliderInput.step = "1";
-        this.sliderInput.value = "0";
-        this.sliderInput.addEventListener("input", () => {
-          this.stopPlay();
-          this.setStep(Number(this.sliderInput.value));
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "form-check-input dynamic-plot-curve-checkbox";
+        checkbox.checked = true;
+        checkbox.style.accentColor = color;
+        checkbox.addEventListener("change", async () => {
+          this.traceVisible[idx] = checkbox.checked;
+          item.classList.toggle("is-hidden", !checkbox.checked);
+          await Plotly.restyle(this.canvas, { visible: checkbox.checked ? true : "legendonly" }, [idx]);
+          this.syncMathOverlays();
         });
 
-        const ticks = document.createElement("div");
-        ticks.className = "dynamic-plot-slider-ticks";
-        const minTick = document.createElement("span");
-        minTick.textContent = sweepSpec.params[0] ?? "";
-        const maxTick = document.createElement("span");
-        maxTick.textContent = sweepSpec.params[sweepSpec.params.length - 1] ?? "";
-        ticks.append(minTick, maxTick);
+        const swatch = document.createElement("span");
+        swatch.className = "dynamic-plot-swatch";
+        swatch.dataset.mode = spec.mode;
+        swatch.style.setProperty("--swatch-color", color);
 
-        controls.append(paramRow, this.sliderInput, ticks);
+        const labelSpan = document.createElement("span");
+        labelSpan.className = "dynamic-plot-curve-label";
+        if (hasMathDelimiters(spec.rawLabel)) labelSpan.innerHTML = MathRenderer.get(spec.rawLabel);
+        else labelSpan.textContent = spec.rawLabel;
 
-        if (this.hasPlayButton) {
-          this.playBtn = document.createElement("button");
-          this.playBtn.type = "button";
-          this.playBtn.className = "btn btn-sm btn-outline-secondary dynamic-plot-play-btn";
-          this.updatePlayButtonUI();
-          this.playBtn.addEventListener("click", () => {
-            if (this.isPlaying) this.stopPlay();
-            else this.startPlay();
-          });
-          controls.appendChild(this.playBtn);
-        }
-
-        sidebar.appendChild(controls);
-      }
+        item.append(checkbox, swatch, labelSpan);
+        sidebar.appendChild(item);
+      });
 
       wrap.append(toggleBtn, sidebar);
       bodyEl.appendChild(wrap);
@@ -566,7 +471,57 @@
         layout.yaxis = ThemeSync.buildAxisTheme(this.cfg.ylabel, this.cfg.yscale, this.cfg.yrange, palette);
       }
 
+      if (this.hasSlider) {
+        const sweepSpec = this.specs[0];
+        const sliderPadT = this.cfg.xlabel ? 62 : 32;
+        const buttonPadT = sliderPadT + 74;
+        layout.margin.b = this.hasPlayButton ? (buttonPadT + 44) : (sliderPadT + 68);
+
+        layout.sliders = [{
+          active: 0,
+          pad: { t: sliderPadT, b: 6 },
+          len: 1.0,
+          x: 0.0,
+          currentvalue: {
+            visible: true, xanchor: "left",
+            prefix: `${sweepSpec.paramLabel}: `,
+            font: { color: palette.textColor, size: 13 }
+          },
+          font: { color: palette.textColor },
+          bordercolor: palette.borderColor,
+          bgcolor: palette.bgColor,
+          steps: sweepSpec.params.map((label, idx) => ({
+            label, method: "animate",
+            args: [[String(idx)], { mode: "immediate", transition: { duration: 0 }, frame: { duration: 0, redraw: false } }]
+          }))
+        }];
+
+        if (this.hasPlayButton) {
+          layout.updatemenus = [{
+            type: "buttons", showactive: false, x: 0.0, y: 0.0,
+            xanchor: "left", yanchor: "top", direction: "left",
+            pad: { t: buttonPadT, b: 6 },
+            font: { color: palette.textColor },
+            bgcolor: palette.bgColor,
+            bordercolor: palette.borderColor,
+            buttons: [{
+              label: "\u25B6 Play",
+              method: "animate",
+              args: [null, { fromcurrent: true, transition: { duration: 0 }, frame: { duration: 250, redraw: false } }],
+              args2: [[null], { mode: "immediate", transition: { duration: 0 }, frame: { duration: 0, redraw: false } }]
+            }]
+          }];
+        }
+      }
       return layout;
+    }
+
+    setPlayLabel(playing) {
+      if (!this.hasPlayButton || this.isPlaying === playing) return;
+      this.isPlaying = playing;
+      Plotly.relayout(this.canvas, {
+        "updatemenus[0].buttons[0].label": playing ? "\u275A\u275A Pause" : "\u25B6 Play"
+      });
     }
 
     placeMathNode(svgEl, htmlContent, { align = "center", rotate = 0 } = {}) {
@@ -604,6 +559,15 @@
       if (hasMathDelimiters(this.cfg.ylabel)) {
         this.placeMathNode(this.canvas.querySelector("text.ytitle"), MathRenderer.get(this.cfg.ylabel), { rotate: -90 });
       }
+      if (this.hasSlider && hasMathDelimiters(this.specs[0].rawParamLabel)) {
+        const sweepSpec = this.specs[0];
+        const stepVal = sweepSpec.params[this.activeStepIdx] ?? sweepSpec.params[0];
+        this.placeMathNode(
+          this.canvas.querySelector("text.slider-label"),
+          `${MathRenderer.get(sweepSpec.rawParamLabel)}: ${stepVal}`,
+          { align: "left" }
+        );
+      }
     }
 
     attachEvents() {
@@ -635,6 +599,18 @@
       });
 
       this.canvas.on("plotly_restyle", () => this.syncMathOverlays());
+
+      const onStep = (idx) => {
+        if (Number.isFinite(idx)) this.activeStepIdx = idx;
+        this.syncMathOverlays();
+      };
+      this.canvas.on("plotly_sliderchange", (ev) => {
+        onStep(ev?.slider?.active);
+        this.setPlayLabel(false);
+      });
+      this.canvas.on("plotly_animatingframe", (ev) => onStep(parseInt(ev?.name, 10)));
+      this.canvas.on("plotly_animated", () => this.setPlayLabel(false));
+      this.canvas.on("plotly_buttonclicked", () => this.setPlayLabel(!this.isPlaying));
 
       if (typeof ResizeObserver !== "undefined") {
         let raf = null;
@@ -683,7 +659,7 @@
 
     syncTheme() {
       if (!this.canvas?.layout) return;
-      Plotly.relayout(this.canvas, ThemeSync.getThemeRelayout(this.is3d));
+      Plotly.relayout(this.canvas, ThemeSync.getThemeRelayout(this.hasSlider, this.hasPlayButton, this.is3d));
       this.syncMathOverlays();
     }
   }

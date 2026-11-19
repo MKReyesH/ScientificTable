@@ -26,7 +26,6 @@
   width: 100%;
 }
 
-/* Collapsible right-hand controls & legend sidebar */
 .dynamic-plot-sidebar-wrap {
   position: relative;
   flex: 0 0 auto;
@@ -80,11 +79,10 @@
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  gap: 0.55rem;
-  min-width: 175px;
+  gap: 0.5rem;
   max-width: 260px;
   margin-left: 22px;
-  padding: 1rem 1.05rem 1rem 0.65rem;
+  padding: 1rem 1.05rem 1rem 0.55rem;
   font-size: 0.875rem;
 }
 
@@ -114,7 +112,6 @@
   cursor: pointer;
 }
 
-/* Pure-CSS line + marker legend swatch */
 .dynamic-plot-swatch {
   position: relative;
   display: inline-block;
@@ -147,57 +144,8 @@
   background-color: var(--swatch-color);
 }
 
-.dynamic-plot-curve-label mjx-container,
-.dynamic-plot-param-label mjx-container {
+.dynamic-plot-curve-label mjx-container {
   margin: 0 !important;
-}
-
-/* Sidebar parameter sweep slider & Play/Pause controls */
-.dynamic-plot-sidebar-divider {
-  width: 100%;
-  margin: 0.35rem 0;
-  border: 0;
-  border-top: 1px solid var(--bs-border-color);
-  opacity: 1;
-}
-
-.dynamic-plot-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  width: 100%;
-}
-
-.dynamic-plot-param-label {
-  font-size: 0.85rem;
-  line-height: 1.25;
-  color: var(--bs-body-color);
-}
-
-.dynamic-plot-slider {
-  width: 100%;
-  margin: 0;
-  cursor: pointer;
-}
-
-.dynamic-plot-slider-ticks {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.72rem;
-  line-height: 1;
-  color: var(--bs-secondary-color, currentColor);
-  margin-top: -0.15rem;
-}
-
-.dynamic-plot-play-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  width: 100%;
-  margin-top: 0.25rem;
-  font-size: 0.8rem;
-  line-height: 1.2;
 }
 
 @media (max-width: 640px) {
@@ -229,10 +177,12 @@
   }
 
   .dynamic-plot-sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
     height: auto;
     max-width: 100%;
     margin-left: 0;
-    padding: 0.55rem 0.9rem 0.85rem;
+    padding: 0.45rem 0.9rem 0.8rem;
   }
 }
 
