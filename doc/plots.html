@@ -372,6 +372,7 @@ window.Quarto = {
 
 <div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;channel-a&quot;,&quot;theory-scaling&quot;],&quot;height&quot;:480,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;\\(E\\) [GeV]&quot;,&quot;xscale&quot;:&quot;log&quot;,&quot;ylabel&quot;:&quot;Rescaled Bound&quot;,&quot;yscale&quot;:&quot;log&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
 <div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sweep&quot;],&quot;height&quot;:480,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\) [m]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(\\psi(x, t)\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sweep&quot;],&quot;height&quot;:480,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\) [m]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(\\psi(x, t)\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
 
 
 
@@ -1006,9 +1007,109 @@ window.Quarto = {
   window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
   </script>
 </div> <!-- /content -->
-<script type="application/json" class="dynamic-plot-def" data-id="channel-a">{"id":"channel-a","kind":"file","label":"Channel A (\\(E^2 \\cdot \\text{Bound}\\))","mode":"lines+markers","paramLabel":"Parameter","play":false,"rows":[[10,1.2e-18,4.5e-18,0.15],[100,3.4e-17,9.1e-17,0.42],[1000,8.9e-16,2.1e-15,0.78],[10000,2.5e-14,6.8e-14,1.1],[100000,7.1e-13,1.9e-12,1.55]],"smooth":false,"x":"c0","y":"c0^2 * c1"}</script>
-<script type="application/json" class="dynamic-plot-def" data-id="theory-scaling">{"expr":"1e-19 * x^2.4","id":"theory-scaling","kind":"function","label":"Theoretical scaling","mode":"lines"}</script>
-<script type="application/json" class="dynamic-plot-def" data-id="wave-sweep">{"id":"wave-sweep","kind":"file","label":"Wave amplitude","mode":"lines+markers","param":"0..3","paramLabel":"\\(t\\) [s]","play":false,"rows":[[0,0,0.5,0.87,1],[0.5,0.48,0.84,1,0.91],[1,0.84,1,0.91,0.6],[1.5,1,0.91,0.6,0.14],[2,0.91,0.6,0.14,-0.35],[2.5,0.6,0.14,-0.35,-0.76],[3,0.14,-0.35,-0.76,-0.98]],"smooth":false,"x":"c0","y":"c1..c4"}</script>
+<script>
+window.MathRenderer = window.MathRenderer || {
+  cache: new Map(),
+  readyPromise: null,
+  queue: Promise.resolve(),
+
+  normalize(str) {
+    if (str === null || str === undefined || str === "") return "";
+    return String(str)
+      .replace(/(^|[^\\])\$\$([\s\S]+?)\$\$/g, "$1\\[$2\\]")
+      .replace(/(^|[^\\])\$([^$\n]+?)\$/g, "$1\\($2\\)");
+  },
+
+  waitForEngine() {
+    if (this.readyPromise) return this.readyPromise;
+    const hasMathScript = Boolean(
+      window.MathJax ||
+      typeof renderMathInElement === "function" ||
+      document.querySelector('script[src*="mathjax" i], script[src*="katex" i]')
+    );
+    if (!hasMathScript) return (this.readyPromise = Promise.resolve("none"));
+
+    this.readyPromise = new Promise((resolve) => {
+      let attempts = 0;
+      const check = () => {
+        if (window.MathJax?.startup?.promise) {
+          window.MathJax.startup.promise.then(() => resolve("mathjax")).catch(() => resolve("none"));
+        } else if (typeof window.MathJax?.typesetPromise === "function") {
+          resolve("mathjax");
+        } else if (typeof renderMathInElement === "function") {
+          resolve("katex");
+        } else if (attempts++ > 150) {
+          resolve("none");
+        } else {
+          setTimeout(check, 20);
+        }
+      };
+      check();
+    });
+    return this.readyPromise;
+  },
+
+  prepare(strings) {
+    this.queue = this.queue.then(() => this._renderBatch(strings));
+    return this.queue;
+  },
+
+  async _renderBatch(strings) {
+    const normalized = strings
+      .filter((s) => s !== null && s !== undefined && s !== "")
+      .map((s) => this.normalize(s));
+    const uncached = [...new Set(normalized)].filter((s) => !this.cache.has(s));
+    if (uncached.length === 0) return;
+
+    const engine = await this.waitForEngine();
+    if (engine === "none") {
+      uncached.forEach((s) => this.cache.set(s, s));
+      return;
+    }
+
+    const sandbox = document.createElement("div");
+    sandbox.style.cssText = "position:absolute;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;";
+    const fragment = document.createDocumentFragment();
+    const items = uncached.map((str) => {
+      const span = document.createElement("span");
+      span.textContent = str;
+      fragment.appendChild(span);
+      return { str, span };
+    });
+    sandbox.appendChild(fragment);
+    document.body.appendChild(sandbox);
+
+    try {
+      if (engine === "mathjax") {
+        await window.MathJax.typesetPromise([sandbox]);
+      } else if (engine === "katex") {
+        items.forEach(({ span }) => {
+          renderMathInElement(span, {
+            delimiters: [
+              { left: "$$", right: "$$", display: true },
+              { left: "\\(", right: "\\)", inline: true },
+              { left: "\\[", right: "\\]", display: true },
+              { left: "$", right: "$", inline: true }
+            ],
+            throwOnError: false
+          });
+        });
+      }
+      items.forEach(({ str, span }) => this.cache.set(str, span.innerHTML));
+    } finally {
+      sandbox.remove();
+    }
+  },
+
+  get(str) {
+    const norm = this.normalize(str);
+    return norm === "" ? "" : (this.cache.get(norm) ?? norm);
+  }
+};
+</script>
+<script type="application/json" class="dynamic-plot-def" data-id="channel-a">{"dim":"2d","id":"channel-a","isSweep":false,"kind":"file","label":"Channel A (\\(E^2 \\cdot \\text{Bound}\\))","mode":"lines+markers","paramLabel":"Parameter","play":false,"rows":[[10,1.2e-18,4.5e-18,0.15],[100,3.4e-17,9.1e-17,0.42],[1000,8.9e-16,2.1e-15,0.78],[10000,2.5e-14,6.8e-14,1.1],[100000,7.1e-13,1.9e-12,1.55]],"smooth":false,"x":"c0","y":"c0^2 * c1"}</script>
+<script type="application/json" class="dynamic-plot-def" data-id="theory-scaling">{"dim":"2d","expr":"1e-19 * x^2.4","id":"theory-scaling","isSweep":false,"kind":"function","label":"Theoretical scaling","mode":"lines","subtype":"2d-explicit"}</script>
+<script type="application/json" class="dynamic-plot-def" data-id="wave-sweep">{"dim":"2d","id":"wave-sweep","isSweep":true,"kind":"file","label":"Wave amplitude","mode":"lines+markers","paramLabel":"\\(t\\) [s]","params":["0","1","2","3"],"play":false,"rows":[[0,0,0.5,0.87,1],[0.5,0.48,0.84,1,0.91],[1,0.84,1,0.91,0.6],[1.5,1,0.91,0.6,0.14],[2,0.91,0.6,0.14,-0.35],[2.5,0.6,0.14,-0.35,-0.76],[3,0.14,-0.35,-0.76,-0.98]],"smooth":false,"sweepCols":[1,2,3,4],"x":"c0","y":"c1..c4"}</script>
 <style>
   .dynamic-plot-wrap {
     position: relative;
@@ -1038,24 +1139,62 @@ window.Quarto = {
     width: 100%;
   }
 
-  .dynamic-plot-sidebar {
+  .dynamic-plot-sidebar-wrap {
+    position: relative;
     flex: 0 0 auto;
+    display: block;
+    border-left: 1px solid var(--bs-border-color);
+    background-color: var(--bs-tertiary-bg, transparent);
+  }
+
+  .dynamic-plot-sidebar-toggle {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 100%;
+    color: var(--bs-secondary-color, currentColor);
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+
+  .dynamic-plot-sidebar-toggle::-webkit-details-marker {
+    display: none;
+  }
+
+  .dynamic-plot-sidebar-toggle::before {
+    content: "\2039";
+    font-size: 1.15rem;
+    line-height: 1;
+  }
+
+  .dynamic-plot-sidebar-wrap[open] .dynamic-plot-sidebar-toggle {
+    position: absolute;
+    inset: 0 auto 0 0;
+  }
+
+  .dynamic-plot-sidebar-wrap[open] .dynamic-plot-sidebar-toggle::before {
+    content: "\203A";
+  }
+
+  .dynamic-plot-sidebar-toggle:hover {
+    background-color: var(--bs-secondary-bg);
+    color: var(--bs-body-color);
+  }
+
+  .dynamic-plot-sidebar {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
-    gap: 0.75rem;
-    max-width: 270px;
-    padding: 1rem 1.1rem 1rem 0.25rem;
-    font-size: 0.875rem;
-  }
-
-  .dynamic-plot-legend {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
     gap: 0.5rem;
-    width: 100%;
+    height: 100%;
+    max-width: 260px;
+    margin-left: 22px;
+    padding: 1rem 1.05rem 1rem 0.55rem;
+    font-size: 0.875rem;
   }
 
   .dynamic-plot-curve-toggle {
@@ -1080,13 +1219,36 @@ window.Quarto = {
     cursor: pointer;
   }
 
-  .dynamic-plot-curve-swatch {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .dynamic-plot-swatch {
+    position: relative;
+    display: inline-block;
     width: 22px;
     height: 12px;
     flex-shrink: 0;
+  }
+
+  .dynamic-plot-swatch:not([data-mode="markers"])::before {
+    content: "";
+    position: absolute;
+    left: 1px;
+    right: 1px;
+    top: 50%;
+    height: 2.2px;
+    transform: translateY(-50%);
+    border-radius: 1px;
+    background-color: var(--swatch-color);
+  }
+
+  .dynamic-plot-swatch[data-mode*="markers"]::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 6.5px;
+    height: 6.5px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background-color: var(--swatch-color);
   }
 
   .dynamic-plot-curve-label mjx-container {
@@ -1098,15 +1260,35 @@ window.Quarto = {
       flex-direction: column;
     }
 
-    .dynamic-plot-sidebar {
-      max-width: 100%;
-      padding: 0.55rem 0.9rem 0.85rem;
+    .dynamic-plot-sidebar-wrap {
+      width: 100%;
+      border-left: none;
       border-top: 1px solid var(--bs-border-color);
     }
 
-    .dynamic-plot-legend {
+    .dynamic-plot-sidebar-toggle,
+    .dynamic-plot-sidebar-wrap[open] .dynamic-plot-sidebar-toggle {
+      position: static;
+      width: 100%;
+      height: 24px;
+    }
+
+    .dynamic-plot-sidebar-toggle::before {
+      content: "\25B8";
+      font-size: 0.85rem;
+    }
+
+    .dynamic-plot-sidebar-wrap[open] .dynamic-plot-sidebar-toggle::before {
+      content: "\25BE";
+    }
+
+    .dynamic-plot-sidebar {
       flex-direction: row;
       flex-wrap: wrap;
+      height: auto;
+      max-width: 100%;
+      margin-left: 0;
+      padding: 0.45rem 0.9rem 0.8rem;
     }
   }
 
@@ -1128,18 +1310,6 @@ window.Quarto = {
   .dynamic-plot-math-label mjx-container {
     margin: 0 !important;
   }
-
-  .dynamic-plot-error {
-    margin: 1rem;
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--bs-danger-border-subtle, #f1aeb5);
-    border-radius: 0.375rem;
-    background-color: var(--bs-danger-bg-subtle, rgba(220, 53, 69, 0.1));
-    color: var(--bs-danger-text-emphasis, #dc3545);
-    font-family: var(--bs-font-monospace, monospace);
-    font-size: 0.875rem;
-    white-space: pre-wrap;
-  }
 </style>
 
 <script>
@@ -1148,156 +1318,36 @@ window.Quarto = {
   window.__quartoDynamicPlotsInit = true;
 
   const PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js";
-
   const TRACE_COLORWAY = [
     "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
     "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
   ];
 
-  // Downloads the full Plotly bundle asynchronously so it loads in parallel with MathJax
+  // Loads Plotly asynchronously so it downloads in parallel with MathJax
   function loadPlotly() {
     if (window.Plotly) return Promise.resolve();
     const store = (window.__quartoWidgetLibs = window.__quartoWidgetLibs || {});
-    if (store.plotly) return store.plotly;
-
-    store.plotly = new Promise((resolve, reject) => {
+    return (store.plotly = store.plotly || new Promise((resolve, reject) => {
       const script = document.createElement("script");
       script.src = PLOTLY_CDN;
       script.async = true;
       script.onload = resolve;
       script.onerror = () => reject(new Error(`Failed to load Plotly from ${PLOTLY_CDN}`));
       document.head.appendChild(script);
-    });
-    return store.plotly;
+    }));
   }
 
-  // Reuses window.MathRenderer when dynamic-tables is loaded, or initializes the shared Quarto MathJax/KaTeX renderer
-  const PlotMathRenderer = window.MathRenderer || (window.MathRenderer = {
-    cache: new Map(),
-    readyPromise: null,
-    queue: Promise.resolve(),
+  const hasMathDelimiters = (str) =>
+    typeof str === "string" && /(\$\$?[\s\S]+?\$\$?|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/.test(str);
 
-    // Normalizes $...$ and $$...$$ into \(...\) and \[...\] for MathJax 3 and KaTeX compatibility
-    normalize(str) {
-      if (str === null || str === undefined || str === "") return "";
-      return String(str)
-        .replace(/(^|[^\\])\$\$([\s\S]+?)\$\$/g, "$1\\[$2\\]")
-        .replace(/(^|[^\\])\$([^$\n]+?)\$/g, "$1\\($2\\)");
-    },
+  // Strips TeX commands to a compact sizing string so Plotly reserves accurate margin space
+  const toSizingText = (str) => !str ? "" : String(str)
+    .replace(/\\\(|\\\)|\\\[|\\\]|\$\$/g, "")
+    .replace(/\$([^$]+)\$/g, "$1")
+    .replace(/\\[a-zA-Z]+\{([^}]*)\}/g, "$1")
+    .replace(/\\[a-zA-Z]+/g, "x")
+    .replace(/[{}^_]/g, "");
 
-    // Detects and awaits the active page math engine
-    waitForEngine() {
-      if (this.readyPromise) return this.readyPromise;
-
-      const hasMathScript = Boolean(
-        window.MathJax ||
-        typeof renderMathInElement === "function" ||
-        document.querySelector('script[src*="mathjax" i], script[src*="katex" i]')
-      );
-
-      if (!hasMathScript) {
-        return (this.readyPromise = Promise.resolve("none"));
-      }
-
-      this.readyPromise = new Promise((resolve) => {
-        let attempts = 0;
-        const check = () => {
-          if (window.MathJax?.startup?.promise) {
-            window.MathJax.startup.promise.then(() => resolve("mathjax")).catch(() => resolve("none"));
-          } else if (typeof window.MathJax?.typesetPromise === "function") {
-            resolve("mathjax");
-          } else if (typeof renderMathInElement === "function") {
-            resolve("katex");
-          } else if (attempts++ > 150) {
-            resolve("none");
-          } else {
-            setTimeout(check, 20);
-          }
-        };
-        check();
-      });
-
-      return this.readyPromise;
-    },
-
-    // Enqueues a batch of LaTeX strings for off-screen rendering
-    prepare(strings) {
-      this.queue = this.queue.then(() => this._renderBatch(strings));
-      return this.queue;
-    },
-
-    // Renders uncached LaTeX strings inside a hidden off-screen container
-    async _renderBatch(strings) {
-      const normalized = strings
-        .filter((s) => s !== null && s !== undefined && s !== "")
-        .map((s) => this.normalize(s));
-      const uncached = [...new Set(normalized)].filter((s) => !this.cache.has(s));
-      if (uncached.length === 0) return;
-
-      const engine = await this.waitForEngine();
-      if (engine === "none") {
-        uncached.forEach((s) => this.cache.set(s, s));
-        return;
-      }
-
-      const sandbox = document.createElement("div");
-      sandbox.style.cssText = "position:absolute;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;";
-      const fragment = document.createDocumentFragment();
-      const items = uncached.map((str) => {
-        const span = document.createElement("span");
-        span.textContent = str;
-        fragment.appendChild(span);
-        return { str, span };
-      });
-      sandbox.appendChild(fragment);
-      document.body.appendChild(sandbox);
-
-      try {
-        if (engine === "mathjax") {
-          await window.MathJax.typesetPromise([sandbox]);
-        } else if (engine === "katex") {
-          items.forEach(({ span }) => {
-            renderMathInElement(span, {
-              delimiters: [
-                { left: "$$", right: "$$", display: true },
-                { left: "\\(", right: "\\)", inline: true },
-                { left: "\\[", right: "\\]", display: true },
-                { left: "$", right: "$", inline: true }
-              ],
-              throwOnError: false
-            });
-          });
-        }
-        items.forEach(({ str, span }) => this.cache.set(str, span.innerHTML));
-      } finally {
-        sandbox.remove();
-      }
-    },
-
-    // Retrieves pre-rendered HTML for a cached LaTeX string
-    get(str) {
-      const norm = this.normalize(str);
-      return norm === "" ? "" : (this.cache.get(norm) ?? norm);
-    }
-  });
-
-  // Checks whether a label contains inline or display LaTeX delimiters
-  function hasMathDelimiters(str) {
-    return typeof str === "string" && /(\$\$?[\s\S]+?\$\$?|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/.test(str);
-  }
-
-  // Produces a compact plain-text sizing string so Plotly reserves accurate margin space
-  function toSizingText(str) {
-    if (!str) return "";
-    return String(str)
-      .replace(/\\\(|\\\)|\\\[|\\\]|\$\$/g, "")
-      .replace(/\$([^$]+)\$/g, "$1")
-      .replace(/\\[a-zA-Z]+\{([^}]*)\}/g, "$1")
-      .replace(/\\[a-zA-Z]+/g, "x")
-      .replace(/[{}^_]/g, "");
-  }
-
-  // Applies a deterministic palette color to a trace object
   function applyTraceColor(trace, color) {
     if (trace.type === "scatter" || trace.type === "scatter3d") {
       trace.line = { ...(trace.line || {}), color };
@@ -1310,698 +1360,262 @@ window.Quarto = {
     return trace;
   }
 
-  // Recursive-descent math parser and compiler supporting implicit multiplication and scientific functions
+  // Compact recursive-descent expression compiler (supports implicit multiplication, '^', and 'lhs = rhs')
   const MathExpr = (() => {
-    const CONSTANTS = Object.freeze({
-      pi: Math.PI,
-      e: Math.E
-    });
+    const CONSTS = { pi: Math.PI, e: Math.E };
+    const FUNCS = {
+      sin: Math.sin, cos: Math.cos, tan: Math.tan, asin: Math.asin, acos: Math.acos, atan: Math.atan,
+      sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh, exp: Math.exp, log: Math.log, ln: Math.log,
+      log10: Math.log10, log2: Math.log2, sqrt: Math.sqrt, abs: Math.abs, sign: Math.sign,
+      floor: Math.floor, ceil: Math.ceil, min: Math.min, max: Math.max
+    };
+    const TOKEN_RE = /\s*(?:((?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)|([a-zA-Z_]\w*)|([+\-*/^(),]))/y;
 
-    const FUNCTIONS = Object.freeze({
-      sin: Math.sin,
-      cos: Math.cos,
-      tan: Math.tan,
-      asin: Math.asin,
-      acos: Math.acos,
-      atan: Math.atan,
-      sinh: Math.sinh,
-      cosh: Math.cosh,
-      tanh: Math.tanh,
-      exp: Math.exp,
-      log: Math.log,
-      ln: Math.log,
-      log10: Math.log10,
-      log2: Math.log2,
-      sqrt: Math.sqrt,
-      abs: Math.abs,
-      sign: Math.sign,
-      floor: Math.floor,
-      ceil: Math.ceil,
-      min: Math.min,
-      max: Math.max
-    });
-
-    // Tokenizes an arithmetic string into numbers, identifiers, and operator symbols
-    function tokenize(src) {
+    function compileSingle(src) {
       const tokens = [];
-      let i = 0;
-      while (i < src.length) {
-        const ch = src[i];
-        if (/\s/.test(ch)) {
-          i++;
-          continue;
-        }
-        if (/[0-9.]/.test(ch)) {
-          const match = src.slice(i).match(/^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/);
-          if (!match) throw new Error(`Invalid number near '${src.slice(i, i + 10)}'`);
-          tokens.push({ type: "num", value: Number(match[0]) });
-          i += match[0].length;
-          continue;
-        }
-        if (/[a-zA-Z_]/.test(ch)) {
-          const match = src.slice(i).match(/^[a-zA-Z_][a-zA-Z0-9_]*/);
-          tokens.push({ type: "id", value: match[0] });
-          i += match[0].length;
-          continue;
-        }
-        if ("+-*/^(),".includes(ch)) {
-          tokens.push({ type: "op", value: ch });
-          i++;
-          continue;
-        }
-        throw new Error(`Unexpected character '${ch}' in expression '${src}'`);
+      TOKEN_RE.lastIndex = 0;
+      while (TOKEN_RE.lastIndex < src.length) {
+        const m = TOKEN_RE.exec(src);
+        if (!m) break;
+        if (m[1] !== undefined) tokens.push({ t: "num", v: Number(m[1]) });
+        else if (m[2] !== undefined) tokens.push({ t: "id", v: m[2] });
+        else if (m[3] !== undefined) tokens.push({ t: "op", v: m[3] });
       }
-      return tokens;
-    }
 
-    // Compiles a single non-equality expression into an evaluator function and records referenced variables
-    function compileSingle(src, allowedVars) {
-      const tokens = tokenize(src);
-      if (tokens.length === 0) throw new Error("Empty mathematical expression");
-
-      const usedVars = new Set();
       let pos = 0;
-
       const peek = () => tokens[pos];
-      const consume = () => tokens[pos++];
-      const isOp = (tok, val) => tok && tok.type === "op" && tok.value === val;
+      const next = () => tokens[pos++];
+      const isOp = (tok, v) => tok && tok.t === "op" && tok.v === v;
 
-      function startsImplicitFactor(tok) {
-        if (!tok) return false;
-        return tok.type === "id" || isOp(tok, "(");
-      }
-
-      function parseAddSub() {
-        let left = parseMulDiv();
+      const parseAdd = () => {
+        let lhs = parseMul();
         while (isOp(peek(), "+") || isOp(peek(), "-")) {
-          const op = consume().value;
-          const right = parseMulDiv();
-          const prev = left;
-          left = op === "+"
-            ? (env) => prev(env) + right(env)
-            : (env) => prev(env) - right(env);
+          const op = next().v, rhs = parseMul(), prev = lhs;
+          lhs = op === "+" ? (e) => prev(e) + rhs(e) : (e) => prev(e) - rhs(e);
         }
-        return left;
-      }
+        return lhs;
+      };
 
-      function parseMulDiv() {
-        let left = parseUnary();
+      const parseMul = () => {
+        let lhs = parseUnary();
         while (true) {
           if (isOp(peek(), "*") || isOp(peek(), "/")) {
-            const op = consume().value;
-            const right = parseUnary();
-            const prev = left;
-            left = op === "*"
-              ? (env) => prev(env) * right(env)
-              : (env) => prev(env) / right(env);
-          } else if (startsImplicitFactor(peek())) {
-            const right = parseUnary();
-            const prev = left;
-            left = (env) => prev(env) * right(env);
-          } else {
-            break;
-          }
+            const op = next().v, rhs = parseUnary(), prev = lhs;
+            lhs = op === "*" ? (e) => prev(e) * rhs(e) : (e) => prev(e) / rhs(e);
+          } else if (peek() && (peek().t === "id" || isOp(peek(), "("))) {
+            const rhs = parseUnary(), prev = lhs;
+            lhs = (e) => prev(e) * rhs(e);
+          } else break;
         }
-        return left;
-      }
+        return lhs;
+      };
 
-      function parseUnary() {
-        if (isOp(peek(), "+")) {
-          consume();
-          return parseUnary();
-        }
-        if (isOp(peek(), "-")) {
-          consume();
-          const operand = parseUnary();
-          return (env) => -operand(env);
-        }
-        return parsePower();
-      }
+      const parseUnary = () => {
+        if (isOp(peek(), "+")) { next(); return parseUnary(); }
+        if (isOp(peek(), "-")) { next(); const a = parseUnary(); return (e) => -a(e); }
+        return parsePow();
+      };
 
-      function parsePower() {
-        const base = parsePrimary();
-        if (isOp(peek(), "^")) {
-          consume();
-          const exp = parseUnary();
-          return (env) => Math.pow(base(env), exp(env));
-        }
+      const parsePow = () => {
+        const base = parseAtom();
+        if (isOp(peek(), "^")) { next(); const exp = parseUnary(); return (e) => Math.pow(base(e), exp(e)); }
         return base;
-      }
+      };
 
-      function parsePrimary() {
-        const tok = peek();
-        if (!tok) throw new Error(`Unexpected end of expression '${src}'`);
-
-        if (tok.type === "num") {
-          consume();
-          const val = tok.value;
-          return () => val;
-        }
-
+      const parseAtom = () => {
+        const tok = next();
+        if (!tok) return () => NaN;
+        if (tok.t === "num") return () => tok.v;
         if (isOp(tok, "(")) {
-          consume();
-          const inner = parseAddSub();
-          if (!isOp(consume(), ")")) {
-            throw new Error(`Missing closing ')' in '${src}'`);
-          }
+          const inner = parseAdd();
+          next();
           return inner;
         }
-
-        if (tok.type === "id") {
-          consume();
-          const name = tok.value;
-
-          if (Object.prototype.hasOwnProperty.call(FUNCTIONS, name)) {
-            if (!isOp(peek(), "(")) {
-              throw new Error(`Function '${name}' must be followed by '(' in '${src}'`);
-            }
-            consume();
-            const args = [];
-            if (!isOp(peek(), ")")) {
-              args.push(parseAddSub());
-              while (isOp(peek(), ",")) {
-                consume();
-                args.push(parseAddSub());
-              }
-            }
-            if (!isOp(consume(), ")")) {
-              throw new Error(`Missing closing ')' after '${name}(...)' in '${src}'`);
-            }
-            const fn = FUNCTIONS[name];
-            return (env) => fn(...args.map((a) => a(env)));
+        const name = tok.v;
+        if (FUNCS[name]) {
+          next(); // '('
+          const args = [];
+          if (!isOp(peek(), ")")) {
+            args.push(parseAdd());
+            while (isOp(peek(), ",")) { next(); args.push(parseAdd()); }
           }
-
-          if (Object.prototype.hasOwnProperty.call(CONSTANTS, name)) {
-            const cval = CONSTANTS[name];
-            return () => cval;
-          }
-
-          if (allowedVars && !allowedVars.has(name)) {
-            throw new Error(`Disallowed variable '${name}' in '${src}'`);
-          }
-          usedVars.add(name);
-          return (env) => env[name];
+          next(); // ')'
+          const fn = FUNCS[name];
+          return (e) => fn(...args.map((a) => a(e)));
         }
-
-        throw new Error(`Unexpected token '${tok.value}' in '${src}'`);
-      }
-
-      const fn = parseAddSub();
-      if (pos < tokens.length) {
-        throw new Error(`Unexpected trailing token '${tokens[pos].value}' in '${src}'`);
-      }
-      return { eval: fn, vars: usedVars };
-    }
-
-    // Compiles an expression, normalizing "lhs = rhs" into "lhs - rhs = 0" when permitted
-    function compile(rawExpr, { allowedVars = null, allowEquals = false } = {}) {
-      const parts = rawExpr.split("=");
-      if (parts.length > 2) {
-        throw new Error(`Expression '${rawExpr}' cannot contain multiple '=' signs`);
-      }
-      if (parts.length === 2) {
-        if (!allowEquals) {
-          throw new Error(`Explicit expression '${rawExpr}' must not contain '='`);
-        }
-        const lhs = compileSingle(parts[0], allowedVars);
-        const rhs = compileSingle(parts[1], allowedVars);
-        const vars = new Set([...lhs.vars, ...rhs.vars]);
-        return {
-          hasEquals: true,
-          vars,
-          eval: (env) => lhs.eval(env) - rhs.eval(env)
-        };
-      }
-      const single = compileSingle(parts[0], allowedVars);
-      return {
-        hasEquals: false,
-        vars: single.vars,
-        eval: single.eval
+        if (name in CONSTS) return () => CONSTS[name];
+        return (e) => e[name];
       };
+
+      return parseAdd();
     }
 
-    return { compile };
+    return {
+      compile(rawExpr) {
+        const parts = rawExpr.split("=");
+        if (parts.length === 2) {
+          const lhs = compileSingle(parts[0]), rhs = compileSingle(parts[1]);
+          return (env) => lhs(env) - rhs(env);
+        }
+        return compileSingle(parts[0]);
+      }
+    };
   })();
 
   // Domain sampling and axis range resolution utilities
   const Domain = {
-    // Generates evenly spaced points in linear or base-10 logarithmic coordinates
-    sampleAxis(range, count, scale = "linear") {
-      const [min, max] = range;
+    sampleAxis([min, max], count, scale = "linear") {
       const pts = new Array(count);
       if (scale === "log") {
-        if (min <= 0 || max <= 0) {
-          throw new Error(`Logarithmic axis requires positive bounds (got [${min}, ${max}])`);
-        }
-        const logMin = Math.log10(min);
-        const logMax = Math.log10(max);
-        const step = (logMax - logMin) / (count - 1);
-        for (let i = 0; i < count; i++) {
-          pts[i] = Math.pow(10, logMin + i * step);
-        }
+        const l0 = Math.log10(min), step = (Math.log10(max) - l0) / (count - 1);
+        for (let i = 0; i < count; i++) pts[i] = Math.pow(10, l0 + i * step);
       } else {
         const step = (max - min) / (count - 1);
-        for (let i = 0; i < count; i++) {
-          pts[i] = min + i * step;
-        }
+        for (let i = 0; i < count; i++) pts[i] = min + i * step;
       }
       return pts;
     },
 
-    // Computes finite [min, max] bounds across an array of numeric values
     extent(values, positiveOnly = false) {
-      let min = Infinity;
-      let max = -Infinity;
-      for (let i = 0; i < values.length; i++) {
-        const v = values[i];
-        if (!Number.isFinite(v)) continue;
-        if (positiveOnly && v <= 0) continue;
+      let min = Infinity, max = -Infinity;
+      for (const v of values) {
+        if (!Number.isFinite(v) || (positiveOnly && v <= 0)) continue;
         if (v < min) min = v;
         if (v > max) max = v;
       }
       return min <= max ? [min, max] : null;
     },
 
-    // Resolves axis domain from plot overrides, function overrides, file extents, or defaults
     resolveAxisRange(plotRange, defRange, dataExtent, scale) {
-      if (plotRange) return plotRange;
-      if (defRange) return defRange;
-      if (dataExtent) {
-        if (dataExtent[0] === dataExtent[1]) {
-          const c = dataExtent[0];
-          return scale === "log" ? [c * 0.5, c * 2] : [c - 1, c + 1];
-        }
-        return dataExtent;
-      }
-      return scale === "log" ? [0.1, 100] : [-10, 10];
+      const r = plotRange || defRange || dataExtent;
+      if (!r) return scale === "log" ? [0.1, 100] : [-10, 10];
+      if (r[0] === r[1]) return scale === "log" ? [r[0] * 0.5, r[0] * 2] : [r[0] - 1, r[0] + 1];
+      return r;
     }
   };
 
-  // Compiles and samples analytical expressions (2D/3D explicit and 2D/3D implicit)
-  const FunctionBuilder = (() => {
-    const ALLOWED_VARS = new Set(["x", "y", "z"]);
+  // Compiles and evaluates analytical expressions (2D/3D explicit and 2D/3D implicit)
+  const FunctionBuilder = {
+    prepare(def) {
+      return { ...def, rawLabel: def.label, fn: MathExpr.compile(def.expr) };
+    },
 
-    // Classifies an expression by '=' presence and variable set {x, y, z}
-    function prepare(def) {
-      const compiled = MathExpr.compile(def.expr, {
-        allowedVars: ALLOWED_VARS,
-        allowEquals: true
-      });
-      const hasY = compiled.vars.has("y");
-      const hasZ = compiled.vars.has("z");
-
-      if (!compiled.hasEquals) {
-        if (hasZ) {
-          throw new Error(`Function '${def.id}': explicit expression '${def.expr}' cannot contain 'z' (use '=' for implicit 3D surfaces)`);
-        }
-        return {
-          id: def.id,
-          kind: "function",
-          dim: hasY ? "3d" : "2d",
-          subtype: hasY ? "3d-explicit" : "2d-explicit",
-          mode: def.mode,
-          isSweep: false,
-          rawLabel: def.label,
-          def,
-          compiled
-        };
-      }
-
-      return {
-        id: def.id,
-        kind: "function",
-        dim: hasZ ? "3d" : "2d",
-        subtype: hasZ ? "3d-implicit" : "2d-implicit",
-        mode: "lines",
-        isSweep: false,
-        rawLabel: def.label,
-        def,
-        compiled
-      };
-    }
-
-    // Evaluates a prepared analytical function across the resolved plot domains
-    function evaluate(spec, domains, scales) {
-      const { def, compiled, subtype } = spec;
-      const { xrange, yrange, zrange } = domains;
+    evaluate(spec, { xrange, yrange, zrange }, scales) {
+      const { subtype, fn, mode, smooth } = spec;
+      const name = toSizingText(spec.rawLabel);
       const env = { x: 0, y: 0, z: 0 };
-      const sizingName = toSizingText(def.label);
+      const evalGrid = (xs, ys) => ys.map((y) => {
+        env.y = y;
+        return xs.map((x) => { env.x = x; const v = fn(env); return Number.isFinite(v) ? v : null; });
+      });
 
       if (subtype === "2d-explicit") {
-        const n = def.points || 100;
-        const xs = Domain.sampleAxis(xrange, n, scales.xscale);
-        const ys = xs.map((x) => {
-          env.x = x;
-          const v = compiled.eval(env);
-          return Number.isFinite(v) ? v : null;
-        });
-        const smooth = def.smooth !== null && def.smooth !== undefined ? def.smooth : true;
+        const xs = Domain.sampleAxis(xrange, spec.points || 100, scales.xscale);
+        const ys = xs.map((x) => { env.x = x; const v = fn(env); return Number.isFinite(v) ? v : null; });
         return {
-          type: "scatter",
-          name: sizingName,
-          x: xs,
-          y: ys,
-          mode: def.mode,
-          line: { shape: smooth ? "spline" : "linear" },
-          connectgaps: false
+          type: "scatter", name, x: xs, y: ys, mode, connectgaps: false,
+          line: { shape: (smooth ?? true) ? "spline" : "linear" }
         };
       }
 
-      if (subtype === "2d-implicit") {
-        const n = def.points || 60;
+      if (subtype === "2d-implicit" || subtype === "3d-explicit") {
+        const n = spec.points || 60;
         const xs = Domain.sampleAxis(xrange, n, scales.xscale);
         const ys = Domain.sampleAxis(yrange, n, scales.yscale);
-        const zGrid = ys.map((y) => {
-          env.y = y;
-          return xs.map((x) => {
-            env.x = x;
-            const v = compiled.eval(env);
-            return Number.isFinite(v) ? v : null;
-          });
-        });
-        return {
-          type: "contour",
-          name: sizingName,
-          x: xs,
-          y: ys,
-          z: zGrid,
-          contours: {
-            coloring: "lines",
-            start: 0,
-            end: 0,
-            size: 1
-          },
-          line: { width: 2.5 },
-          showscale: false
-        };
+        const z = evalGrid(xs, ys);
+        return subtype === "2d-implicit"
+          ? { type: "contour", name, x: xs, y: ys, z, contours: { coloring: "lines", start: 0, end: 0, size: 1 }, line: { width: 2.5 }, showscale: false }
+          : { type: "surface", name, x: xs, y: ys, z, showscale: false };
       }
 
-      if (subtype === "3d-explicit") {
-        const n = def.points || 60;
-        const xs = Domain.sampleAxis(xrange, n, scales.xscale);
-        const ys = Domain.sampleAxis(yrange, n, scales.yscale);
-        const zGrid = ys.map((y) => {
-          env.y = y;
-          return xs.map((x) => {
-            env.x = x;
-            const v = compiled.eval(env);
-            return Number.isFinite(v) ? v : null;
-          });
-        });
-        return {
-          type: "surface",
-          name: sizingName,
-          x: xs,
-          y: ys,
-          z: zGrid,
-          showscale: false
-        };
-      }
-
-      // Evaluates 3D implicit surfaces F(x, y, z) = 0 on a volumetric grid
-      const n = def.points || 25;
+      const n = spec.points || 25;
       const xs = Domain.sampleAxis(xrange, n, scales.xscale);
       const ys = Domain.sampleAxis(yrange, n, scales.yscale);
       const zs = Domain.sampleAxis(zrange, n, scales.zscale);
-      const total = n * n * n;
-      const flatX = new Array(total);
-      const flatY = new Array(total);
-      const flatZ = new Array(total);
-      const flatVal = new Array(total);
-
-      let idx = 0;
-      for (let ix = 0; ix < n; ix++) {
-        env.x = xs[ix];
-        for (let iy = 0; iy < n; iy++) {
-          env.y = ys[iy];
-          for (let iz = 0; iz < n; iz++) {
-            env.z = zs[iz];
-            const v = compiled.eval(env);
-            flatX[idx] = xs[ix];
-            flatY[idx] = ys[iy];
-            flatZ[idx] = zs[iz];
-            flatVal[idx] = Number.isFinite(v) ? v : NaN;
-            idx++;
+      const flatX = [], flatY = [], flatZ = [], value = [];
+      for (const x of xs) {
+        env.x = x;
+        for (const y of ys) {
+          env.y = y;
+          for (const z of zs) {
+            env.z = z;
+            const v = fn(env);
+            flatX.push(x); flatY.push(y); flatZ.push(z);
+            value.push(Number.isFinite(v) ? v : NaN);
           }
         }
       }
-
       return {
-        type: "isosurface",
-        name: sizingName,
-        x: flatX,
-        y: flatY,
-        z: flatZ,
-        value: flatVal,
-        isomin: 0,
-        isomax: 0,
-        surface: { count: 1 },
-        caps: { x: { show: false }, y: { show: false }, z: { show: false } },
-        showscale: false
+        type: "isosurface", name, x: flatX, y: flatY, z: flatZ, value,
+        isomin: 0, isomax: 0, surface: { count: 1 },
+        caps: { x: { show: false }, y: { show: false }, z: { show: false } }, showscale: false
       };
     }
-
-    return { prepare, evaluate };
-  })();
+  };
 
   // Compiles tabular file rows into static 2D/3D traces or slider-driven parameter sweeps
-  const FileBuilder = (() => {
-    function buildColumnVars(numCols) {
-      const vars = new Set();
-      for (let i = 0; i < numCols; i++) vars.add(`c${i}`);
-      return vars;
-    }
-
-    function rowToEnv(row, target = {}) {
-      for (let i = 0; i < row.length; i++) target[`c${i}`] = row[i];
-      return target;
-    }
-
-    function parseColIndex(token, numCols, id) {
-      const m = token.trim().match(/^c(\d+)$/);
-      if (!m) {
-        throw new Error(`File '${id}': invalid column identifier '${token.trim()}' (expected c0..c${numCols - 1})`);
-      }
-      const idx = parseInt(m[1], 10);
-      if (idx < 0 || idx >= numCols) {
-        throw new Error(`File '${id}': column 'c${idx}' out of range (file has ${numCols} columns: c0..c${numCols - 1})`);
-      }
-      return idx;
-    }
-
-    function parseSweepCols(spec, numCols, id) {
-      const rangeMatch = spec.trim().match(/^(c\d+)\s*\.\.\s*(c\d+)$/);
-      if (rangeMatch) {
-        const start = parseColIndex(rangeMatch[1], numCols, id);
-        const end = parseColIndex(rangeMatch[2], numCols, id);
-        if (start > end) {
-          throw new Error(`File '${id}': column range '${spec}' must be ascending`);
-        }
-        const cols = [];
-        for (let c = start; c <= end; c++) cols.push(c);
-        return cols;
-      }
-      const cols = spec.split(",").map((tok) => parseColIndex(tok, numCols, id));
-      if (cols.length === 0) {
-        throw new Error(`File '${id}': 'y' sweep list cannot be empty`);
-      }
-      return cols;
-    }
-
-    function parseSweepParams(spec, count, id) {
-      const rangeMatch = spec.trim().match(/^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*\.\.\s*([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)$/);
-      if (rangeMatch) {
-        if (count < 2) {
-          throw new Error(`File '${id}': 'param' range '${spec}' requires at least 2 sweep columns`);
-        }
-        const start = Number(rangeMatch[1]);
-        const end = Number(rangeMatch[2]);
-        const step = (end - start) / (count - 1);
-        const vals = new Array(count);
-        for (let i = 0; i < count; i++) vals[i] = start + i * step;
-        return vals;
-      }
-
-      const vals = spec.split(",").map((s) => {
-        const trimmed = s.trim();
-        const num = Number(trimmed);
-        if (trimmed === "" || !Number.isFinite(num)) {
-          throw new Error(`File '${id}': non-numeric parameter value '${trimmed}' in 'param'`);
-        }
-        return num;
-      });
-
-      if (vals.length !== count) {
-        throw new Error(`File '${id}': 'param' has ${vals.length} values, but 'y' selects ${count} columns`);
-      }
-      return vals;
-    }
-
-    function formatParamLabel(val) {
-      const abs = Math.abs(val);
-      if (abs > 0 && (abs < 1e-3 || abs >= 1e4)) return val.toExponential(2);
-      return Number(val.toFixed(4)).toString();
-    }
-
-    // Evaluates column expressions for a file definition
-    function prepare(def) {
-      const rows = def.rows;
-      const numCols = rows[0].length;
-      const colVars = buildColumnVars(numCols);
-      const xExpr = MathExpr.compile(def.x, { allowedVars: colVars, allowEquals: false });
-      const sizingName = toSizingText(def.label);
-
+  const FileBuilder = {
+    prepare(def) {
       const env = {};
-      const xs = rows.map((r) => {
-        const v = xExpr.eval(rowToEnv(r, env));
-        return Number.isFinite(v) ? v : null;
-      });
+      const rowEnv = (r) => { for (let i = 0; i < r.length; i++) env[`c${i}`] = r[i]; return env; };
+      const evalCol = (fn) => def.rows.map((r) => { const v = fn(rowEnv(r)); return Number.isFinite(v) ? v : null; });
 
-      // Parameter-sweep mode (active when 'param' is provided)
-      if (def.param !== null && def.param !== undefined) {
-        const cols = parseSweepCols(def.y, numCols, def.id);
-        const params = parseSweepParams(def.param, cols.length, def.id);
+      const xs = evalCol(MathExpr.compile(def.x));
+      const name = toSizingText(def.label);
+      const line = { shape: def.smooth ? "spline" : "linear" };
 
-        let transformExpr = null;
-        if (def.transform) {
-          const transformVars = new Set(["y", ...colVars]);
-          transformExpr = MathExpr.compile(def.transform, {
-            allowedVars: transformVars,
-            allowEquals: false
-          });
-        }
-
-        const ySeries = cols.map((colIdx) =>
-          rows.map((r) => {
+      if (def.isSweep) {
+        const tFn = def.transform ? MathExpr.compile(def.transform) : null;
+        const ySeries = def.sweepCols.map((colIdx) =>
+          def.rows.map((r) => {
             const rawY = r[colIdx];
-            if (!transformExpr) return rawY;
-            rowToEnv(r, env);
-            env.y = rawY;
-            const v = transformExpr.eval(env);
+            if (!tFn) return rawY;
+            rowEnv(r).y = rawY;
+            const v = tFn(env);
             return Number.isFinite(v) ? v : null;
           })
         );
-
-        const frames = params.map((pVal, idx) => ({
-          name: String(idx),
-          data: [{ x: xs, y: ySeries[idx] }]
-        }));
-
         return {
-          id: def.id,
-          kind: "file",
-          dim: "2d",
-          mode: def.mode,
-          isSweep: true,
-          rawLabel: def.label,
-          rawParamLabel: def.paramLabel,
-          xs,
-          ys: ySeries.flat(),
-          zs: null,
-          initialTrace: {
-            type: "scatter",
-            name: sizingName,
-            x: xs,
-            y: ySeries[0],
-            mode: def.mode,
-            line: { shape: def.smooth ? "spline" : "linear" }
-          },
-          frames,
-          params: params.map(formatParamLabel),
+          ...def, rawLabel: def.label, rawParamLabel: def.paramLabel,
+          xs, ys: ySeries.flat(), zs: null,
           paramLabel: toSizingText(def.paramLabel),
-          play: def.play
+          initialTrace: { type: "scatter", name, x: xs, y: ySeries[0], mode: def.mode, line },
+          frames: ySeries.map((y, idx) => ({ name: String(idx), data: [{ x: xs, y }] }))
         };
       }
 
-      // Static 2D or 3D file curve
-      const yExpr = MathExpr.compile(def.y, { allowedVars: colVars, allowEquals: false });
-      const ys = rows.map((r) => {
-        const v = yExpr.eval(rowToEnv(r, env));
-        return Number.isFinite(v) ? v : null;
-      });
-
+      const ys = evalCol(MathExpr.compile(def.y));
       if (def.z) {
-        const zExpr = MathExpr.compile(def.z, { allowedVars: colVars, allowEquals: false });
-        const zs = rows.map((r) => {
-          const v = zExpr.eval(rowToEnv(r, env));
-          return Number.isFinite(v) ? v : null;
-        });
-
+        const zs = evalCol(MathExpr.compile(def.z));
         return {
-          id: def.id,
-          kind: "file",
-          dim: "3d",
-          mode: def.mode,
-          isSweep: false,
-          rawLabel: def.label,
-          xs,
-          ys,
-          zs,
-          trace: {
-            type: "scatter3d",
-            name: sizingName,
-            x: xs,
-            y: ys,
-            z: zs,
-            mode: def.mode,
-            marker: { size: 3.5 }
-          }
+          ...def, rawLabel: def.label, xs, ys, zs,
+          trace: { type: "scatter3d", name, x: xs, y: ys, z: zs, mode: def.mode, marker: { size: 3.5 } }
         };
       }
 
       return {
-        id: def.id,
-        kind: "file",
-        dim: "2d",
-        mode: def.mode,
-        isSweep: false,
-        rawLabel: def.label,
-        xs,
-        ys,
-        zs: null,
-        trace: {
-          type: "scatter",
-          name: sizingName,
-          x: xs,
-          y: ys,
-          mode: def.mode,
-          line: { shape: def.smooth ? "spline" : "linear" }
-        }
+        ...def, rawLabel: def.label, xs, ys, zs: null,
+        trace: { type: "scatter", name, x: xs, y: ys, mode: def.mode, line }
       };
     }
-
-    return { prepare };
-  })();
+  };
 
   // Synchronizes Plotly axis, font, and control colors with active Bootstrap CSS variables
   const ThemeSync = {
     getPalette() {
-      const styles = getComputedStyle(document.body);
-      const textColor = styles.getPropertyValue("--bs-body-color").trim() || "#212529";
-      const borderColor = styles.getPropertyValue("--bs-border-color").trim() || "#dee2e6";
-      const bgColor = styles.getPropertyValue("--bs-body-bg").trim() || "#ffffff";
-      const gridColor = `color-mix(in srgb, ${borderColor} 55%, transparent)`;
-
-      return { textColor, borderColor, bgColor, gridColor };
+      const s = getComputedStyle(document.body);
+      const textColor = s.getPropertyValue("--bs-body-color").trim() || "#212529";
+      const borderColor = s.getPropertyValue("--bs-border-color").trim() || "#dee2e6";
+      const bgColor = s.getPropertyValue("--bs-body-bg").trim() || "#ffffff";
+      return { textColor, borderColor, bgColor, gridColor: `color-mix(in srgb, ${borderColor} 55%, transparent)` };
     },
 
     buildAxisTheme(titleText, scale, range, p) {
       const axis = {
-        type: scale,
-        automargin: true,
-        color: p.textColor,
-        gridcolor: p.gridColor,
-        linecolor: p.borderColor,
-        zerolinecolor: p.borderColor,
-        tickfont: { color: p.textColor }
+        type: scale, automargin: true, color: p.textColor, gridcolor: p.gridColor,
+        linecolor: p.borderColor, zerolinecolor: p.borderColor, tickfont: { color: p.textColor }
       };
-      if (titleText) {
-        axis.title = {
-          text: toSizingText(titleText),
-          font: { color: p.textColor },
-          standoff: 12
-        };
-      }
+      if (titleText) axis.title = { text: toSizingText(titleText), font: { color: p.textColor }, standoff: 12 };
       if (range) {
         axis.range = scale === "log" ? [Math.log10(range[0]), Math.log10(range[1])] : range;
         axis.autorange = false;
@@ -2009,182 +1623,104 @@ window.Quarto = {
       return axis;
     },
 
-    buildThemeRelayout(hasSlider, hasPlayButton, is3d) {
+    getThemeRelayout(hasSlider, hasPlayButton, is3d) {
       const p = this.getPalette();
-      const base = {
+      const u = {
         "font.color": p.textColor,
         "hoverlabel.bgcolor": p.bgColor,
         "hoverlabel.bordercolor": p.borderColor,
         "hoverlabel.font.color": p.textColor
       };
-
-      if (is3d) {
-        for (const ax of ["xaxis", "yaxis", "zaxis"]) {
-          base[`scene.${ax}.color`] = p.textColor;
-          base[`scene.${ax}.tickfont.color`] = p.textColor;
-          base[`scene.${ax}.title.font.color`] = p.textColor;
-          base[`scene.${ax}.gridcolor`] = p.gridColor;
-          base[`scene.${ax}.linecolor`] = p.borderColor;
-          base[`scene.${ax}.backgroundcolor`] = "rgba(0,0,0,0)";
-        }
-      } else {
-        for (const ax of ["xaxis", "yaxis"]) {
-          base[`${ax}.color`] = p.textColor;
-          base[`${ax}.tickfont.color`] = p.textColor;
-          base[`${ax}.title.font.color`] = p.textColor;
-          base[`${ax}.gridcolor`] = p.gridColor;
-          base[`${ax}.linecolor`] = p.borderColor;
-          base[`${ax}.zerolinecolor`] = p.borderColor;
-        }
+      const prefix = is3d ? "scene." : "";
+      for (const ax of (is3d ? ["xaxis", "yaxis", "zaxis"] : ["xaxis", "yaxis"])) {
+        Object.assign(u, {
+          [`${prefix}${ax}.color`]: p.textColor,
+          [`${prefix}${ax}.tickfont.color`]: p.textColor,
+          [`${prefix}${ax}.title.font.color`]: p.textColor,
+          [`${prefix}${ax}.gridcolor`]: p.gridColor,
+          [`${prefix}${ax}.linecolor`]: p.borderColor,
+          ...(is3d
+            ? { [`${prefix}${ax}.backgroundcolor`]: "rgba(0,0,0,0)" }
+            : { [`${prefix}${ax}.zerolinecolor`]: p.borderColor })
+        });
       }
-
       if (hasSlider) {
-        base["sliders[0].font.color"] = p.textColor;
-        base["sliders[0].currentvalue.font.color"] = p.textColor;
-        base["sliders[0].bordercolor"] = p.borderColor;
-        base["sliders[0].bgcolor"] = p.bgColor;
+        Object.assign(u, {
+          "sliders[0].font.color": p.textColor,
+          "sliders[0].currentvalue.font.color": p.textColor,
+          "sliders[0].bordercolor": p.borderColor,
+          "sliders[0].bgcolor": p.bgColor
+        });
       }
-
       if (hasPlayButton) {
-        base["updatemenus[0].font.color"] = p.textColor;
-        base["updatemenus[0].bordercolor"] = p.borderColor;
-        base["updatemenus[0].bgcolor"] = p.bgColor;
+        Object.assign(u, {
+          "updatemenus[0].font.color": p.textColor,
+          "updatemenus[0].bordercolor": p.borderColor,
+          "updatemenus[0].bgcolor": p.bgColor
+        });
       }
-
-      return base;
+      return u;
     }
   };
 
-  // Builds a compact SVG line/marker swatch matching a curve's mode and color
-  function createCurveSwatch(mode, color) {
-    const span = document.createElement("span");
-    span.className = "dynamic-plot-curve-swatch";
-    const showLine = mode !== "markers";
-    const showMarker = mode === "markers" || mode === "lines+markers";
-    const lineSvg = showLine
-      ? `<line x1="1" y1="6" x2="21" y2="6" stroke="${color}" stroke-width="2.2" stroke-linecap="round"/>`
-      : "";
-    const markerSvg = showMarker
-      ? `<circle cx="11" cy="6" r="3.2" fill="${color}"/>`
-      : "";
-    span.innerHTML = `<svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true">${lineSvg}${markerSvg}</svg>`;
-    return span;
-  }
-
-  // Controller managing Plotly canvas composition, curve visibility checkboxes, native MathJax overlays, zoom resampling, and theme sync
   class DynamicPlotController {
     constructor(wrapEl, registry) {
       this.wrapEl = wrapEl;
-      this.registry = registry;
       this.cfg = JSON.parse(wrapEl.dataset.plotConfig || "{}");
-      this.bodyEl = null;
-      this.stageEl = null;
-      this.canvas = null;
-      this.mathLayer = null;
-      this.is3d = false;
-      this.hasSlider = false;
-      this.hasPlayButton = false;
+
+      const rawSpecs = this.cfg.curves.map((id) => registry.get(id));
+      const sweep = rawSpecs.find((s) => s.isSweep);
+      this.is3d = rawSpecs[0].dim === "3d";
+      this.hasSlider = Boolean(sweep);
+      this.specs = sweep ? [sweep, ...rawSpecs.filter((s) => !s.isSweep)] : rawSpecs;
+      this.hasPlayButton = Boolean(sweep?.play);
+      this.traceVisible = this.specs.map(() => true);
       this.activeStepIdx = 0;
       this.isResampling = false;
-      this.homeDomains = null;
-      this.specs = [];
-      this.traceVisible = [];
 
-      try {
-        this.mount();
-      } catch (err) {
-        this.renderError(err.message || String(err));
-      }
+      this.mount();
     }
 
-    // Displays a formatted configuration error message inside the plot container
-    renderError(msg) {
-      this.wrapEl.innerHTML = "";
-      const box = document.createElement("div");
-      box.className = "dynamic-plot-error";
-      box.textContent = `[dynamic-plot] ${msg}`;
-      this.wrapEl.appendChild(box);
-    }
-
-    // Validates referenced curve IDs, dimensionality consistency, and sweep uniqueness
-    resolveSpecs() {
-      const specs = this.cfg.curves.map((id) => {
-        const spec = this.registry.get(id);
-        if (!spec) {
-          throw new Error(`Unknown curve ID '${id}' (define it with ::: {.plot-function id="${id}"} or ::: {.plot-file id="${id}"})`);
-        }
-        return spec;
-      });
-
-      const dims = new Set(specs.map((s) => s.dim));
-      if (dims.size > 1) {
-        throw new Error("Cannot mix 2D and 3D curves in the same dynamic-plot");
-      }
-
-      const sweeps = specs.filter((s) => s.isSweep);
-      if (sweeps.length > 1) {
-        throw new Error("Cannot combine multiple parameter-sweep curves in the same dynamic-plot");
-      }
-
-      this.is3d = dims.has("3d");
-      this.hasSlider = sweeps.length === 1;
-      // Place any sweep curve at trace index 0 so animation frames target traces: [0]
-      this.specs = this.hasSlider
-        ? [sweeps[0], ...specs.filter((s) => !s.isSweep)]
-        : specs;
-      this.hasPlayButton = Boolean(this.hasSlider && this.specs[0].play);
-      this.traceVisible = this.specs.map(() => true);
-    }
-
-    // Resolves initial x, y, and z domains across plot config, function overrides, and file bounds
     computeInitialDomains() {
-      const fileSpecs = this.specs.filter((s) => s.kind === "file");
-      const fnSpecs = this.specs.filter((s) => s.kind === "function");
-
-      const fileX = Domain.extent(fileSpecs.flatMap((s) => s.xs), this.cfg.xscale === "log");
-      const fileY = Domain.extent(fileSpecs.flatMap((s) => s.ys), this.cfg.yscale === "log");
-      const fileZ = this.is3d
-        ? Domain.extent(fileSpecs.flatMap((s) => s.zs || []), this.cfg.zscale === "log")
-        : null;
-
-      const fnX = fnSpecs.find((s) => s.def.xrange)?.def.xrange || null;
-      const fnY = fnSpecs.find((s) => s.def.yrange)?.def.yrange || null;
-      const fnZ = fnSpecs.find((s) => s.def.zrange)?.def.zrange || null;
+      const files = this.specs.filter((s) => s.kind === "file");
+      const fns = this.specs.filter((s) => s.kind === "function");
+      const fileX = Domain.extent(files.flatMap((s) => s.xs), this.cfg.xscale === "log");
+      const fileY = Domain.extent(files.flatMap((s) => s.ys), this.cfg.yscale === "log");
+      const fileZ = this.is3d ? Domain.extent(files.flatMap((s) => s.zs || []), this.cfg.zscale === "log") : null;
 
       return {
-        xrange: Domain.resolveAxisRange(this.cfg.xrange, fnX, fileX, this.cfg.xscale),
-        yrange: Domain.resolveAxisRange(this.cfg.yrange, fnY, fileY, this.cfg.yscale),
-        zrange: this.is3d ? Domain.resolveAxisRange(this.cfg.zrange, fnZ, fileZ, this.cfg.zscale) : null
+        xrange: Domain.resolveAxisRange(this.cfg.xrange, fns.find((s) => s.xrange)?.xrange, fileX, this.cfg.xscale),
+        yrange: Domain.resolveAxisRange(this.cfg.yrange, fns.find((s) => s.yrange)?.yrange, fileY, this.cfg.yscale),
+        zrange: this.is3d ? Domain.resolveAxisRange(this.cfg.zrange, fns.find((s) => s.zrange)?.zrange, fileZ, this.cfg.zscale) : null
       };
     }
 
-    // Evaluates analytical traces and collects pre-built file traces with consistent colors and visibility state
     buildTraces(domains) {
-      const scales = {
-        xscale: this.cfg.xscale,
-        yscale: this.cfg.yscale,
-        zscale: this.cfg.zscale
-      };
+      const scales = { xscale: this.cfg.xscale, yscale: this.cfg.yscale, zscale: this.cfg.zscale };
       return this.specs.map((spec, idx) => {
         const color = TRACE_COLORWAY[idx % TRACE_COLORWAY.length];
-        const rawTrace = spec.kind === "function"
+        const trace = spec.kind === "function"
           ? FunctionBuilder.evaluate(spec, domains, scales)
-          : (spec.isSweep ? { ...spec.initialTrace } : { ...spec.trace });
-        applyTraceColor(rawTrace, color);
-        rawTrace.visible = this.traceVisible[idx] ? true : "legendonly";
-        return rawTrace;
+          : { ...(spec.isSweep ? spec.initialTrace : spec.trace) };
+        applyTraceColor(trace, color);
+        trace.visible = this.traceVisible[idx] ? true : "legendonly";
+        return trace;
       });
     }
 
-    // Builds the vertically centered right-hand sidebar containing curve checkboxes
-    buildSidebar() {
+    buildSidebar(bodyEl) {
       if (this.cfg.legend === false) return;
 
-      const sidebarEl = document.createElement("div");
-      sidebarEl.className = "dynamic-plot-sidebar";
+      const details = document.createElement("details");
+      details.className = "dynamic-plot-sidebar-wrap";
+      details.open = true;
 
-      const legendEl = document.createElement("div");
-      legendEl.className = "dynamic-plot-legend";
+      const summary = document.createElement("summary");
+      summary.className = "dynamic-plot-sidebar-toggle";
+      summary.title = "Toggle legend";
+
+      const sidebar = document.createElement("div");
+      sidebar.className = "dynamic-plot-sidebar";
 
       this.specs.forEach((spec, idx) => {
         const color = TRACE_COLORWAY[idx % TRACE_COLORWAY.length];
@@ -2196,38 +1732,31 @@ window.Quarto = {
         checkbox.className = "form-check-input dynamic-plot-curve-checkbox";
         checkbox.checked = true;
         checkbox.style.accentColor = color;
-
         checkbox.addEventListener("change", async () => {
-          const show = checkbox.checked;
-          this.traceVisible[idx] = show;
-          item.classList.toggle("is-hidden", !show);
-          if (this.canvas) {
-            await Plotly.restyle(this.canvas, { visible: show ? true : "legendonly" }, [idx]);
-            this.syncMathOverlays();
-          }
+          this.traceVisible[idx] = checkbox.checked;
+          item.classList.toggle("is-hidden", !checkbox.checked);
+          await Plotly.restyle(this.canvas, { visible: checkbox.checked ? true : "legendonly" }, [idx]);
+          this.syncMathOverlays();
         });
 
-        const swatch = createCurveSwatch(spec.mode, color);
+        const swatch = document.createElement("span");
+        swatch.className = "dynamic-plot-swatch";
+        swatch.dataset.mode = spec.mode;
+        swatch.style.setProperty("--swatch-color", color);
 
         const labelSpan = document.createElement("span");
         labelSpan.className = "dynamic-plot-curve-label";
-        if (hasMathDelimiters(spec.rawLabel)) {
-          labelSpan.innerHTML = PlotMathRenderer.get(spec.rawLabel);
-        } else {
-          labelSpan.textContent = spec.rawLabel;
-        }
+        if (hasMathDelimiters(spec.rawLabel)) labelSpan.innerHTML = MathRenderer.get(spec.rawLabel);
+        else labelSpan.textContent = spec.rawLabel;
 
-        item.appendChild(checkbox);
-        item.appendChild(swatch);
-        item.appendChild(labelSpan);
-        legendEl.appendChild(item);
+        item.append(checkbox, swatch, labelSpan);
+        sidebar.appendChild(item);
       });
 
-      sidebarEl.appendChild(legendEl);
-      this.bodyEl.appendChild(sidebarEl);
+      details.append(summary, sidebar);
+      bodyEl.appendChild(details);
     }
 
-    // Constructs the Plotly layout object including axes, theme colors, and optional sweep slider
     buildLayout(palette) {
       const layout = {
         height: this.cfg.height,
@@ -2237,11 +1766,7 @@ window.Quarto = {
         colorway: TRACE_COLORWAY,
         font: { color: palette.textColor },
         showlegend: false,
-        hoverlabel: {
-          bgcolor: palette.bgColor,
-          bordercolor: palette.borderColor,
-          font: { color: palette.textColor }
-        }
+        hoverlabel: { bgcolor: palette.bgColor, bordercolor: palette.borderColor, font: { color: palette.textColor } }
       };
 
       if (this.is3d) {
@@ -2266,8 +1791,7 @@ window.Quarto = {
           len: this.hasPlayButton ? 0.82 : 1.0,
           x: this.hasPlayButton ? 0.18 : 0.0,
           currentvalue: {
-            visible: true,
-            xanchor: "left",
+            visible: true, xanchor: "left",
             prefix: `${sweepSpec.paramLabel}: `,
             font: { color: palette.textColor, size: 13 }
           },
@@ -2275,58 +1799,30 @@ window.Quarto = {
           bordercolor: palette.borderColor,
           bgcolor: palette.bgColor,
           steps: sweepSpec.params.map((label, idx) => ({
-            label,
-            method: "animate",
-            args: [[String(idx)], {
-              mode: "immediate",
-              transition: { duration: 0 },
-              frame: { duration: 0, redraw: false }
-            }]
+            label, method: "animate",
+            args: [[String(idx)], { mode: "immediate", transition: { duration: 0 }, frame: { duration: 0, redraw: false } }]
           }))
         }];
 
         if (this.hasPlayButton) {
           layout.updatemenus = [{
-            type: "buttons",
-            showactive: false,
-            x: 0,
-            y: 0,
-            xanchor: "left",
-            yanchor: "top",
-            direction: "left",
+            type: "buttons", showactive: false, x: 0, y: 0,
+            xanchor: "left", yanchor: "top", direction: "left",
             pad: { t: sliderPadT + 14, r: 8 },
             font: { color: palette.textColor },
             bgcolor: palette.bgColor,
             bordercolor: palette.borderColor,
             buttons: [
-              {
-                label: "Play",
-                method: "animate",
-                args: [null, {
-                  fromcurrent: true,
-                  transition: { duration: 0 },
-                  frame: { duration: 250, redraw: false }
-                }]
-              },
-              {
-                label: "Pause",
-                method: "animate",
-                args: [[null], {
-                  mode: "immediate",
-                  transition: { duration: 0 },
-                  frame: { duration: 0, redraw: false }
-                }]
-              }
+              { label: "Play", method: "animate", args: [null, { fromcurrent: true, transition: { duration: 0 }, frame: { duration: 250, redraw: false } }] },
+              { label: "Pause", method: "animate", args: [[null], { mode: "immediate", transition: { duration: 0 }, frame: { duration: 0, redraw: false } }] }
             ]
           }];
         }
       }
-
       return layout;
     }
 
-    // Positions a single Quarto-rendered MathJax/KaTeX overlay element over an SVG text node
-    placeMathNode(svgEl, htmlContent, { align = "center", rotate = 0, opacity = "1" } = {}) {
+    placeMathNode(svgEl, htmlContent, { align = "center", rotate = 0 } = {}) {
       if (!svgEl || !this.stageEl) return;
       const stageRect = this.stageEl.getBoundingClientRect();
       const rect = svgEl.getBoundingClientRect();
@@ -2336,7 +1832,6 @@ window.Quarto = {
       const span = document.createElement("span");
       span.className = "dynamic-plot-math-label";
       span.innerHTML = htmlContent;
-      span.style.opacity = opacity;
       span.style.fontSize = getComputedStyle(svgEl).fontSize || "12px";
 
       const midY = rect.top + rect.height / 2 - stageRect.top;
@@ -2345,76 +1840,54 @@ window.Quarto = {
         span.style.top = `${midY}px`;
         span.style.transform = rotate ? `translate(0, -50%) rotate(${rotate}deg)` : "translate(0, -50%)";
       } else {
-        const midX = rect.left + rect.width / 2 - stageRect.left;
-        span.style.left = `${midX}px`;
+        span.style.left = `${rect.left + rect.width / 2 - stageRect.left}px`;
         span.style.top = `${midY}px`;
         span.style.transform = rotate ? `translate(-50%, -50%) rotate(${rotate}deg)` : "translate(-50%, -50%)";
       }
-
       this.mathLayer.appendChild(span);
     }
 
-    // Synchronizes native Quarto MathJax/KaTeX overlays for axis titles and slider labels
     syncMathOverlays() {
       if (!this.mathLayer || !this.canvas) return;
       this.mathLayer.innerHTML = "";
 
       if (hasMathDelimiters(this.cfg.xlabel)) {
-        this.placeMathNode(
-          this.canvas.querySelector("text.xtitle"),
-          PlotMathRenderer.get(this.cfg.xlabel)
-        );
+        this.placeMathNode(this.canvas.querySelector("text.xtitle"), MathRenderer.get(this.cfg.xlabel));
       }
-
       if (hasMathDelimiters(this.cfg.ylabel)) {
-        this.placeMathNode(
-          this.canvas.querySelector("text.ytitle"),
-          PlotMathRenderer.get(this.cfg.ylabel),
-          { rotate: -90 }
-        );
+        this.placeMathNode(this.canvas.querySelector("text.ytitle"), MathRenderer.get(this.cfg.ylabel), { rotate: -90 });
       }
-
       if (this.hasSlider && hasMathDelimiters(this.specs[0].rawParamLabel)) {
         const sweepSpec = this.specs[0];
         const stepVal = sweepSpec.params[this.activeStepIdx] ?? sweepSpec.params[0];
-        const sliderTextEl = this.canvas.querySelector("text.slider-label");
         this.placeMathNode(
-          sliderTextEl,
-          `${PlotMathRenderer.get(sweepSpec.rawParamLabel)}: ${stepVal}`,
+          this.canvas.querySelector("text.slider-label"),
+          `${MathRenderer.get(sweepSpec.rawParamLabel)}: ${stepVal}`,
           { align: "left" }
         );
       }
     }
 
-    // Re-evaluates 2D analytical curves across visible bounds on user zoom or pan
     attachEvents() {
       this.canvas.on("plotly_relayout", (ev) => {
         if (!this.is3d && this.specs.some((s) => s.kind === "function") && !this.isResampling && ev) {
-          let nextX = null;
-          let nextY = null;
-
+          let nextX = null, nextY = null;
           if (ev["xaxis.autorange"] || ev["yaxis.autorange"]) {
             nextX = this.homeDomains.xrange;
             nextY = this.homeDomains.yrange;
           } else if (ev["xaxis.range[0]"] !== undefined && ev["xaxis.range[1]"] !== undefined) {
-            const r0 = Number(ev["xaxis.range[0]"]);
-            const r1 = Number(ev["xaxis.range[1]"]);
+            const r0 = Number(ev["xaxis.range[0]"]), r1 = Number(ev["xaxis.range[1]"]);
             nextX = this.cfg.xscale === "log" ? [Math.pow(10, r0), Math.pow(10, r1)] : [r0, r1];
-
-            if (ev["yaxis.range[0]"] !== undefined && ev["yaxis.range[1]"] !== undefined) {
-              const y0 = Number(ev["yaxis.range[0]"]);
-              const y1 = Number(ev["yaxis.range[1]"]);
-              nextY = this.cfg.yscale === "log" ? [Math.pow(10, y0), Math.pow(10, y1)] : [y0, y1];
-            } else {
-              nextY = this.homeDomains.yrange;
-            }
+            nextY = (ev["yaxis.range[0]"] !== undefined && ev["yaxis.range[1]"] !== undefined)
+              ? (this.cfg.yscale === "log"
+                  ? [Math.pow(10, Number(ev["yaxis.range[0]"])), Math.pow(10, Number(ev["yaxis.range[1]"]))]
+                  : [Number(ev["yaxis.range[0]"]), Number(ev["yaxis.range[1]"])])
+              : this.homeDomains.yrange;
           }
-
           if (nextX && Number.isFinite(nextX[0]) && Number.isFinite(nextX[1]) && nextX[0] < nextX[1]) {
             this.isResampling = true;
             try {
-              const updatedTraces = this.buildTraces({ xrange: nextX, yrange: nextY, zrange: null });
-              Plotly.react(this.canvas, updatedTraces, this.canvas.layout, { responsive: true });
+              Plotly.react(this.canvas, this.buildTraces({ xrange: nextX, yrange: nextY, zrange: null }), this.canvas.layout, { responsive: true });
             } finally {
               this.isResampling = false;
             }
@@ -2425,57 +1898,46 @@ window.Quarto = {
 
       this.canvas.on("plotly_restyle", () => this.syncMathOverlays());
 
-      this.canvas.on("plotly_sliderchange", (ev) => {
-        if (ev?.slider && typeof ev.slider.active === "number") {
-          this.activeStepIdx = ev.slider.active;
-        }
+      const onStep = (idx) => {
+        if (Number.isFinite(idx)) this.activeStepIdx = idx;
         this.syncMathOverlays();
-      });
-
-      this.canvas.on("plotly_animatingframe", (ev) => {
-        if (ev?.name !== undefined) {
-          this.activeStepIdx = parseInt(ev.name, 10) || 0;
-        }
-        this.syncMathOverlays();
-      });
+      };
+      this.canvas.on("plotly_sliderchange", (ev) => onStep(ev?.slider?.active));
+      this.canvas.on("plotly_animatingframe", (ev) => onStep(parseInt(ev?.name, 10)));
 
       if (typeof ResizeObserver !== "undefined") {
-        let resizeRaf = null;
+        let raf = null;
         new ResizeObserver(() => {
-          cancelAnimationFrame(resizeRaf);
-          resizeRaf = requestAnimationFrame(() => this.syncMathOverlays());
+          cancelAnimationFrame(raf);
+          raf = requestAnimationFrame(() => {
+            Plotly.Plots.resize(this.canvas);
+            this.syncMathOverlays();
+          });
         }).observe(this.stageEl);
       }
     }
 
-    // Mounts the Plotly graph, native MathJax overlay layer, and right-hand sidebar
     mount() {
-      this.resolveSpecs();
       this.homeDomains = this.computeInitialDomains();
 
-      this.bodyEl = document.createElement("div");
-      this.bodyEl.className = "dynamic-plot-body";
-      this.wrapEl.appendChild(this.bodyEl);
+      const bodyEl = document.createElement("div");
+      bodyEl.className = "dynamic-plot-body";
 
       this.stageEl = document.createElement("div");
       this.stageEl.className = "dynamic-plot-stage";
-      this.bodyEl.appendChild(this.stageEl);
 
       this.canvas = document.createElement("div");
       this.canvas.className = "dynamic-plot-canvas";
-      this.stageEl.appendChild(this.canvas);
 
       this.mathLayer = document.createElement("div");
       this.mathLayer.className = "dynamic-plot-math-layer";
-      this.stageEl.appendChild(this.mathLayer);
 
-      this.buildSidebar();
+      this.stageEl.append(this.canvas, this.mathLayer);
+      bodyEl.appendChild(this.stageEl);
+      this.buildSidebar(bodyEl);
+      this.wrapEl.appendChild(bodyEl);
 
-      const palette = ThemeSync.getPalette();
-      const traces = this.buildTraces(this.homeDomains);
-      const layout = this.buildLayout(palette);
-
-      Plotly.newPlot(this.canvas, traces, layout, {
+      Plotly.newPlot(this.canvas, this.buildTraces(this.homeDomains), this.buildLayout(ThemeSync.getPalette()), {
         responsive: true,
         displaylogo: false
       });
@@ -2488,18 +1950,13 @@ window.Quarto = {
       this.syncMathOverlays();
     }
 
-    // Updates all Plotly axis, tick, title, and control colors when the page theme switches
-    async syncTheme() {
-      if (!this.canvas || !this.canvas.layout) return;
-      await Plotly.relayout(
-        this.canvas,
-        ThemeSync.buildThemeRelayout(this.hasSlider, this.hasPlayButton, this.is3d)
-      );
+    syncTheme() {
+      if (!this.canvas?.layout) return;
+      Plotly.relayout(this.canvas, ThemeSync.getThemeRelayout(this.hasSlider, this.hasPlayButton, this.is3d));
       this.syncMathOverlays();
     }
   }
 
-  // Indexes plot definitions, loads Plotly and MathJax in parallel, mounts canvases, and observes theme changes
   async function initDynamicPlots() {
     const wraps = Array.from(document.querySelectorAll(".dynamic-plot-wrap"));
     if (wraps.length === 0) return;
@@ -2508,47 +1965,26 @@ window.Quarto = {
     const mathStrings = [];
 
     document.querySelectorAll("script.dynamic-plot-def").forEach((el) => {
-      try {
-        const def = JSON.parse(el.textContent);
-        const prepared = def.kind === "function"
-          ? FunctionBuilder.prepare(def)
-          : FileBuilder.prepare(def);
-        registry.set(def.id, prepared);
-        if (hasMathDelimiters(def.label)) mathStrings.push(def.label);
-        if (hasMathDelimiters(def.paramLabel)) mathStrings.push(def.paramLabel);
-      } catch (err) {
-        registry.set(el.dataset.id, { __error: err.message || String(err) });
-      }
+      const def = JSON.parse(el.textContent);
+      registry.set(def.id, def.kind === "function" ? FunctionBuilder.prepare(def) : FileBuilder.prepare(def));
+      if (hasMathDelimiters(def.label)) mathStrings.push(def.label);
+      if (hasMathDelimiters(def.paramLabel)) mathStrings.push(def.paramLabel);
     });
 
     wraps.forEach((wrap) => {
-      try {
-        const cfg = JSON.parse(wrap.dataset.plotConfig || "{}");
-        if (hasMathDelimiters(cfg.xlabel)) mathStrings.push(cfg.xlabel);
-        if (hasMathDelimiters(cfg.ylabel)) mathStrings.push(cfg.ylabel);
-      } catch (_) {}
+      const cfg = JSON.parse(wrap.dataset.plotConfig || "{}");
+      if (hasMathDelimiters(cfg.xlabel)) mathStrings.push(cfg.xlabel);
+      if (hasMathDelimiters(cfg.ylabel)) mathStrings.push(cfg.ylabel);
     });
 
-    await Promise.all([
-      loadPlotly(),
-      PlotMathRenderer.prepare(mathStrings)
-    ]);
+    await Promise.all([loadPlotly(), MathRenderer.prepare(mathStrings)]);
 
-    const checkedRegistry = {
-      get(id) {
-        const item = registry.get(id);
-        if (item && item.__error) throw new Error(item.__error);
-        return item;
-      }
-    };
-
-    const controllers = [];
-    wraps.forEach((wrap) => {
-      if (!wrap.dataset.initialized) {
-        wrap.dataset.initialized = "true";
-        controllers.push(new DynamicPlotController(wrap, checkedRegistry));
-      }
-    });
+    const controllers = wraps
+      .filter((w) => !w.dataset.initialized)
+      .map((w) => {
+        w.dataset.initialized = "true";
+        return new DynamicPlotController(w, registry);
+      });
 
     if (controllers.length === 0) return;
 
@@ -2557,31 +1993,16 @@ window.Quarto = {
       document.documentElement.getAttribute("data-bs-theme") === "dark";
 
     let lastDark = detectDark();
-    let syncTimer = null;
-
-    const scheduleThemeSync = () => {
+    const onThemeChange = () => {
       const isDark = detectDark();
       if (isDark === lastDark) return;
       lastDark = isDark;
-
-      clearTimeout(syncTimer);
-      requestAnimationFrame(() => {
-        controllers.forEach((ctrl) => ctrl.syncTheme());
-        syncTimer = setTimeout(() => {
-          controllers.forEach((ctrl) => ctrl.syncTheme());
-        }, 80);
-      });
+      requestAnimationFrame(() => controllers.forEach((ctrl) => ctrl.syncTheme()));
     };
 
-    const observer = new MutationObserver(scheduleThemeSync);
-    observer.observe(document.body, {
-      attributes: true,
-      attributeFilter: ["class", "data-bs-theme"]
-    });
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class", "data-bs-theme"]
-    });
+    const observer = new MutationObserver(onThemeChange);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class", "data-bs-theme"] });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-bs-theme"] });
   }
 
   if (document.readyState === "loading") {
