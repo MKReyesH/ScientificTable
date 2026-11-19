@@ -6,6 +6,109 @@ local U = {}
 
 U.SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
 U._template_cache = {}
+U._math_injected = setmetatable({}, { __mode = "k" })
+
+local MATH_RENDERER_SCRIPT = [[
+<script>
+window.MathRenderer = window.MathRenderer || {
+  cache: new Map(),
+  readyPromise: null,
+  queue: Promise.resolve(),
+
+  normalize(str) {
+    if (str === null || str === undefined || str === "") return "";
+    return String(str)
+      .replace(/(^|[^\\])\$\$([\s\S]+?)\$\$/g, "$1\\[$2\\]")
+      .replace(/(^|[^\\])\$([^$\n]+?)\$/g, "$1\\($2\\)");
+  },
+
+  waitForEngine() {
+    if (this.readyPromise) return this.readyPromise;
+    const hasMathScript = Boolean(
+      window.MathJax ||
+      typeof renderMathInElement === "function" ||
+      document.querySelector('script[src*="mathjax" i], script[src*="katex" i]')
+    );
+    if (!hasMathScript) return (this.readyPromise = Promise.resolve("none"));
+
+    this.readyPromise = new Promise((resolve) => {
+      let attempts = 0;
+      const check = () => {
+        if (window.MathJax?.startup?.promise) {
+          window.MathJax.startup.promise.then(() => resolve("mathjax")).catch(() => resolve("none"));
+        } else if (typeof window.MathJax?.typesetPromise === "function") {
+          resolve("mathjax");
+        } else if (typeof renderMathInElement === "function") {
+          resolve("katex");
+        } else if (attempts++ > 150) {
+          resolve("none");
+        } else {
+          setTimeout(check, 20);
+        }
+      };
+      check();
+    });
+    return this.readyPromise;
+  },
+
+  prepare(strings) {
+    this.queue = this.queue.then(() => this._renderBatch(strings));
+    return this.queue;
+  },
+
+  async _renderBatch(strings) {
+    const normalized = strings
+      .filter((s) => s !== null && s !== undefined && s !== "")
+      .map((s) => this.normalize(s));
+    const uncached = [...new Set(normalized)].filter((s) => !this.cache.has(s));
+    if (uncached.length === 0) return;
+
+    const engine = await this.waitForEngine();
+    if (engine === "none") {
+      uncached.forEach((s) => this.cache.set(s, s));
+      return;
+    }
+
+    const sandbox = document.createElement("div");
+    sandbox.style.cssText = "position:absolute;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none;";
+    const fragment = document.createDocumentFragment();
+    const items = uncached.map((str) => {
+      const span = document.createElement("span");
+      span.textContent = str;
+      fragment.appendChild(span);
+      return { str, span };
+    });
+    sandbox.appendChild(fragment);
+    document.body.appendChild(sandbox);
+
+    try {
+      if (engine === "mathjax") {
+        await window.MathJax.typesetPromise([sandbox]);
+      } else if (engine === "katex") {
+        items.forEach(({ span }) => {
+          renderMathInElement(span, {
+            delimiters: [
+              { left: "$$", right: "$$", display: true },
+              { left: "\\(", right: "\\)", inline: true },
+              { left: "\\[", right: "\\]", display: true },
+              { left: "$", right: "$", inline: true }
+            ],
+            throwOnError: false
+          });
+        });
+      }
+      items.forEach(({ str, span }) => this.cache.set(str, span.innerHTML));
+    } finally {
+      sandbox.remove();
+    }
+  },
+
+  get(str) {
+    const norm = this.normalize(str);
+    return norm === "" ? "" : (this.cache.get(norm) ?? norm);
+  }
+};
+</script>]]
 
 -- Trims leading and trailing whitespace
 function U.trim(s)
@@ -122,12 +225,18 @@ function U.ensure_quarto_math(doc)
     }))
 end
 
--- Injects HTML/CSS/JS assets once at the end of the document body
+-- Injects shared MathRenderer once and appends widget HTML/CSS/JS assets at the end of the document body
 function U.inject_after_body(doc, html)
+    local payload = html
+    if not U._math_injected[doc] then
+        U._math_injected[doc] = true
+        payload = MATH_RENDERER_SCRIPT .. "\n" .. html
+    end
+
     if quarto and quarto.doc and quarto.doc.include_text then
-        quarto.doc.include_text("after-body", html)
+        quarto.doc.include_text("after-body", payload)
     else
-        table.insert(doc.blocks, pandoc.RawBlock("html", html))
+        table.insert(doc.blocks, pandoc.RawBlock("html", payload))
     end
 end
 

@@ -36,3 +36,10 @@ curves: wave-sweep
 xlabel: $x$ [m]
 ylabel: $\psi(x, t)$
 :::
+
+::: {.dynamic-plot}
+curves: wave-sweep
+xlabel: $x$ [m]
+ylabel: $\psi(x, t)$
+play: true
+:::
