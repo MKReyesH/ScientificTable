@@ -26,11 +26,6 @@ local DEFAULTS = {
     auto_type  = true
 }
 
-local PATHS = {
-    filter_rel   = "lua/dynamic%-tables%.lua",
-    template_rel = "include/dynamic-tables.html"
-}
-
 local has_dynamic_table = false
 local has_table_math = false
 local inspire_keys = {}
@@ -453,7 +448,10 @@ function Pandoc(doc)
         if has_table_math then
             U.ensure_quarto_math(doc)
         end
-        U.inject_after_body(doc, U.load_template(PATHS.filter_rel, PATHS.template_rel, TAG, PANDOC_SCRIPT_FILE))
+        U.inject_widget(doc, "dynamic-tables", SCRIPT_DIR, {
+            head = '<link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">',
+            body_prefix = '<script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>'
+        })
         has_dynamic_table = false
         has_table_math = false
     end

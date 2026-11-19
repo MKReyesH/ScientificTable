@@ -30,11 +30,6 @@ local DEFAULTS = {
     legend = true
 }
 
-local PATHS = {
-    filter_rel   = "lua/dynamic%-plots%.lua",
-    template_rel = "include/dynamic-plots.html"
-}
-
 local MODES  = { lines = true, markers = true, ["lines+markers"] = true }
 local SCALES = { linear = true, log = true }
 
@@ -61,7 +56,7 @@ local PLOT_KEYS = {
     curves = true, xlabel = true, ylabel = true, zlabel = true,
     xscale = true, yscale = true, zscale = true,
     xrange = true, yrange = true, zrange = true, height = true,
-    legend = true
+    legend = true, play = true
 }
 
 local has_dynamic_plot = false
@@ -452,7 +447,8 @@ local function render_plot_canvas(el)
         yrange = parse_range(kv.yrange, "yrange", context),
         zrange = parse_range(kv.zrange, "zrange", context),
         height = parse_int(kv.height, "height", 200, context) or DEFAULTS.height,
-        legend = legend_opt
+        legend = legend_opt,
+        play   = parse_bool(kv.play, "play", context)
     }
 
     table.insert(plot_configs, { context = context, cfg = cfg })
@@ -498,6 +494,9 @@ local function validate_plots()
 
         if sweep_count > 1 then
             error(string.format("[%s] Error: Cannot combine multiple parameter-sweep curves in %s", TAG, ctx))
+        end
+        if cfg.play ~= nil and sweep_count == 0 then
+            error(string.format("[%s] Error: Key 'play' in %s requires a parameter-sweep curve", TAG, ctx))
         end
 
         for _, axis in ipairs({ "x", "y", "z" }) do
@@ -551,9 +550,9 @@ function Pandoc(doc)
             safe_json
         ))
     end
-    table.insert(payload, U.load_template(PATHS.filter_rel, PATHS.template_rel, TAG, PANDOC_SCRIPT_FILE))
 
     U.inject_after_body(doc, table.concat(payload, "\n"))
+    U.inject_widget(doc, "dynamic-plots", SCRIPT_DIR)
 
     has_dynamic_plot = false
     has_plot_math = false

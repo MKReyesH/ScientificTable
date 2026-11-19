@@ -19,17 +19,8 @@ website:
       - text: "About"
         href: about.qmd
 
-bibliography: bib/global.bib
-csl: bib/jcap.csl
-
 project:
   type: website
-
-filters: # The order matters
-  - lua/latex-to-quarto.lua
-  - lua/dynamic-tables.lua
-  - lua/dynamic-plots.lua
-  - lua/mindmap-graph.lua
 
 format:
   html:
@@ -38,6 +29,15 @@ format:
     theme: # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
       light: flatly
       dark: [flatly, include/dark-theme.scss]
-    css: include/css-config.css
+    css: include/theme/css-config.css
     include-after-body:
-      - include/dark-theme-toggle.html
+      - include/theme/dark-theme-toggle.html
+
+bibliography: bib/references.bib
+csl: bib/jcap.csl
+
+filters: # The order matters
+  - include/lua/latex-to-quarto.lua
+  - include/lua/dynamic-tables.lua
+  - include/lua/dynamic-plots.lua
+  - include/lua/mindmap-graph.lua

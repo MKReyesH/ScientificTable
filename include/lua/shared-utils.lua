@@ -1,11 +1,11 @@
 -- =============================================================================
--- Shared Quarto Widget Utilities
+-- Shared Quarto Utilities
 -- =============================================================================
 
 local U = {}
 
 U.SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
-U._template_cache = {}
+U._file_cache = {}
 U._math_injected = setmetatable({}, { __mode = "k" })
 
 local MATH_RENDERER_SCRIPT = [[
@@ -125,32 +125,31 @@ function U.has_math(s)
     return type(s) == "string" and (s:find("\\%(") ~= nil or s:find("\\%[") ~= nil or s:find("%$") ~= nil)
 end
 
--- Loads and caches a widget HTML/CSS/JS template relative to the calling filter
-function U.load_template(filter_rel, template_rel, tag, script_file)
-    local base_script = script_file or PANDOC_SCRIPT_FILE or ""
-    local html_path = base_script:gsub(filter_rel .. "$", template_rel)
-    if U._template_cache[html_path] then
-        return U._template_cache[html_path]
+-- Reads and caches a text asset from disk
+function U.read_asset(path, tag)
+    if U._file_cache[path] then
+        return U._file_cache[path]
     end
-
-    local file = io.open(html_path, "r")
+    local file = io.open(path, "r")
     if not file then
-        error(string.format("[%s] Error: Cannot open template at '%s'. Check file path.", tag, html_path))
+        error(string.format("[%s] Error: Cannot open asset at '%s'. Check file path.", tag or "shared-utils", path))
     end
-
     local content = file:read("*a")
     file:close()
-    U._template_cache[html_path] = content
+    U._file_cache[path] = content
     return content
 end
 
--- Opens a data file relative to working directory, filter parent directory, or input document
+-- Opens a data file relative to working directory, project root (from include/lua/), or active document
 function U.open_data_file(src, script_dir)
     local file = io.open(src, "r")
     if file then return file end
 
     local dir = script_dir or U.SCRIPT_DIR
     if dir ~= "" then
+        file = io.open(dir .. "../../" .. src, "r")
+        if file then return file end
+
         file = io.open(dir .. "../" .. src, "r")
         if file then return file end
     end
@@ -225,19 +224,41 @@ function U.ensure_quarto_math(doc)
     }))
 end
 
--- Injects shared MathRenderer once and appends widget HTML/CSS/JS assets at the end of the document body
+-- Injects HTML into a Quarto document location ('in-header' or 'after-body')
+function U.inject_html(doc, location, html)
+    if quarto and quarto.doc and quarto.doc.include_text then
+        quarto.doc.include_text(location, html)
+    else
+        table.insert(doc.blocks, pandoc.RawBlock("html", html))
+    end
+end
+
+-- Injects shared MathRenderer once and appends HTML/JS at the end of the document body
 function U.inject_after_body(doc, html)
     local payload = html
     if not U._math_injected[doc] then
         U._math_injected[doc] = true
         payload = MATH_RENDERER_SCRIPT .. "\n" .. html
     end
+    U.inject_html(doc, "after-body", payload)
+end
 
-    if quarto and quarto.doc and quarto.doc.include_text then
-        quarto.doc.include_text("after-body", payload)
-    else
-        table.insert(doc.blocks, pandoc.RawBlock("html", payload))
-    end
+-- Injects a widget's paired ../css/<name>.css (in-header) and ../js/<name>.js (after-body)
+function U.inject_widget(doc, name, script_dir, opts)
+    opts = opts or {}
+    local dir = script_dir or U.SCRIPT_DIR
+    local css = U.read_asset(dir .. "../css/" .. name .. ".css", name)
+    local js  = U.read_asset(dir .. "../js/" .. name .. ".js", name)
+
+    local head_parts = {}
+    if opts.head then table.insert(head_parts, opts.head) end
+    table.insert(head_parts, "<style>\n" .. css .. "\n</style>")
+    U.inject_html(doc, "in-header", table.concat(head_parts, "\n"))
+
+    local body_parts = {}
+    if opts.body_prefix then table.insert(body_parts, opts.body_prefix) end
+    table.insert(body_parts, "<script>\n" .. js .. "\n</script>")
+    U.inject_after_body(doc, table.concat(body_parts, "\n"))
 end
 
 return U
