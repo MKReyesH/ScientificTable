@@ -1324,6 +1324,7 @@ window.MathRenderer = window.MathRenderer || {
   window.__quartoDynamicPlotsInit = true;
 
   const PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js";
+  const PLAY_INTERVAL_MS = 300;
   const TRACE_COLORWAY = [
     "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
     "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
@@ -1354,13 +1355,17 @@ window.MathRenderer = window.MathRenderer || {
     .replace(/\\[a-zA-Z]+/g, "x")
     .replace(/[{}^_]/g, "");
 
+  function resolveCurveColor(spec, idx) {
+    return spec.color || TRACE_COLORWAY[idx % TRACE_COLORWAY.length];
+  }
+
   function applyTraceColor(trace, color) {
     if (trace.type === "scatter" || trace.type === "scatter3d") {
       trace.line = { ...(trace.line || {}), color };
       trace.marker = { ...(trace.marker || {}), color };
     } else if (trace.type === "contour") {
       trace.line = { ...(trace.line || {}), color };
-    } else if (trace.type === "isosurface") {
+    } else if (trace.type === "isosurface" || trace.type === "surface") {
       trace.colorscale = [[0, color], [1, color]];
     }
     return trace;
@@ -1586,7 +1591,7 @@ window.MathRenderer = window.MathRenderer || {
           xs, ys: ySeries.flat(), zs: null,
           paramLabel: toSizingText(def.paramLabel),
           initialTrace: { type: "scatter", name, x: xs, y: ySeries[0], mode: def.mode, line },
-          frames: ySeries.map((y, idx) => ({ name: String(idx), data: [{ x: xs, y }] }))
+          frames: ySeries.map((y, idx) => ({ name: String(idx), traces: [0], data: [{ x: xs, y }] }))
         };
       }
 
@@ -1683,6 +1688,8 @@ window.MathRenderer = window.MathRenderer || {
       this.traceVisible = this.specs.map(() => true);
       this.activeStepIdx = 0;
       this.isPlaying = false;
+      this.playTimer = null;
+      this.isAdvancingFrame = false;
       this.isResampling = false;
 
       this.mount();
@@ -1705,7 +1712,7 @@ window.MathRenderer = window.MathRenderer || {
     buildTraces(domains) {
       const scales = { xscale: this.cfg.xscale, yscale: this.cfg.yscale, zscale: this.cfg.zscale };
       return this.specs.map((spec, idx) => {
-        const color = TRACE_COLORWAY[idx % TRACE_COLORWAY.length];
+        const color = resolveCurveColor(spec, idx);
         const trace = spec.kind === "function"
           ? FunctionBuilder.evaluate(spec, domains, scales)
           : { ...(spec.isSweep ? spec.initialTrace : spec.trace) };
@@ -1735,7 +1742,7 @@ window.MathRenderer = window.MathRenderer || {
       sidebar.className = "dynamic-plot-sidebar";
 
       this.specs.forEach((spec, idx) => {
-        const color = TRACE_COLORWAY[idx % TRACE_COLORWAY.length];
+        const color = resolveCurveColor(spec, idx);
         const item = document.createElement("label");
         item.className = "dynamic-plot-curve-toggle";
 
@@ -1788,21 +1795,22 @@ window.MathRenderer = window.MathRenderer || {
           zaxis: ThemeSync.buildAxisTheme(this.cfg.zlabel || "z", this.cfg.zscale, this.cfg.zrange, palette)
         };
       } else {
+        const yRange = this.hasSlider ? (this.cfg.yrange || this.homeDomains.yrange) : this.cfg.yrange;
         layout.xaxis = ThemeSync.buildAxisTheme(this.cfg.xlabel, this.cfg.xscale, this.cfg.xrange, palette);
-        layout.yaxis = ThemeSync.buildAxisTheme(this.cfg.ylabel, this.cfg.yscale, this.cfg.yrange, palette);
+        layout.yaxis = ThemeSync.buildAxisTheme(this.cfg.ylabel, this.cfg.yscale, yRange, palette);
       }
 
       if (this.hasSlider) {
         const sweepSpec = this.specs[0];
         const sliderPadT = this.cfg.xlabel ? 62 : 32;
-        const buttonPadT = sliderPadT + 74;
-        layout.margin.b = this.hasPlayButton ? (buttonPadT + 44) : (sliderPadT + 68);
+        const sliderX = this.hasPlayButton ? 0.085 : 0.0;
+        layout.margin.b = sliderPadT + 68;
 
         layout.sliders = [{
           active: 0,
           pad: { t: sliderPadT, b: 6 },
-          len: 1.0,
-          x: 0.0,
+          len: 1.0 - sliderX,
+          x: sliderX,
           currentvalue: {
             visible: true, xanchor: "left",
             prefix: `${sweepSpec.paramLabel}: `,
@@ -1821,15 +1829,14 @@ window.MathRenderer = window.MathRenderer || {
           layout.updatemenus = [{
             type: "buttons", showactive: false, x: 0.0, y: 0.0,
             xanchor: "left", yanchor: "top", direction: "left",
-            pad: { t: buttonPadT, b: 6 },
-            font: { color: palette.textColor },
+            pad: { t: sliderPadT - 5, b: 4 },
+            font: { color: palette.textColor, size: 11 },
             bgcolor: palette.bgColor,
             bordercolor: palette.borderColor,
             buttons: [{
-              label: "\u25B6 Play",
-              method: "animate",
-              args: [null, { fromcurrent: true, transition: { duration: 0 }, frame: { duration: 250, redraw: false } }],
-              args2: [[null], { mode: "immediate", transition: { duration: 0 }, frame: { duration: 0, redraw: false } }]
+              label: "\u25B6",
+              method: "skip",
+              execute: false
             }]
           }];
         }
@@ -1837,12 +1844,51 @@ window.MathRenderer = window.MathRenderer || {
       return layout;
     }
 
+    advanceToFrame(idx) {
+      this.activeStepIdx = idx;
+      this.isAdvancingFrame = true;
+      Plotly.animate(this.canvas, [String(idx)], {
+        mode: "immediate",
+        transition: { duration: 0 },
+        frame: { duration: 0, redraw: false }
+      }).finally(() => {
+        this.isAdvancingFrame = false;
+      });
+      this.syncMathOverlays();
+    }
+
     setPlayLabel(playing) {
       if (!this.hasPlayButton || this.isPlaying === playing) return;
       this.isPlaying = playing;
       Plotly.relayout(this.canvas, {
-        "updatemenus[0].buttons[0].label": playing ? "\u275A\u275A Pause" : "\u25B6 Play"
+        "updatemenus[0].buttons[0].label": playing ? "\u275A\u275A" : "\u25B6"
       });
+    }
+
+    startPlay() {
+      if (this.isPlaying || !this.hasSlider) return;
+      const total = this.specs[0].params.length;
+      if (total < 2) return;
+
+      this.setPlayLabel(true);
+      if (this.activeStepIdx >= total - 1) {
+        this.advanceToFrame(0);
+      }
+      this.playTimer = setInterval(() => {
+        if (!this.wrapEl.isConnected) {
+          this.stopPlay();
+          return;
+        }
+        this.advanceToFrame((this.activeStepIdx + 1) % total);
+      }, PLAY_INTERVAL_MS);
+    }
+
+    stopPlay() {
+      if (this.playTimer !== null) {
+        clearInterval(this.playTimer);
+        this.playTimer = null;
+      }
+      this.setPlayLabel(false);
     }
 
     placeMathNode(svgEl, htmlContent, { align = "center", rotate = 0 } = {}) {
@@ -1926,12 +1972,14 @@ window.MathRenderer = window.MathRenderer || {
         this.syncMathOverlays();
       };
       this.canvas.on("plotly_sliderchange", (ev) => {
+        if (!this.isAdvancingFrame) this.stopPlay();
         onStep(ev?.slider?.active);
-        this.setPlayLabel(false);
       });
       this.canvas.on("plotly_animatingframe", (ev) => onStep(parseInt(ev?.name, 10)));
-      this.canvas.on("plotly_animated", () => this.setPlayLabel(false));
-      this.canvas.on("plotly_buttonclicked", () => this.setPlayLabel(!this.isPlaying));
+      this.canvas.on("plotly_buttonclicked", () => {
+        if (this.isPlaying) this.stopPlay();
+        else this.startPlay();
+      });
 
       if (typeof ResizeObserver !== "undefined") {
         let raf = null;
