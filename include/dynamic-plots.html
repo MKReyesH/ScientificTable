@@ -10,14 +10,31 @@
     overflow: hidden;
   }
 
-  .dynamic-plot-legend {
+  .dynamic-plot-body {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 1.25rem;
-    padding: 0.55rem 0.9rem;
-    border-bottom: 1px solid var(--bs-border-color);
-    background-color: var(--bs-tertiary-bg);
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .dynamic-plot-stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .dynamic-plot-canvas {
+    width: 100%;
+  }
+
+  .dynamic-plot-legend {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    max-width: 270px;
+    padding: 1.4rem 1.1rem 1rem 0.25rem;
     font-size: 0.875rem;
   }
 
@@ -28,16 +45,18 @@
     margin: 0;
     cursor: pointer;
     user-select: none;
+    line-height: 1.25;
     color: var(--bs-body-color);
     transition: opacity 0.15s ease;
   }
 
   .dynamic-plot-curve-toggle.is-hidden {
-    opacity: 0.5;
+    opacity: 0.48;
   }
 
   .dynamic-plot-curve-checkbox {
     margin: 0 !important;
+    flex-shrink: 0;
     cursor: pointer;
   }
 
@@ -54,13 +73,18 @@
     margin: 0 !important;
   }
 
-  .dynamic-plot-stage {
-    position: relative;
-    width: 100%;
-  }
+  @media (max-width: 640px) {
+    .dynamic-plot-body {
+      flex-direction: column;
+    }
 
-  .dynamic-plot-canvas {
-    width: 100%;
+    .dynamic-plot-legend {
+      flex-direction: row;
+      flex-wrap: wrap;
+      max-width: 100%;
+      padding: 0.55rem 0.9rem 0.85rem;
+      border-top: 1px solid var(--bs-border-color);
+    }
   }
 
   .dynamic-plot-math-layer {
@@ -1025,6 +1049,7 @@
       this.wrapEl = wrapEl;
       this.registry = registry;
       this.cfg = JSON.parse(wrapEl.dataset.plotConfig || "{}");
+      this.bodyEl = null;
       this.stageEl = null;
       this.canvas = null;
       this.mathLayer = null;
@@ -1123,12 +1148,12 @@
       });
     }
 
-    // Builds the interactive checkbox legend bar for toggling individual curves
-    buildCurveToggleBar() {
+    // Builds the right-hand legend with checkboxes for toggling individual curves
+    buildCurveLegend() {
       if (this.cfg.legend === false) return;
 
-      const bar = document.createElement("div");
-      bar.className = "dynamic-plot-legend";
+      const legendEl = document.createElement("div");
+      legendEl.className = "dynamic-plot-legend";
 
       this.specs.forEach((spec, idx) => {
         const color = TRACE_COLORWAY[idx % TRACE_COLORWAY.length];
@@ -1164,17 +1189,17 @@
         item.appendChild(checkbox);
         item.appendChild(swatch);
         item.appendChild(labelSpan);
-        bar.appendChild(item);
+        legendEl.appendChild(item);
       });
 
-      this.wrapEl.appendChild(bar);
+      this.bodyEl.appendChild(legendEl);
     }
 
     // Constructs the Plotly layout object including axes, theme colors, and optional sweep slider
     buildLayout(palette) {
       const layout = {
         height: this.cfg.height,
-        margin: this.is3d ? { l: 10, r: 10, t: 25, b: 10 } : { l: 65, r: 25, t: 25, b: 58 },
+        margin: this.is3d ? { l: 10, r: 10, t: 25, b: 10 } : { l: 65, r: 20, t: 25, b: 58 },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(0,0,0,0)",
         colorway: TRACE_COLORWAY,
@@ -1200,14 +1225,17 @@
 
       if (this.hasSlider) {
         const sweepSpec = this.specs[0];
-        layout.margin.b = this.hasPlayButton ? 115 : 95;
+        const sliderPadT = this.cfg.xlabel ? 76 : 42;
+        layout.margin.b = sliderPadT + 70;
+
         layout.sliders = [{
           active: 0,
-          pad: { t: 35, b: 5 },
+          pad: { t: sliderPadT, b: 6 },
           len: this.hasPlayButton ? 0.82 : 1.0,
           x: this.hasPlayButton ? 0.18 : 0.0,
           currentvalue: {
             visible: true,
+            xanchor: "left",
             prefix: `${sweepSpec.paramLabel}: `,
             font: { color: palette.textColor, size: 13 }
           },
@@ -1230,11 +1258,11 @@
             type: "buttons",
             showactive: false,
             x: 0,
-            y: -0.18,
+            y: 0,
             xanchor: "left",
             yanchor: "top",
             direction: "left",
-            pad: { t: 10, r: 8 },
+            pad: { t: sliderPadT + 14, r: 8 },
             font: { color: palette.textColor },
             bgcolor: palette.bgColor,
             bordercolor: palette.borderColor,
@@ -1300,20 +1328,29 @@
       this.mathLayer.innerHTML = "";
 
       if (hasMathDelimiters(this.cfg.xlabel)) {
-        this.placeMathNode(this.canvas.querySelector("text.xtitle"), PlotMathRenderer.get(this.cfg.xlabel));
+        this.placeMathNode(
+          this.canvas.querySelector("text.xtitle"),
+          PlotMathRenderer.get(this.cfg.xlabel)
+        );
       }
 
       if (hasMathDelimiters(this.cfg.ylabel)) {
-        this.placeMathNode(this.canvas.querySelector("text.ytitle"), PlotMathRenderer.get(this.cfg.ylabel), { rotate: -90 });
+        this.placeMathNode(
+          this.canvas.querySelector("text.ytitle"),
+          PlotMathRenderer.get(this.cfg.ylabel),
+          { rotate: -90 }
+        );
       }
 
       if (this.hasSlider && hasMathDelimiters(this.specs[0].rawParamLabel)) {
         const sweepSpec = this.specs[0];
         const stepVal = sweepSpec.params[this.activeStepIdx] ?? sweepSpec.params[0];
         const sliderTextEl = this.canvas.querySelector("text.slider-label");
-        this.placeMathNode(sliderTextEl, `${PlotMathRenderer.get(sweepSpec.rawParamLabel)}: ${stepVal}`, {
-          align: "left"
-        });
+        this.placeMathNode(
+          sliderTextEl,
+          `${PlotMathRenderer.get(sweepSpec.rawParamLabel)}: ${stepVal}`,
+          { align: "left" }
+        );
       }
     }
 
@@ -1369,18 +1406,28 @@
         }
         this.syncMathOverlays();
       });
+
+      if (typeof ResizeObserver !== "undefined") {
+        let resizeRaf = null;
+        new ResizeObserver(() => {
+          cancelAnimationFrame(resizeRaf);
+          resizeRaf = requestAnimationFrame(() => this.syncMathOverlays());
+        }).observe(this.stageEl);
+      }
     }
 
-    // Mounts the curve toggle bar, Plotly graph, and native MathJax overlay layer into the container
+    // Mounts the Plotly graph, native MathJax overlay layer, and right-hand checkbox legend
     mount() {
       this.resolveSpecs();
       this.homeDomains = this.computeInitialDomains();
 
-      this.buildCurveToggleBar();
+      this.bodyEl = document.createElement("div");
+      this.bodyEl.className = "dynamic-plot-body";
+      this.wrapEl.appendChild(this.bodyEl);
 
       this.stageEl = document.createElement("div");
       this.stageEl.className = "dynamic-plot-stage";
-      this.wrapEl.appendChild(this.stageEl);
+      this.bodyEl.appendChild(this.stageEl);
 
       this.canvas = document.createElement("div");
       this.canvas.className = "dynamic-plot-canvas";
@@ -1389,6 +1436,8 @@
       this.mathLayer = document.createElement("div");
       this.mathLayer.className = "dynamic-plot-math-layer";
       this.stageEl.appendChild(this.mathLayer);
+
+      this.buildCurveLegend();
 
       const palette = ThemeSync.getPalette();
       const traces = this.buildTraces(this.homeDomains);
@@ -1486,7 +1535,6 @@
       clearTimeout(syncTimer);
       requestAnimationFrame(() => {
         controllers.forEach((ctrl) => ctrl.syncTheme());
-        // Re-sync shortly after in case an alternate Bootstrap stylesheet finished applying asynchronously
         syncTimer = setTimeout(() => {
           controllers.forEach((ctrl) => ctrl.syncTheme());
         }, 80);
