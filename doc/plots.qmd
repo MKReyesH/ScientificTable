@@ -3,7 +3,7 @@ title: Dynamic plots
 ---
 
 ::: {.plot-file id="channel-a"}
-src: data/liv_bounds.dat
+src: data/example-plot1.dat
 x: c0
 y: c0^2 * c1
 label: Channel A ($E^2 \cdot \text{Bound}$)
@@ -23,7 +23,7 @@ yscale: log
 :::
 
 ::: {.plot-file id="wave-sweep"}
-src: data/wave_evolution.dat
+src: data/example-plot2.dat
 x: c0
 y: c1..c4
 param: 0..3
