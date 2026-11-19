@@ -48,7 +48,7 @@ local FUNCTION_KEYS = {
 
 local FILE_KEYS = {
     src = true, skip = true, x = true, y = true, z = true,
-    param = true, ["param-label"] = true, transform = true, play = true,
+    param = true, ["param-label"] = true, transform = true,
     label = true, mode = true, smooth = true
 }
 
@@ -355,7 +355,7 @@ local function register_file_def(el)
             error(string.format("[%s] Error: Key 'z' is not allowed in parameter-sweep mode in %s", TAG, context))
         end
     else
-        for _, sweep_only in ipairs({ "transform", "param-label", "play" }) do
+        for _, sweep_only in ipairs({ "transform", "param-label" }) do
             if kv[sweep_only] ~= nil then
                 error(string.format("[%s] Error: Key '%s' requires 'param' in %s", TAG, sweep_only, context))
             end
@@ -404,7 +404,6 @@ local function register_file_def(el)
         params     = params,
         paramLabel = param_label,
         transform  = kv.transform,
-        play       = parse_bool(kv.play, "play", context) or DEFAULTS.play,
         label      = label,
         mode       = parse_enum(kv.mode, "mode", MODES, context) or "lines+markers",
         smooth     = parse_bool(kv.smooth, "smooth", context) or false
@@ -497,6 +496,9 @@ local function validate_plots()
         end
         if cfg.play ~= nil and sweep_count == 0 then
             error(string.format("[%s] Error: Key 'play' in %s requires a parameter-sweep curve", TAG, ctx))
+        end
+        if cfg.play == nil then
+            cfg.play = DEFAULTS.play
         end
 
         for _, axis in ipairs({ "x", "y", "z" }) do
