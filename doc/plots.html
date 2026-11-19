@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Backgrounds</title>
+<title>Dynamic plots</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -48,9 +48,9 @@ ul.task-list li input[type="checkbox"] {
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-d9238eb41e71b1ae82d92e2357f41766.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-055a61766c6810c375d4f48c04a61e8b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-d9238eb41e71b1ae82d92e2357f41766.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-62702c64308498ea70e7e43e5dd5b943.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-3f2e95da7c1a02af4281bb2046e9b78d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-62702c64308498ea70e7e43e5dd5b943.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -314,16 +314,16 @@ window.Quarto = {
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../doc/bounds.html"> 
-<span class="menu-text">Bounds</span></a>
+    <a class="nav-link" href="../doc/tables.html"> 
+<span class="menu-text">Tables</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="../doc/processes.html"> 
-<span class="menu-text">Processes</span></a>
+    <a class="nav-link active" href="../doc/plots.html" aria-current="page"> 
+<span class="menu-text">Plots</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link active" href="../doc/backgrounds.html" aria-current="page"> 
-<span class="menu-text">Backgrounds</span></a>
+    <a class="nav-link" href="../doc/mindmaps.html"> 
+<span class="menu-text">Mindmaps</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="https://github.com/MKReyesH/ScientificTable"> 
@@ -353,7 +353,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Backgrounds</h1>
+<h1 class="title">Dynamic plots</h1>
 </div>
 
 
@@ -370,9 +370,1091 @@ window.Quarto = {
 </header>
 
 
+<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;channel-a&quot;,&quot;theory-scaling&quot;],&quot;height&quot;:480,&quot;xlabel&quot;:&quot;$E$ [GeV]&quot;,&quot;xscale&quot;:&quot;log&quot;,&quot;ylabel&quot;:&quot;Rescaled Bound&quot;,&quot;yscale&quot;:&quot;log&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sweep&quot;],&quot;height&quot;:480,&quot;xlabel&quot;:&quot;$x$ [m]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;$\\psi(x, t)$&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
 
 
 
+<script type="application/json" class="dynamic-plot-def" data-id="channel-a">{"id":"channel-a","kind":"file","label":"Channel A ($E^2 \\cdot \\text{Bound}$)","mode":"lines+markers","paramLabel":"Parameter","play":false,"rows":[[10,1.2e-18,4.5e-18,0.15],[100,3.4e-17,9.1e-17,0.42],[1000,8.9e-16,2.1e-15,0.78],[10000,2.5e-14,6.8e-14,1.1],[100000,7.1e-13,1.9e-12,1.55]],"smooth":false,"x":"c0","y":"c0^2 * c1"}</script>
+<script type="application/json" class="dynamic-plot-def" data-id="theory-scaling">{"expr":"1e-19 * x^2.4","id":"theory-scaling","kind":"function","label":"Theoretical scaling","mode":"lines"}</script>
+<script type="application/json" class="dynamic-plot-def" data-id="wave-sweep">{"id":"wave-sweep","kind":"file","label":"Wave amplitude","mode":"lines+markers","param":"0..3","paramLabel":"$t$ [s]","play":false,"rows":[[0,0,0.5,0.87,1],[0.5,0.48,0.84,1,0.91],[1,0.84,1,0.91,0.6],[1.5,1,0.91,0.6,0.14],[2,0.91,0.6,0.14,-0.35],[2.5,0.6,0.14,-0.35,-0.76],[3,0.14,-0.35,-0.76,-0.98]],"smooth":false,"x":"c0","y":"c1..c4"}</script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+<style>
+  .dynamic-plot-wrap {
+    margin: 1.5rem auto;
+    width: 100%;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    overflow: hidden;
+  }
+
+  .dynamic-plot-canvas {
+    width: 100%;
+  }
+
+  .dynamic-plot-error {
+    margin: 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--bs-danger-border-subtle, #f1aeb5);
+    border-radius: 0.375rem;
+    background-color: var(--bs-danger-bg-subtle, rgba(220, 53, 69, 0.1));
+    color: var(--bs-danger-text-emphasis, #dc3545);
+    font-family: var(--bs-font-monospace, monospace);
+    font-size: 0.875rem;
+    white-space: pre-wrap;
+  }
+</style>
+
+<script>
+(() => {
+  // Awaits MathJax startup when present so Plotly renders LaTeX axis labels cleanly
+  function waitForMathJax() {
+    if (window.MathJax?.startup?.promise) {
+      return window.MathJax.startup.promise.catch(() => {});
+    }
+    return Promise.resolve();
+  }
+
+  // Recursive-descent math parser and compiler supporting implicit multiplication and scientific functions
+  const MathExpr = (() => {
+    const CONSTANTS = Object.freeze({
+      pi: Math.PI,
+      e: Math.E
+    });
+
+    const FUNCTIONS = Object.freeze({
+      sin: Math.sin,
+      cos: Math.cos,
+      tan: Math.tan,
+      asin: Math.asin,
+      acos: Math.acos,
+      atan: Math.atan,
+      sinh: Math.sinh,
+      cosh: Math.cosh,
+      tanh: Math.tanh,
+      exp: Math.exp,
+      log: Math.log,
+      ln: Math.log,
+      log10: Math.log10,
+      log2: Math.log2,
+      sqrt: Math.sqrt,
+      abs: Math.abs,
+      sign: Math.sign,
+      floor: Math.floor,
+      ceil: Math.ceil,
+      min: Math.min,
+      max: Math.max
+    });
+
+    // Tokenizes an arithmetic string into numbers, identifiers, and operator symbols
+    function tokenize(src) {
+      const tokens = [];
+      let i = 0;
+      while (i < src.length) {
+        const ch = src[i];
+        if (/\s/.test(ch)) {
+          i++;
+          continue;
+        }
+        if (/[0-9.]/.test(ch)) {
+          const match = src.slice(i).match(/^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/);
+          if (!match) throw new Error(`Invalid number near '${src.slice(i, i + 10)}'`);
+          tokens.push({ type: "num", value: Number(match[0]) });
+          i += match[0].length;
+          continue;
+        }
+        if (/[a-zA-Z_]/.test(ch)) {
+          const match = src.slice(i).match(/^[a-zA-Z_][a-zA-Z0-9_]*/);
+          tokens.push({ type: "id", value: match[0] });
+          i += match[0].length;
+          continue;
+        }
+        if ("+-*/^(),".includes(ch)) {
+          tokens.push({ type: "op", value: ch });
+          i++;
+          continue;
+        }
+        throw new Error(`Unexpected character '${ch}' in expression '${src}'`);
+      }
+      return tokens;
+    }
+
+    // Compiles a single non-equality expression into an evaluator function and records referenced variables
+    function compileSingle(src, allowedVars) {
+      const tokens = tokenize(src);
+      if (tokens.length === 0) throw new Error("Empty mathematical expression");
+
+      const usedVars = new Set();
+      let pos = 0;
+
+      const peek = () => tokens[pos];
+      const consume = () => tokens[pos++];
+      const isOp = (tok, val) => tok && tok.type === "op" && tok.value === val;
+
+      // Checks whether the next token begins an implicit multiplication factor (e.g. 2x or 2(x+1))
+      function startsImplicitFactor(tok) {
+        if (!tok) return false;
+        return tok.type === "id" || isOp(tok, "(");
+      }
+
+      function parseAddSub() {
+        let left = parseMulDiv();
+        while (isOp(peek(), "+") || isOp(peek(), "-")) {
+          const op = consume().value;
+          const right = parseMulDiv();
+          const prev = left;
+          left = op === "+"
+            ? (env) => prev(env) + right(env)
+            : (env) => prev(env) - right(env);
+        }
+        return left;
+      }
+
+      function parseMulDiv() {
+        let left = parseUnary();
+        while (true) {
+          if (isOp(peek(), "*") || isOp(peek(), "/")) {
+            const op = consume().value;
+            const right = parseUnary();
+            const prev = left;
+            left = op === "*"
+              ? (env) => prev(env) * right(env)
+              : (env) => prev(env) / right(env);
+          } else if (startsImplicitFactor(peek())) {
+            const right = parseUnary();
+            const prev = left;
+            left = (env) => prev(env) * right(env);
+          } else {
+            break;
+          }
+        }
+        return left;
+      }
+
+      function parseUnary() {
+        if (isOp(peek(), "+")) {
+          consume();
+          return parseUnary();
+        }
+        if (isOp(peek(), "-")) {
+          consume();
+          const operand = parseUnary();
+          return (env) => -operand(env);
+        }
+        return parsePower();
+      }
+
+      function parsePower() {
+        const base = parsePrimary();
+        if (isOp(peek(), "^")) {
+          consume();
+          const exp = parseUnary();
+          return (env) => Math.pow(base(env), exp(env));
+        }
+        return base;
+      }
+
+      function parsePrimary() {
+        const tok = peek();
+        if (!tok) throw new Error(`Unexpected end of expression '${src}'`);
+
+        if (tok.type === "num") {
+          consume();
+          const val = tok.value;
+          return () => val;
+        }
+
+        if (isOp(tok, "(")) {
+          consume();
+          const inner = parseAddSub();
+          if (!isOp(consume(), ")")) {
+            throw new Error(`Missing closing ')' in '${src}'`);
+          }
+          return inner;
+        }
+
+        if (tok.type === "id") {
+          consume();
+          const name = tok.value;
+
+          if (Object.prototype.hasOwnProperty.call(FUNCTIONS, name)) {
+            if (!isOp(peek(), "(")) {
+              throw new Error(`Function '${name}' must be followed by '(' in '${src}'`);
+            }
+            consume();
+            const args = [];
+            if (!isOp(peek(), ")")) {
+              args.push(parseAddSub());
+              while (isOp(peek(), ",")) {
+                consume();
+                args.push(parseAddSub());
+              }
+            }
+            if (!isOp(consume(), ")")) {
+              throw new Error(`Missing closing ')' after '${name}(...)' in '${src}'`);
+            }
+            const fn = FUNCTIONS[name];
+            return (env) => fn(...args.map((a) => a(env)));
+          }
+
+          if (Object.prototype.hasOwnProperty.call(CONSTANTS, name)) {
+            const cval = CONSTANTS[name];
+            return () => cval;
+          }
+
+          if (allowedVars && !allowedVars.has(name)) {
+            throw new Error(`Disallowed variable '${name}' in '${src}'`);
+          }
+          usedVars.add(name);
+          return (env) => env[name];
+        }
+
+        throw new Error(`Unexpected token '${tok.value}' in '${src}'`);
+      }
+
+      const fn = parseAddSub();
+      if (pos < tokens.length) {
+        throw new Error(`Unexpected trailing token '${tokens[pos].value}' in '${src}'`);
+      }
+      return { eval: fn, vars: usedVars };
+    }
+
+    // Compiles an expression, normalizing "lhs = rhs" into "lhs - rhs = 0" when permitted
+    function compile(rawExpr, { allowedVars = null, allowEquals = false } = {}) {
+      const parts = rawExpr.split("=");
+      if (parts.length > 2) {
+        throw new Error(`Expression '${rawExpr}' cannot contain multiple '=' signs`);
+      }
+      if (parts.length === 2) {
+        if (!allowEquals) {
+          throw new Error(`Explicit expression '${rawExpr}' must not contain '='`);
+        }
+        const lhs = compileSingle(parts[0], allowedVars);
+        const rhs = compileSingle(parts[1], allowedVars);
+        const vars = new Set([...lhs.vars, ...rhs.vars]);
+        return {
+          hasEquals: true,
+          vars,
+          eval: (env) => lhs.eval(env) - rhs.eval(env)
+        };
+      }
+      const single = compileSingle(parts[0], allowedVars);
+      return {
+        hasEquals: false,
+        vars: single.vars,
+        eval: single.eval
+      };
+    }
+
+    return { compile };
+  })();
+
+  // Domain sampling and axis range resolution utilities
+  const Domain = {
+    // Generates evenly spaced points in linear or base-10 logarithmic coordinates
+    sampleAxis(range, count, scale = "linear") {
+      const [min, max] = range;
+      const pts = new Array(count);
+      if (scale === "log") {
+        if (min <= 0 || max <= 0) {
+          throw new Error(`Logarithmic axis requires positive bounds (got [${min}, ${max}])`);
+        }
+        const logMin = Math.log10(min);
+        const logMax = Math.log10(max);
+        const step = (logMax - logMin) / (count - 1);
+        for (let i = 0; i < count; i++) {
+          pts[i] = Math.pow(10, logMin + i * step);
+        }
+      } else {
+        const step = (max - min) / (count - 1);
+        for (let i = 0; i < count; i++) {
+          pts[i] = min + i * step;
+        }
+      }
+      return pts;
+    },
+
+    // Computes finite [min, max] bounds across an array of numeric values
+    extent(values, positiveOnly = false) {
+      let min = Infinity;
+      let max = -Infinity;
+      for (let i = 0; i < values.length; i++) {
+        const v = values[i];
+        if (!Number.isFinite(v)) continue;
+        if (positiveOnly && v <= 0) continue;
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+      return min <= max ? [min, max] : null;
+    },
+
+    // Resolves axis domain from plot overrides, function overrides, file extents, or defaults
+    resolveAxisRange(plotRange, defRange, dataExtent, scale) {
+      if (plotRange) return plotRange;
+      if (defRange) return defRange;
+      if (dataExtent) {
+        if (dataExtent[0] === dataExtent[1]) {
+          const c = dataExtent[0];
+          return scale === "log" ? [c * 0.5, c * 2] : [c - 1, c + 1];
+        }
+        return dataExtent;
+      }
+      return scale === "log" ? [0.1, 100] : [-10, 10];
+    }
+  };
+
+  // Compiles and samples analytical expressions (2D/3D explicit and 2D/3D implicit)
+  const FunctionBuilder = (() => {
+    const ALLOWED_VARS = new Set(["x", "y", "z"]);
+
+    // Classifies an expression by '=' presence and variable set {x, y, z}
+    function prepare(def) {
+      const compiled = MathExpr.compile(def.expr, {
+        allowedVars: ALLOWED_VARS,
+        allowEquals: true
+      });
+      const hasY = compiled.vars.has("y");
+      const hasZ = compiled.vars.has("z");
+
+      if (!compiled.hasEquals) {
+        if (hasZ) {
+          throw new Error(`Function '${def.id}': explicit expression '${def.expr}' cannot contain 'z' (use '=' for implicit 3D surfaces)`);
+        }
+        return {
+          id: def.id,
+          kind: "function",
+          dim: hasY ? "3d" : "2d",
+          subtype: hasY ? "3d-explicit" : "2d-explicit",
+          isSweep: false,
+          def,
+          compiled
+        };
+      }
+
+      return {
+        id: def.id,
+        kind: "function",
+        dim: hasZ ? "3d" : "2d",
+        subtype: hasZ ? "3d-implicit" : "2d-implicit",
+        isSweep: false,
+        def,
+        compiled
+      };
+    }
+
+    // Evaluates a prepared analytical function across the resolved plot domains
+    function evaluate(spec, domains, scales) {
+      const { def, compiled, subtype } = spec;
+      const { xrange, yrange, zrange } = domains;
+      const env = { x: 0, y: 0, z: 0 };
+
+      if (subtype === "2d-explicit") {
+        const n = def.points || 100;
+        const xs = Domain.sampleAxis(xrange, n, scales.xscale);
+        const ys = xs.map((x) => {
+          env.x = x;
+          const v = compiled.eval(env);
+          return Number.isFinite(v) ? v : null;
+        });
+        const smooth = def.smooth !== null && def.smooth !== undefined ? def.smooth : true;
+        return {
+          type: "scatter",
+          name: def.label,
+          x: xs,
+          y: ys,
+          mode: def.mode,
+          line: { shape: smooth ? "spline" : "linear" },
+          connectgaps: false
+        };
+      }
+
+      if (subtype === "2d-implicit") {
+        const n = def.points || 60;
+        const xs = Domain.sampleAxis(xrange, n, scales.xscale);
+        const ys = Domain.sampleAxis(yrange, n, scales.yscale);
+        const zGrid = ys.map((y) => {
+          env.y = y;
+          return xs.map((x) => {
+            env.x = x;
+            const v = compiled.eval(env);
+            return Number.isFinite(v) ? v : null;
+          });
+        });
+        return {
+          type: "contour",
+          name: def.label,
+          x: xs,
+          y: ys,
+          z: zGrid,
+          contours: {
+            coloring: "lines",
+            start: 0,
+            end: 0,
+            size: 1
+          },
+          line: { width: 2.5 },
+          showscale: false,
+          showlegend: true
+        };
+      }
+
+      if (subtype === "3d-explicit") {
+        const n = def.points || 60;
+        const xs = Domain.sampleAxis(xrange, n, scales.xscale);
+        const ys = Domain.sampleAxis(yrange, n, scales.yscale);
+        const zGrid = ys.map((y) => {
+          env.y = y;
+          return xs.map((x) => {
+            env.x = x;
+            const v = compiled.eval(env);
+            return Number.isFinite(v) ? v : null;
+          });
+        });
+        return {
+          type: "surface",
+          name: def.label,
+          x: xs,
+          y: ys,
+          z: zGrid,
+          showscale: false,
+          showlegend: true
+        };
+      }
+
+      // Evaluates 3D implicit surfaces F(x, y, z) = 0 on a volumetric grid
+      const n = def.points || 25;
+      const xs = Domain.sampleAxis(xrange, n, scales.xscale);
+      const ys = Domain.sampleAxis(yrange, n, scales.yscale);
+      const zs = Domain.sampleAxis(zrange, n, scales.zscale);
+      const total = n * n * n;
+      const flatX = new Array(total);
+      const flatY = new Array(total);
+      const flatZ = new Array(total);
+      const flatVal = new Array(total);
+
+      let idx = 0;
+      for (let ix = 0; ix < n; ix++) {
+        env.x = xs[ix];
+        for (let iy = 0; iy < n; iy++) {
+          env.y = ys[iy];
+          for (let iz = 0; iz < n; iz++) {
+            env.z = zs[iz];
+            const v = compiled.eval(env);
+            flatX[idx] = xs[ix];
+            flatY[idx] = ys[iy];
+            flatZ[idx] = zs[iz];
+            flatVal[idx] = Number.isFinite(v) ? v : NaN;
+            idx++;
+          }
+        }
+      }
+
+      return {
+        type: "isosurface",
+        name: def.label,
+        x: flatX,
+        y: flatY,
+        z: flatZ,
+        value: flatVal,
+        isomin: 0,
+        isomax: 0,
+        surface: { count: 1 },
+        caps: { x: { show: false }, y: { show: false }, z: { show: false } },
+        showscale: false,
+        showlegend: true
+      };
+    }
+
+    return { prepare, evaluate };
+  })();
+
+  // Compiles tabular file rows into static 2D/3D traces or slider-driven parameter sweeps
+  const FileBuilder = (() => {
+    function buildColumnVars(numCols) {
+      const vars = new Set();
+      for (let i = 0; i < numCols; i++) vars.add(`c${i}`);
+      return vars;
+    }
+
+    function rowToEnv(row, target = {}) {
+      for (let i = 0; i < row.length; i++) target[`c${i}`] = row[i];
+      return target;
+    }
+
+    function parseColIndex(token, numCols, id) {
+      const m = token.trim().match(/^c(\d+)$/);
+      if (!m) {
+        throw new Error(`File '${id}': invalid column identifier '${token.trim()}' (expected c0..c${numCols - 1})`);
+      }
+      const idx = parseInt(m[1], 10);
+      if (idx < 0 || idx >= numCols) {
+        throw new Error(`File '${id}': column 'c${idx}' out of range (file has ${numCols} columns: c0..c${numCols - 1})`);
+      }
+      return idx;
+    }
+
+    function parseSweepCols(spec, numCols, id) {
+      const rangeMatch = spec.trim().match(/^(c\d+)\s*\.\.\s*(c\d+)$/);
+      if (rangeMatch) {
+        const start = parseColIndex(rangeMatch[1], numCols, id);
+        const end = parseColIndex(rangeMatch[2], numCols, id);
+        if (start > end) {
+          throw new Error(`File '${id}': column range '${spec}' must be ascending`);
+        }
+        const cols = [];
+        for (let c = start; c <= end; c++) cols.push(c);
+        return cols;
+      }
+      const cols = spec.split(",").map((tok) => parseColIndex(tok, numCols, id));
+      if (cols.length === 0) {
+        throw new Error(`File '${id}': 'y' sweep list cannot be empty`);
+      }
+      return cols;
+    }
+
+    function parseSweepParams(spec, count, id) {
+      const rangeMatch = spec.trim().match(/^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)\s*\.\.\s*([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)$/);
+      if (rangeMatch) {
+        if (count < 2) {
+          throw new Error(`File '${id}': 'param' range '${spec}' requires at least 2 sweep columns`);
+        }
+        const start = Number(rangeMatch[1]);
+        const end = Number(rangeMatch[2]);
+        const step = (end - start) / (count - 1);
+        const vals = new Array(count);
+        for (let i = 0; i < count; i++) vals[i] = start + i * step;
+        return vals;
+      }
+
+      const vals = spec.split(",").map((s) => {
+        const trimmed = s.trim();
+        const num = Number(trimmed);
+        if (trimmed === "" || !Number.isFinite(num)) {
+          throw new Error(`File '${id}': non-numeric parameter value '${trimmed}' in 'param'`);
+        }
+        return num;
+      });
+
+      if (vals.length !== count) {
+        throw new Error(`File '${id}': 'param' has ${vals.length} values, but 'y' selects ${count} columns`);
+      }
+      return vals;
+    }
+
+    function formatParamLabel(val) {
+      const abs = Math.abs(val);
+      if (abs > 0 && (abs < 1e-3 || abs >= 1e4)) return val.toExponential(2);
+      return Number(val.toFixed(4)).toString();
+    }
+
+    // Evaluates column expressions for a file definition
+    function prepare(def) {
+      const rows = def.rows;
+      const numCols = rows[0].length;
+      const colVars = buildColumnVars(numCols);
+      const xExpr = MathExpr.compile(def.x, { allowedVars: colVars, allowEquals: false });
+
+      const env = {};
+      const xs = rows.map((r) => {
+        const v = xExpr.eval(rowToEnv(r, env));
+        return Number.isFinite(v) ? v : null;
+      });
+
+      // Parameter-sweep mode (active when 'param' is provided)
+      if (def.param !== null && def.param !== undefined) {
+        const cols = parseSweepCols(def.y, numCols, def.id);
+        const params = parseSweepParams(def.param, cols.length, def.id);
+
+        let transformExpr = null;
+        if (def.transform) {
+          const transformVars = new Set(["y", ...colVars]);
+          transformExpr = MathExpr.compile(def.transform, {
+            allowedVars: transformVars,
+            allowEquals: false
+          });
+        }
+
+        const ySeries = cols.map((colIdx) =>
+          rows.map((r) => {
+            const rawY = r[colIdx];
+            if (!transformExpr) return rawY;
+            rowToEnv(r, env);
+            env.y = rawY;
+            const v = transformExpr.eval(env);
+            return Number.isFinite(v) ? v : null;
+          })
+        );
+
+        const frames = params.map((pVal, idx) => ({
+          name: String(idx),
+          data: [{ x: xs, y: ySeries[idx] }]
+        }));
+
+        return {
+          id: def.id,
+          kind: "file",
+          dim: "2d",
+          isSweep: true,
+          xs,
+          ys: ySeries.flat(),
+          zs: null,
+          initialTrace: {
+            type: "scatter",
+            name: def.label,
+            x: xs,
+            y: ySeries[0],
+            mode: def.mode,
+            line: { shape: def.smooth ? "spline" : "linear" }
+          },
+          frames,
+          params: params.map(formatParamLabel),
+          paramLabel: def.paramLabel,
+          play: def.play
+        };
+      }
+
+      // Static 2D or 3D file curve
+      const yExpr = MathExpr.compile(def.y, { allowedVars: colVars, allowEquals: false });
+      const ys = rows.map((r) => {
+        const v = yExpr.eval(rowToEnv(r, env));
+        return Number.isFinite(v) ? v : null;
+      });
+
+      if (def.z) {
+        const zExpr = MathExpr.compile(def.z, { allowedVars: colVars, allowEquals: false });
+        const zs = rows.map((r) => {
+          const v = zExpr.eval(rowToEnv(r, env));
+          return Number.isFinite(v) ? v : null;
+        });
+
+        return {
+          id: def.id,
+          kind: "file",
+          dim: "3d",
+          isSweep: false,
+          xs,
+          ys,
+          zs,
+          trace: {
+            type: "scatter3d",
+            name: def.label,
+            x: xs,
+            y: ys,
+            z: zs,
+            mode: def.mode,
+            marker: { size: 3.5 }
+          }
+        };
+      }
+
+      return {
+        id: def.id,
+        kind: "file",
+        dim: "2d",
+        isSweep: false,
+        xs,
+        ys,
+        zs: null,
+        trace: {
+          type: "scatter",
+          name: def.label,
+          x: xs,
+          y: ys,
+          mode: def.mode,
+          line: { shape: def.smooth ? "spline" : "linear" }
+        }
+      };
+    }
+
+    return { prepare };
+  })();
+
+  // Synchronizes Plotly axis, font, and control colors with active Bootstrap CSS variables
+  const ThemeSync = {
+    getPalette() {
+      const styles = getComputedStyle(document.body);
+      const textColor = styles.getPropertyValue("--bs-body-color").trim() || "#212529";
+      const borderColor = styles.getPropertyValue("--bs-border-color").trim() || "#dee2e6";
+      const bgColor = styles.getPropertyValue("--bs-body-bg").trim() || "#ffffff";
+      const gridColor = `color-mix(in srgb, ${borderColor} 55%, transparent)`;
+
+      return { textColor, borderColor, bgColor, gridColor };
+    },
+
+    buildAxisTheme(titleText, scale, range, p) {
+      const axis = {
+        type: scale,
+        color: p.textColor,
+        gridcolor: p.gridColor,
+        linecolor: p.borderColor,
+        zerolinecolor: p.borderColor,
+        tickfont: { color: p.textColor }
+      };
+      if (titleText) axis.title = { text: titleText, font: { color: p.textColor } };
+      if (range) {
+        axis.range = scale === "log" ? [Math.log10(range[0]), Math.log10(range[1])] : range;
+        axis.autorange = false;
+      }
+      return axis;
+    },
+
+    buildThemeRelayout(hasSlider, is3d) {
+      const p = this.getPalette();
+      const base = {
+        "font.color": p.textColor,
+        "legend.font.color": p.textColor,
+        "hoverlabel.bgcolor": p.bgColor,
+        "hoverlabel.bordercolor": p.borderColor,
+        "hoverlabel.font.color": p.textColor
+      };
+
+      if (is3d) {
+        for (const ax of ["xaxis", "yaxis", "zaxis"]) {
+          base[`scene.${ax}.color`] = p.textColor;
+          base[`scene.${ax}.gridcolor`] = p.gridColor;
+          base[`scene.${ax}.linecolor`] = p.borderColor;
+          base[`scene.${ax}.backgroundcolor`] = "rgba(0,0,0,0)";
+        }
+      } else {
+        for (const ax of ["xaxis", "yaxis"]) {
+          base[`${ax}.color`] = p.textColor;
+          base[`${ax}.gridcolor`] = p.gridColor;
+          base[`${ax}.linecolor`] = p.borderColor;
+          base[`${ax}.zerolinecolor`] = p.borderColor;
+        }
+      }
+
+      if (hasSlider) {
+        base["sliders[0].font.color"] = p.textColor;
+        base["sliders[0].bordercolor"] = p.borderColor;
+        base["sliders[0].bgcolor"] = p.bgColor;
+      }
+      return base;
+    }
+  };
+
+  // Controller managing Plotly canvas composition, zoom resampling, and theme synchronization
+  class DynamicPlotController {
+    constructor(wrapEl, registry) {
+      this.wrapEl = wrapEl;
+      this.registry = registry;
+      this.cfg = JSON.parse(wrapEl.dataset.plotConfig || "{}");
+      this.canvas = null;
+      this.is3d = false;
+      this.hasSlider = false;
+      this.isResampling = false;
+      this.homeDomains = null;
+      this.specs = [];
+
+      try {
+        this.mount();
+      } catch (err) {
+        this.renderError(err.message || String(err));
+      }
+    }
+
+    // Displays a formatted configuration error message inside the plot container
+    renderError(msg) {
+      this.wrapEl.innerHTML = "";
+      const box = document.createElement("div");
+      box.className = "dynamic-plot-error";
+      box.textContent = `[dynamic-plot] ${msg}`;
+      this.wrapEl.appendChild(box);
+    }
+
+    // Validates referenced curve IDs, dimensionality consistency, and sweep uniqueness
+    resolveSpecs() {
+      const specs = this.cfg.curves.map((id) => {
+        const spec = this.registry.get(id);
+        if (!spec) {
+          throw new Error(`Unknown curve ID '${id}' (define it with ::: {.plot-function id="${id}"} or ::: {.plot-file id="${id}"})`);
+        }
+        return spec;
+      });
+
+      const dims = new Set(specs.map((s) => s.dim));
+      if (dims.size > 1) {
+        throw new Error("Cannot mix 2D and 3D curves in the same dynamic-plot");
+      }
+
+      const sweeps = specs.filter((s) => s.isSweep);
+      if (sweeps.length > 1) {
+        throw new Error("Cannot combine multiple parameter-sweep curves in the same dynamic-plot");
+      }
+
+      this.is3d = dims.has("3d");
+      this.hasSlider = sweeps.length === 1;
+      // Place any sweep curve at trace index 0 so animation frames target traces: [0]
+      this.specs = this.hasSlider
+        ? [sweeps[0], ...specs.filter((s) => !s.isSweep)]
+        : specs;
+    }
+
+    // Resolves initial x, y, and z domains across plot config, function overrides, and file bounds
+    computeInitialDomains() {
+      const fileSpecs = this.specs.filter((s) => s.kind === "file");
+      const fnSpecs = this.specs.filter((s) => s.kind === "function");
+
+      const fileX = Domain.extent(fileSpecs.flatMap((s) => s.xs), this.cfg.xscale === "log");
+      const fileY = Domain.extent(fileSpecs.flatMap((s) => s.ys), this.cfg.yscale === "log");
+      const fileZ = this.is3d
+        ? Domain.extent(fileSpecs.flatMap((s) => s.zs || []), this.cfg.zscale === "log")
+        : null;
+
+      const fnX = fnSpecs.find((s) => s.def.xrange)?.def.xrange || null;
+      const fnY = fnSpecs.find((s) => s.def.yrange)?.def.yrange || null;
+      const fnZ = fnSpecs.find((s) => s.def.zrange)?.def.zrange || null;
+
+      return {
+        xrange: Domain.resolveAxisRange(this.cfg.xrange, fnX, fileX, this.cfg.xscale),
+        yrange: Domain.resolveAxisRange(this.cfg.yrange, fnY, fileY, this.cfg.yscale),
+        zrange: this.is3d ? Domain.resolveAxisRange(this.cfg.zrange, fnZ, fileZ, this.cfg.zscale) : null
+      };
+    }
+
+    // Evaluates analytical traces and collects pre-built file traces
+    buildTraces(domains) {
+      const scales = {
+        xscale: this.cfg.xscale,
+        yscale: this.cfg.yscale,
+        zscale: this.cfg.zscale
+      };
+      return this.specs.map((spec) => {
+        if (spec.kind === "function") {
+          return FunctionBuilder.evaluate(spec, domains, scales);
+        }
+        return spec.isSweep ? spec.initialTrace : spec.trace;
+      });
+    }
+
+    // Constructs the Plotly layout object including axes, theme colors, and optional sweep slider
+    buildLayout(palette) {
+      const layout = {
+        height: this.cfg.height,
+        margin: this.is3d ? { l: 10, r: 10, t: 25, b: 10 } : { l: 60, r: 25, t: 25, b: 55 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: { color: palette.textColor },
+        showlegend: this.specs.length > 1 || this.specs[0].def?.label !== this.specs[0].id,
+        legend: { font: { color: palette.textColor } },
+        hoverlabel: {
+          bgcolor: palette.bgColor,
+          bordercolor: palette.borderColor,
+          font: { color: palette.textColor }
+        }
+      };
+
+      if (this.is3d) {
+        layout.scene = {
+          xaxis: ThemeSync.buildAxisTheme(this.cfg.xlabel || "x", this.cfg.xscale, this.cfg.xrange, palette),
+          yaxis: ThemeSync.buildAxisTheme(this.cfg.ylabel || "y", this.cfg.yscale, this.cfg.yrange, palette),
+          zaxis: ThemeSync.buildAxisTheme(this.cfg.zlabel || "z", this.cfg.zscale, this.cfg.zrange, palette)
+        };
+      } else {
+        layout.xaxis = ThemeSync.buildAxisTheme(this.cfg.xlabel, this.cfg.xscale, this.cfg.xrange, palette);
+        layout.yaxis = ThemeSync.buildAxisTheme(this.cfg.ylabel, this.cfg.yscale, this.cfg.yrange, palette);
+      }
+
+      if (this.hasSlider) {
+        const sweepSpec = this.specs[0];
+        layout.margin.b = sweepSpec.play ? 115 : 95;
+        layout.sliders = [{
+          active: 0,
+          pad: { t: 35, b: 5 },
+          len: sweepSpec.play ? 0.82 : 1.0,
+          x: sweepSpec.play ? 0.18 : 0.0,
+          currentvalue: {
+            visible: true,
+            prefix: `${sweepSpec.paramLabel}: `,
+            font: { color: palette.textColor, size: 13 }
+          },
+          font: { color: palette.textColor },
+          bordercolor: palette.borderColor,
+          bgcolor: palette.bgColor,
+          steps: sweepSpec.params.map((label, idx) => ({
+            label,
+            method: "animate",
+            args: [[String(idx)], {
+              mode: "immediate",
+              transition: { duration: 0 },
+              frame: { duration: 0, redraw: false }
+            }]
+          }))
+        }];
+
+        if (sweepSpec.play) {
+          layout.updatemenus = [{
+            type: "buttons",
+            showactive: false,
+            x: 0,
+            y: -0.18,
+            xanchor: "left",
+            yanchor: "top",
+            direction: "left",
+            pad: { t: 10, r: 8 },
+            font: { color: palette.textColor },
+            bgcolor: palette.bgColor,
+            bordercolor: palette.borderColor,
+            buttons: [
+              {
+                label: "Play",
+                method: "animate",
+                args: [null, {
+                  fromcurrent: true,
+                  transition: { duration: 0 },
+                  frame: { duration: 250, redraw: false }
+                }]
+              },
+              {
+                label: "Pause",
+                method: "animate",
+                args: [[null], {
+                  mode: "immediate",
+                  transition: { duration: 0 },
+                  frame: { duration: 0, redraw: false }
+                }]
+              }
+            ]
+          }];
+        }
+      }
+
+      return layout;
+    }
+
+    // Re-evaluates 2D analytical curves across visible bounds on user zoom or pan
+    attachZoomResampler() {
+      if (this.is3d || !this.specs.some((s) => s.kind === "function")) return;
+
+      this.canvas.on("plotly_relayout", (ev) => {
+        if (this.isResampling || !ev) return;
+
+        let nextX = null;
+        let nextY = null;
+
+        if (ev["xaxis.autorange"] || ev["yaxis.autorange"]) {
+          nextX = this.homeDomains.xrange;
+          nextY = this.homeDomains.yrange;
+        } else if (ev["xaxis.range[0]"] !== undefined && ev["xaxis.range[1]"] !== undefined) {
+          const r0 = Number(ev["xaxis.range[0]"]);
+          const r1 = Number(ev["xaxis.range[1]"]);
+          nextX = this.cfg.xscale === "log" ? [Math.pow(10, r0), Math.pow(10, r1)] : [r0, r1];
+
+          if (ev["yaxis.range[0]"] !== undefined && ev["yaxis.range[1]"] !== undefined) {
+            const y0 = Number(ev["yaxis.range[0]"]);
+            const y1 = Number(ev["yaxis.range[1]"]);
+            nextY = this.cfg.yscale === "log" ? [Math.pow(10, y0), Math.pow(10, y1)] : [y0, y1];
+          } else {
+            nextY = this.homeDomains.yrange;
+          }
+        } else {
+          return;
+        }
+
+        if (!Number.isFinite(nextX[0]) || !Number.isFinite(nextX[1]) || nextX[0] >= nextX[1]) return;
+
+        this.isResampling = true;
+        try {
+          const updatedTraces = this.buildTraces({ xrange: nextX, yrange: nextY, zrange: null });
+          Plotly.react(this.canvas, updatedTraces, this.canvas.layout, { responsive: true });
+        } finally {
+          this.isResampling = false;
+        }
+      });
+    }
+
+    // Mounts the Plotly graph into the container
+    mount() {
+      this.resolveSpecs();
+      this.homeDomains = this.computeInitialDomains();
+
+      this.canvas = document.createElement("div");
+      this.canvas.className = "dynamic-plot-canvas";
+      this.wrapEl.appendChild(this.canvas);
+
+      const palette = ThemeSync.getPalette();
+      const traces = this.buildTraces(this.homeDomains);
+      const layout = this.buildLayout(palette);
+
+      Plotly.newPlot(this.canvas, traces, layout, {
+        responsive: true,
+        displaylogo: false
+      });
+
+      if (this.hasSlider) {
+        Plotly.addFrames(this.canvas, this.specs[0].frames);
+      }
+
+      this.attachZoomResampler();
+    }
+
+    // Updates Plotly colors when the page theme switches between light and dark mode
+    syncTheme() {
+      if (!this.canvas || !this.canvas.layout) return;
+      Plotly.relayout(this.canvas, ThemeSync.buildThemeRelayout(this.hasSlider, this.is3d));
+    }
+  }
+
+  // Indexes plot definitions, mounts all dynamic plot containers, and observes theme changes
+  async function initDynamicPlots() {
+    if (typeof Plotly === "undefined") return;
+    await waitForMathJax();
+
+    const registry = new Map();
+    document.querySelectorAll("script.dynamic-plot-def").forEach((el) => {
+      try {
+        const def = JSON.parse(el.textContent);
+        const prepared = def.kind === "function"
+          ? FunctionBuilder.prepare(def)
+          : FileBuilder.prepare(def);
+        registry.set(def.id, prepared);
+      } catch (err) {
+        registry.set(el.dataset.id, { __error: err.message || String(err) });
+      }
+    });
+
+    const checkedRegistry = {
+      get(id) {
+        const item = registry.get(id);
+        if (item && item.__error) throw new Error(item.__error);
+        return item;
+      }
+    };
+
+    const controllers = [];
+    document.querySelectorAll(".dynamic-plot-wrap").forEach((wrap) => {
+      if (!wrap.dataset.initialized) {
+        wrap.dataset.initialized = "true";
+        controllers.push(new DynamicPlotController(wrap, checkedRegistry));
+      }
+    });
+
+    if (controllers.length === 0) return;
+
+    let lastDark = document.body.classList.contains("quarto-dark");
+    const syncAllThemes = () => {
+      const isDark = document.body.classList.contains("quarto-dark");
+      if (isDark === lastDark) return;
+      lastDark = isDark;
+      controllers.forEach((ctrl) => ctrl.syncTheme());
+    };
+
+    new MutationObserver(syncAllThemes).observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class"]
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initDynamicPlots);
+  } else {
+    initDynamicPlots();
+  }
+})();
+</script>
 
 </main> <!-- /main -->
 <style>
