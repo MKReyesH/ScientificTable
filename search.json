@@ -1,12 +1,5 @@
 [
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Scientific Table Template",
-    "section": "",
-    "text": "Welcome to the Scientific Table Template"
-  },
-  {
     "objectID": "about.html",
     "href": "about.html",
     "title": "About this Wiki",
@@ -42,6 +35,13 @@
     "text": "Scientific Units, LaTeX Math Numbers, and INSPIRE-HEP Citations\nThree specialized column tags support physical unit scaling, LaTeX scientific notation, and automated bibliography management:\n\nunits(Unit1: factor1, Unit2: factor2, ...): Implies number and adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor.\nlatexnum: Implies both number and latex, and transforms numeric cells into inline math expressions (1.057e-1 displayed as \\(1.06 \\times 10^{-1}\\)) that update automatically whenever the user switches units.\ninspire: Implies string and treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons, with or without a leading @). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP in batches, turns each valid key into a clickable [N] CitationKey link that highlights the target entry on click, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated.\n\n::: {.dynamic-table}\nsrc: data/example-table.csv\nsearchable: true\nper-page: 4\ncol 0: header=\"Sector\", dropdown\ncol 1: header=\"Particle\", latex\ncol 2: header=$m$, latexnum, units(GeV: 1, MeV: 1e3, TeV: 1e-3)\ncol 3: header=\"Discovery\", inspire, unsortable\n:::\n\n\n\n\n\n\\(\\)"
   },
   {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Scientific Table Template",
+    "section": "",
+    "text": "Welcome to the Scientific Table Template"
+  },
+  {
     "objectID": "doc/plots.html",
     "href": "doc/plots.html",
     "title": "How to create dynamic plots",
@@ -67,13 +67,13 @@
     "href": "doc/plots.html#plot-canvas-.dynamic-plot",
     "title": "How to create dynamic plots",
     "section": "Plot Canvas (.dynamic-plot)",
-    "text": "Plot Canvas (.dynamic-plot)\nThe ::: {.dynamic-plot} block mounts the responsive Plotly canvas and configures axes and interactive controls:\n\ncurves: Comma-separated list of .plot-function and/or .plot-file IDs to display together (required). All curves in a plot must share the same dimensionality (all 2D or all 3D), with at most one parameter-sweep curve per canvas.\nxlabel, ylabel, zlabel: Axis titles, supporting inline LaTeX math ($ ... $, \\( ... \\)). In 3D scenes, axes default to x, y, and z.\nxscale, yscale, zscale: Axis scaling (linear or log, default linear).\nxrange, yrange, zrange: Explicit axis bounds formatted as [min, max] (min &lt; max; bounds must be strictly positive when the corresponding axis uses log scale).\nheight: Canvas height in pixels, integer \\(\\ge 200\\) (default 480). Width automatically fills 100% of the enclosing Quarto container.\nlegend: Shows or hides the collapsible right-hand legend sidebar with per-curve visibility checkboxes (true or false, default true; when false, no legend is shown).\nplay: Adds a Play/Pause animation toggle button next to the parameter slider (true or false, default false). Valid only when curves includes a parameter-sweep curve."
+    "text": "Plot Canvas (.dynamic-plot)\nThe ::: {.dynamic-plot} block mounts the responsive Plotly canvas and configures axes and interactive controls:\n\ncurves: Comma-separated list of .plot-function and/or .plot-file IDs to display together (required). All curves in a plot must share the same dimensionality (all 2D or all 3D), with at most one parameter-sweep curve per canvas.\nxlabel, ylabel, zlabel: Axis titles, supporting inline LaTeX math ($ ... $, \\( ... \\)). In 3D scenes, axes default to x, y, and z.\nxscale, yscale, zscale: Axis scaling (linear or log, default linear).\nxrange, yrange, zrange: Initial visible axis bounds formatted as [min, max] (min &lt; max; bounds must be strictly positive when the corresponding axis uses log scale).\nwidth, height: Canvas dimensions in pixels, integer \\(\\ge 200\\) (height defaults to 480; width defaults to 100% of the enclosing container).\nlegend: Shows or hides the collapsible right-hand legend sidebar with per-curve visibility checkboxes (true or false, default true; when false, no legend is shown).\nplay: Adds a Play/Pause animation toggle button next to the parameter slider (true or false, default false). Valid only when curves includes a parameter-sweep curve."
   },
   {
-    "objectID": "doc/plots.html#parameter-sweeps-and-3d-scenes",
-    "href": "doc/plots.html#parameter-sweeps-and-3d-scenes",
+    "objectID": "doc/plots.html#animated-parameter-sweeps",
+    "href": "doc/plots.html#animated-parameter-sweeps",
     "title": "How to create dynamic plots",
-    "section": "Parameter Sweeps and 3D Scenes",
-    "text": "Parameter Sweeps and 3D Scenes\nCombining sweep options in .plot-file with play: true in .dynamic-plot creates an animated slider plot:\n::: {.plot-file id=\"wave-sweep\"}\nsrc: data/example-plot-sweep.csv\nx: c0\ny: c1..c7\nparam: 0..3\nparam-label: $t$ [s]\nlabel: Wave amplitude\nsmooth: true\n:::\n\n::: {.dynamic-plot}\ncurves: wave-sweep\nxlabel: $x$ [m]\nylabel: $\\psi(x, t)$\nplay: true\nheight: 440\n:::\n\nCombining 3D .plot-function definitions (explicit \\(z = f(x, y)\\) surfaces or implicit = isosurfaces) with 3D .plot-file traces (z: specified) renders an interactive WebGL 3D scene:\n::: {.plot-function id=\"saddle-surface\"}\nexpr: 0.25 * (x^2 - y^2)\nlabel: $z = \\frac{1}{4}(x^2 - y^2)$\nxrange: [-1.5, 1.5]\nyrange: [-1.5, 1.5]\npoints: 40\n:::\n\n::: {.plot-function id=\"unit-sphere\"}\nexpr: x^2 + y^2 + z^2 = 1\nlabel: $x^2 + y^2 + z^2 = 1$\nxrange: [-1.2, 1.2]\nyrange: [-1.2, 1.2]\nzrange: [-1.2, 1.2]\npoints: 22\ncolor: #2ca02c\n:::\n\n::: {.plot-file id=\"helix-path\"}\nsrc: data/example-plot-3d.csv\nx: c0\ny: c1\nz: c2\nlabel: Helix trajectory\nmode: lines+markers\ncolor: #ff7f0e\n:::\n\n::: {.dynamic-plot}\ncurves: saddle-surface, unit-sphere, helix-path\nxlabel: x\nylabel: y\nzlabel: z\nheight: 500\n:::\n\n\n\n\n\\(\\)"
+    "section": "Animated Parameter Sweeps",
+    "text": "Animated Parameter Sweeps\nCombining sweep options in .plot-file with play: true in .dynamic-plot creates an interactive slider plot:\n::: {.plot-file id=\"wave-sweep\"}\nsrc: data/example-plot-sweep.csv\nx: c0\ny: c1..c7\nparam: 0..3\nparam-label: $t$ [s]\nlabel: Wave amplitude\nsmooth: true\n:::\n\n::: {.dynamic-plot}\ncurves: wave-sweep\nxlabel: $x$ [m]\nylabel: $\\psi(x, t)$\nplay: true\nheight: 440\n:::\n\n\n\n\n\\(\\)"
   }
 ]
