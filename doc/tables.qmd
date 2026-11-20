@@ -33,7 +33,7 @@ Global options are specified as `key: value` pairs at the top of the block:
 
 Individual columns are configured with `col N:`, using a **0-based index** (`col 0:` is the first column, `col 1:` is the second, and so on). Multiple properties for the same column are separated by commas:
 
-- `header=...`: Replaces the CSV header title. Enclose the title in quotes (`"..."` or `'...'`) if it contains commas; inline math expressions (such as `header=$E_{\text{LIV}}^{(1)}$`) are also supported when `latex` or `latexnum` is active (see below).
+- `header=...`: Replaces the CSV header title. Enclose the title in quotes (`"..."` or `'...'`) if it contains commas; inline math expressions (such as `header=$m$`) are also supported when `latex` or `latexnum` is active (see below).
 - `number` / `string`: Enforces numeric or alphabetical sorting instead of auto-detection (empty cells always sort to the bottom). Numeric columns automatically format extreme magnitudes ($\vert{}x\vert{} < 10^{-3}$ or $\vert{}x\vert{} \ge 10^4$) in exponential notation.
 - `sortable` / `unsortable`: Overrides the global `sortable` setting for that column.
 - `latex`: Renders any LaTeX math syntax (`$ ... $`, `$$ ... $$`, `\( ... \)`, or `\[ ... \]`) in both the column header and cell text via MathJax or KaTeX.
@@ -44,10 +44,10 @@ Individual columns are configured with `col N:`, using a **0-based index** (`col
 src: data/example-table.csv
 searchable: true
 per-page: 4
-col 0: header="Channel", dropdown
-col 1: header="Operator", latex
-col 2: header="Bound [GeV]", number
-col 3: header="Reference", unsortable
+col 0: header="Sector", dropdown
+col 1: header="Particle", latex
+col 2: header="Mass [GeV]", number
+col 3: header="Discovery", unsortable
 :::
 ```
 
@@ -55,10 +55,10 @@ col 3: header="Reference", unsortable
 src: data/example-table.csv
 searchable: true
 per-page: 4
-col 0: header="Channel", dropdown
-col 1: header="Operator", latex
-col 2: header="Bound [GeV]", number
-col 3: header="Reference", unsortable
+col 0: header="Sector", dropdown
+col 1: header="Particle", latex
+col 2: header="Mass [GeV]", number
+col 3: header="Discovery", unsortable
 :::
 
 ## Scientific Units, LaTeX Math Numbers, and INSPIRE-HEP Citations
@@ -66,7 +66,7 @@ col 3: header="Reference", unsortable
 Three specialized column tags support physical unit scaling, LaTeX scientific notation, and automated bibliography management:
 
 - `units(Unit1: factor1, Unit2: factor2, ...)`: Implies `number` and adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor.
-- `latexnum`: Implies both `number` and `latex`, and transform numeric cells into inline math expressions (`1.0e-16` displayed as $1.00 \times 10^{-16}$) that update automatically whenever the user switches units.
+- `latexnum`: Implies both `number` and `latex`, and transforms numeric cells into inline math expressions (`1.057e-1` displayed as $1.06 \times 10^{-1}$) that update automatically whenever the user switches units.
 - `inspire`: Implies `string` and treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons, with or without a leading `@`). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP in batches, turns each valid key into a clickable `[N] CitationKey` link that highlights the target entry on click, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated.
 
 ```markdown
@@ -74,10 +74,10 @@ Three specialized column tags support physical unit scaling, LaTeX scientific no
 src: data/example-table.csv
 searchable: true
 per-page: 4
-col 0: header="Channel", dropdown
-col 1: header="Operator", latex
-col 2: header=$E_{\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)
-col 3: header="References", inspire, unsortable
+col 0: header="Sector", dropdown
+col 1: header="Particle", latex
+col 2: header=$m$, latexnum, units(GeV: 1, MeV: 1e3, TeV: 1e-3)
+col 3: header="Discovery", inspire, unsortable
 :::
 ```
 
@@ -85,8 +85,8 @@ col 3: header="References", inspire, unsortable
 src: data/example-table.csv
 searchable: true
 per-page: 4
-col 0: header="Channel", dropdown
-col 1: header="Operator", latex
-col 2: header=$E_{\text{LIV}}^{(1)}$, latexnum, units(GeV: 1, TeV: 1e-3, Planck units: 8.19e-20)
-col 3: header="References", inspire, unsortable
+col 0: header="Sector", dropdown
+col 1: header="Particle", latex
+col 2: header=$m$, latexnum, units(GeV: 1, MeV: 1e3, TeV: 1e-3)
+col 3: header="Discovery", inspire, unsortable
 :::

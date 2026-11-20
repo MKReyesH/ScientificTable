@@ -1,31 +1,227 @@
 ---
-title: Dynamic plots
+title: 'How to create dynamic plots'
 ---
 
-::: {.plot-file id="channel-a"}
-src: data/example-plot1.dat
-x: c0
-y: c0^2 * c1
-label: Channel A ($E^2 \cdot \text{Bound}$)
+Static figures, as shown in the [Quarto Markdown Guide](/doc/Examples/example1.qmd), work well for fixed illustrations. For interactive scientific figures requiring zoomable 2D/3D canvases, analytical curve evaluation, tabular data overlays, LaTeX math labels, or animated parameter sweeps, this template provides a custom `dynamic-plots` filter powered by Plotly.
+
+# Decoupled Definitions and Canvas Blocks
+
+A dynamic plot is split into **curve definition blocks** (which register data or mathematical expressions without rendering anything on their own) and a **canvas block** (`::: {.dynamic-plot}`) that combines one or more curve IDs onto a single figure:
+
+- `::: {.plot-function id="..."}`: Defines an analytical 2D or 3D curve or implicit contour/surface.
+- `::: {.plot-file id="..."}`: Defines a 2D/3D trace or a slider-driven parameter sweep from a numeric data file.
+- `::: {.dynamic-plot}`: Mounts the interactive Plotly canvas, axis styling, collapsible legend sidebar, and sweep controls.
+
+Every `.plot-function` and `.plot-file` block requires a unique `id` attribute so it can be referenced inside `curves:` (and reused across multiple figures if needed).
+
+# Canvas Configuration (`dynamic-plot`)
+
+The `::: {.dynamic-plot}` block accepts `key: value` options controlling layout, axes, and interactive controls:
+
+- `curves`: Comma-separated list of `.plot-function` and/or `.plot-file` IDs to plot together (required). All curves in a plot must share the same dimensionality (all 2D or all 3D), and at most one parameter-sweep curve may be included per plot.
+- `xlabel`, `ylabel`, `zlabel`: Axis titles. Inline LaTeX math (`$ ... $`, `\( ... \)`) is rendered via MathJax or KaTeX.
+- `xscale`, `yscale`, `zscale`: Axis scaling (`linear` or `log`, default `linear`).
+- `xrange`, `yrange`, `zrange`: Explicit axis bounds formatted as `[min, max]`. Bounds must be strictly positive when the corresponding axis uses `log` scale.
+- `height`: Canvas height in pixels (integer $\ge 200$, default `480`).
+- `legend`: Shows or hides the collapsible right-hand legend sidebar with per-curve visibility checkboxes (`true` or `false`, default `true`).
+- `play`: Displays a compact Play/Pause animation button next to the parameter slider (`true` or `false`, default `false`). Only valid when `curves` includes a parameter-sweep curve.
+
+# Analytical Functions (`plot-function`)
+
+Use `::: {.plot-function id="..."}` to plot explicit functions or implicit equations without pre-generating data files:
+
+- `expr`: Mathematical expression (required). Supported forms:
+  - **2D explicit** (`y = f(x)`): Expression in `x` without `=` (e.g., `sin(x) / x`).
+  - **2D implicit** (`f(x, y) = g(x, y)`): Equation in `x` and `y` containing `=` (e.g., `x^2 + y^2 = 1`).
+  - **3D explicit** (`z = f(x, y)`): Expression in `x` and `y` without `=` (e.g., `x^2 - y^2`).
+  - **3D implicit** (`f(x, y, z) = g(x, y, z)`): Equation in `x`, `y`, and `z` containing `=` (e.g., `x^2 + y^2 + z^2 = 1`).
+- `label`: Legend title, supporting inline LaTeX math (default: the block's `id`).
+- `color`: Trace or surface CSS color, such as `#1f77b4`, `crimson`, or `rgb(31, 119, 180)` (default: automatic colorway).
+- `xrange`, `yrange`, `zrange`: Sampling domain `[min, max]` along each axis (default: the canvas range, co-plotted file extent, or `[-10, 10]`).
+- `points`: Sample resolution per axis, integer $\ge 2$ (defaults: `100` for 2D explicit, `60` for 2D implicit and 3D explicit, `25` per axis for 3D implicit).
+- `mode`: Drawing style for explicit 2D curves (`lines`, `markers`, or `lines+markers`, default `lines`).
+- `smooth`: Enables spline interpolation between sample points (`true` or `false`, default `true`).
+
+Expressions support `+`, `-`, `*`, `/`, `^`, implicit multiplication (`2x`, `x sin(x)`), constants (`pi`, `e`), and standard functions (`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `sinh`, `cosh`, `tanh`, `exp`, `log`, `ln`, `log10`, `log2`, `sqrt`, `abs`, `sign`, `floor`, `ceil`, `min`, `max`). Explicit 2D functions automatically resample when zooming or panning.
+
+```markdown
+::: {.plot-function id="wave-sin"}
+expr: sin(2 * x) * exp(-0.2 * x)
+label: $e^{-0.2x}\sin(2x)$
+xrange: [0, 8]
+color: #1f77b4
 :::
 
-::: {.plot-function id="theory-scaling"}
-expr: 1e-19 * x^2.4
-label: Theoretical scaling
+::: {.plot-function id="circle-eq"}
+expr: (x - 4)^2 + y^2 = 0.64
+label: $(x - 4)^2 + y^2 = 0.8^2$
+xrange: [0, 8]
+yrange: [-1.2, 1.2]
+color: crimson
 :::
 
 ::: {.dynamic-plot}
-curves: channel-a, theory-scaling
-xlabel: $E$ [GeV]
-ylabel: Rescaled Bound
-xscale: log
-yscale: log
+curves: wave-sin, circle-eq
+xlabel: $x$
+ylabel: $y(x)$
+yrange: [-1.2, 1.2]
+height: 400
+:::
+```
+
+::: {.plot-function id="wave-sin"}
+expr: sin(2 * x) * exp(-0.2 * x)
+label: $e^{-0.2x}\sin(2x)$
+xrange: [0, 8]
+color: #1f77b4
 :::
 
-::: {.plot-file id="wave-sweep"}
-src: data/example-plot2.dat
+::: {.plot-function id="circle-eq"}
+expr: (x - 4)^2 + y^2 = 0.64
+label: $(x - 4)^2 + y^2 = 0.8^2$
+xrange: [0, 8]
+yrange: [-1.2, 1.2]
+color: crimson
+:::
+
+::: {.dynamic-plot}
+curves: wave-sin, circle-eq
+xlabel: $x$
+ylabel: $y(x)$
+yrange: [-1.2, 1.2]
+height: 400
+:::
+
+# File-Backed Curves and Logarithmic Axes (`plot-file`)
+
+Use `::: {.plot-file id="..."}` to plot numeric columns from `.csv`, `.tsv`, or whitespace-delimited text files (blank lines and lines starting with `#`, `%`, or `//` are skipped automatically):
+
+- `src`: Path to the data file (required).
+- `x`: Column expression for the horizontal axis using **0-based column tokens** (`c0`, `c1`, `c2`, …) and any supported math operators or functions (required).
+- `y`: Column expression for the vertical axis (required).
+- `z`: Column expression for the third axis in 3D scatter/line plots.
+- `skip`: Number of leading non-comment header rows to ignore, integer $\ge 0$ (default `0`).
+- `label`: Legend title, supporting inline LaTeX math (default: the block's `id`).
+- `color`: Trace CSS color (default: automatic colorway).
+- `mode`: Drawing style (`lines`, `markers`, or `lines+markers`, default `lines+markers`).
+- `smooth`: Enables spline interpolation (`true` or `false`, default `false`).
+
+```markdown
+::: {.plot-file id="damped-data"}
+src: data/example-plot-damped.csv
+skip: 1
 x: c0
-y: c1..c4
+y: c1
+label: Measured amplitude
+mode: markers
+color: #ff7f0e
+:::
+
+::: {.plot-function id="damped-model"}
+expr: exp(-0.35 * x) * cos(2 * x)
+label: $e^{-0.35t}\cos(2t)$
+color: #1f77b4
+:::
+
+::: {.dynamic-plot}
+curves: damped-data, damped-model
+xlabel: Time $t$ [s]
+ylabel: Amplitude $A(t)$ [m]
+height: 400
+:::
+```
+
+::: {.plot-file id="damped-data"}
+src: data/example-plot-damped.csv
+skip: 1
+x: c0
+y: c1
+label: Measured amplitude
+mode: markers
+color: #ff7f0e
+:::
+
+::: {.plot-function id="damped-model"}
+expr: exp(-0.35 * x) * cos(2 * x)
+label: $e^{-0.35t}\cos(2t)$
+color: #1f77b4
+:::
+
+::: {.dynamic-plot}
+curves: damped-data, damped-model
+xlabel: Time $t$ [s]
+ylabel: Amplitude $A(t)$ [m]
+height: 400
+:::
+
+Setting `yscale: log` (or `xscale: log`) switches the corresponding axis to base-10 logarithmic scaling and automatically filters out non-positive values when computing default axis bounds:
+
+```markdown
+::: {.plot-file id="energy-data"}
+src: data/example-plot-damped.csv
+skip: 1
+x: c0
+y: c2
+label: Measured energy
+mode: markers
+color: #2ca02c
+:::
+
+::: {.plot-function id="energy-fit"}
+expr: exp(-0.70 * x)
+label: $E_0 e^{-0.70t}$
+color: #1f77b4
+:::
+
+::: {.dynamic-plot}
+curves: energy-data, energy-fit
+xlabel: Time $t$ [s]
+ylabel: Energy $E(t)$ [J]
+yscale: log
+height: 380
+:::
+```
+
+::: {.plot-file id="energy-data"}
+src: data/example-plot-damped.csv
+skip: 1
+x: c0
+y: c2
+label: Measured energy
+mode: markers
+color: #2ca02c
+:::
+
+::: {.plot-function id="energy-fit"}
+expr: exp(-0.70 * x)
+label: $E_0 e^{-0.70t}$
+color: #1f77b4
+:::
+
+::: {.dynamic-plot}
+curves: energy-data, energy-fit
+xlabel: Time $t$ [s]
+ylabel: Energy $E(t)$ [J]
+yscale: log
+height: 380
+:::
+
+# Parameter Sweeps and Animation
+
+When a data file stores multiple snapshots across columns, `.plot-file` can turn them into an interactive slider sweep:
+
+- `y`: Sweep column range (`c1..c7`) or explicit comma-separated column list (`c1, c3, c5, c7`).
+- `param`: Numeric parameter values mapped to the selected columns, written either as a uniform range (`0..3`) or an explicit list (`0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0`) matching the column count (required to enable sweep mode).
+- `param-label`: Label shown beside the live parameter readout, supporting inline LaTeX math (default `Parameter`).
+- `transform`: Optional expression applied to every sweep value `y` and any column tokens `cN` (e.g., `y^2` to plot squared amplitude).
+
+Adding `play: true` to the enclosing `::: {.dynamic-plot}` block places a Play/Pause toggle button directly before the parameter readout:
+
+```markdown
+::: {.plot-file id="wave-sweep"}
+src: data/example-plot-sweep.csv
+x: c0
+y: c1..c7
 param: 0..3
 param-label: $t$ [s]
 label: Wave amplitude
@@ -35,6 +231,18 @@ label: Wave amplitude
 curves: wave-sweep
 xlabel: $x$ [m]
 ylabel: $\psi(x, t)$
+play: true
+height: 440
+:::
+```
+
+::: {.plot-file id="wave-sweep"}
+src: data/example-plot-sweep.csv
+x: c0
+y: c1..c7
+param: 0..3
+param-label: $t$ [s]
+label: Wave amplitude
 :::
 
 ::: {.dynamic-plot}
@@ -42,4 +250,127 @@ curves: wave-sweep
 xlabel: $x$ [m]
 ylabel: $\psi(x, t)$
 play: true
+height: 440
+:::
+
+You can also derive transformed quantities on the fly with `transform:` and disable the sidebar with `legend: false` when plotting a single curve:
+
+```markdown
+::: {.plot-file id="wave-intensity"}
+src: data/example-plot-sweep.csv
+x: c0
+y: c1..c7
+param: 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0
+param-label: $t$ [s]
+transform: y^2
+label: $\vert{}\psi(x, t)\vert{}^2$
+color: #9467bd
+smooth: true
+:::
+
+::: {.dynamic-plot}
+curves: wave-intensity
+xlabel: $x$ [m]
+ylabel: $\vert{}\psi(x, t)\vert{}^2$
+legend: false
+height: 400
+:::
+```
+
+::: {.plot-file id="wave-intensity"}
+src: data/example-plot-sweep.csv
+x: c0
+y: c1..c7
+param: 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0
+param-label: $t$ [s]
+transform: y^2
+label: $|\psi(x, t)|^2$
+color: #9467bd
+smooth: true
+:::
+
+::: {.dynamic-plot}
+curves: wave-intensity
+xlabel: $x$ [m]
+ylabel: $|\psi(x, t)|^2$
+legend: false
+height: 400
+:::
+
+# 3D Surfaces, Implicit Volumes, and Trajectories
+
+Combining 3D `.plot-function` definitions (explicit surfaces or implicit `=` isosurfaces) with 3D `.plot-file` definitions (`z:` specified) renders an interactive WebGL 3D scene supporting orbit rotation, pan, zoom, and per-trace legend toggles:
+
+```markdown
+::: {.plot-function id="saddle-surface"}
+expr: 0.25 * (x^2 - y^2)
+label: $z = \frac{1}{4}(x^2 - y^2)$
+xrange: [-1.5, 1.5]
+yrange: [-1.5, 1.5]
+points: 40
+:::
+
+::: {.plot-function id="unit-sphere"}
+expr: x^2 + y^2 + z^2 = 1
+label: $x^2 + y^2 + z^2 = 1$
+xrange: [-1.2, 1.2]
+yrange: [-1.2, 1.2]
+zrange: [-1.2, 1.2]
+points: 22
+color: #2ca02c
+:::
+
+::: {.plot-file id="helix-path"}
+src: data/example-plot-3d.csv
+x: c0
+y: c1
+z: c2
+label: Helix trajectory
+mode: lines+markers
+color: #ff7f0e
+:::
+
+::: {.dynamic-plot}
+curves: saddle-surface, unit-sphere, helix-path
+xlabel: x
+ylabel: y
+zlabel: z
+height: 520
+:::
+```
+
+::: {.plot-function id="saddle-surface"}
+expr: 0.25 * (x^2 - y^2)
+label: $z = \frac{1}{4}(x^2 - y^2)$
+xrange: [-1.5, 1.5]
+yrange: [-1.5, 1.5]
+points: 40
+:::
+
+::: {.plot-function id="unit-sphere"}
+expr: x^2 + y^2 + z^2 = 1
+label: $x^2 + y^2 + z^2 = 1$
+xrange: [-1.2, 1.2]
+yrange: [-1.2, 1.2]
+zrange: [-1.2, 1.2]
+points: 22
+color: #2ca02c
+:::
+
+::: {.plot-file id="helix-path"}
+src: data/example-plot-3d.csv
+x: c0
+y: c1
+z: c2
+label: Helix trajectory
+mode: lines+markers
+color: #ff7f0e
+:::
+
+::: {.dynamic-plot}
+curves: saddle-surface, unit-sphere, helix-path
+xlabel: x
+ylabel: y
+zlabel: z
+height: 520
 :::
