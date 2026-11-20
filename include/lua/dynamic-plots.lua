@@ -512,15 +512,6 @@ local function validate_plots()
     end
 end
 
--- Detects malformed fenced divs that Pandoc left as raw paragraphs
-function Para(p)
-    local txt = U.trim(pandoc.utils.stringify(p))
-    if txt:match(":::%s*{%.plot%-function") or txt:match(":::%s*{%.plot%-file") or txt:match(":::%s*{%.dynamic%-plot") then
-        error(string.format("[%s] Error: Malformed fenced block (ensure a blank line before ':::' and a space after ':::'): %s", TAG, txt))
-    end
-    return nil
-end
-
 -- Pandoc filter hook for '.plot-function', '.plot-file', and '.dynamic-plot' fenced divs
 function Div(el)
     if el.classes:includes("plot-function") then
