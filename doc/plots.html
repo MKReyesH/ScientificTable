@@ -613,10 +613,10 @@ window.Quarto = {
 </header>
 
 
-<p>Static figures, as shown in the <a href="../doc/Examples/example1.qmd">Quarto Markdown Guide</a>, work well for fixed illustrations[cite: 10]. For interactive scientific plots requiring zoomable 2D/3D canvases, analytical curve evaluation, tabular data overlays, LaTeX math labels, or animated parameter sweeps, this template provides a custom <code>dynamic-plots</code> filter powered by Plotly[cite: 10].</p>
+<p>Static figures, as shown in the <a href="../doc/Examples/example1.qmd">Quarto Markdown Guide</a>, work well for fixed illustrations. For interactive scientific plots requiring zoomable 2D/3D canvases, analytical curve evaluation, tabular data overlays, LaTeX math labels, or animated parameter sweeps, this template provides a custom <code>dynamic-plots</code> filter powered by Plotly.</p>
 <section id="defining-curves-and-plotting-a-canvas" class="level1">
 <h1>Defining Curves and Plotting a Canvas</h1>
-<p>Unlike tables, dynamic plots separate <strong>curve definitions</strong> from the <strong>plot canvas</strong>[cite: 10]. Definition blocks (<code>::: {.plot-function id="..."}</code> or <code>::: {.plot-file id="..."}</code>) register mathematical expressions or data series without rendering anything on their own; a <code>::: {.dynamic-plot}</code> block then renders one or more registered IDs onto a single interactive canvas[cite: 10]:</p>
+<p>Dynamic plots separate <strong>curve definitions</strong> from the <strong>plot canvas</strong>. Definition blocks (<code>::: {.plot-function id="..."}</code> or <code>::: {.plot-file id="..."}</code>) register mathematical expressions or data series without rendering anything on their own; a <code>::: {.dynamic-plot}</code> block then renders one or more registered IDs onto a single interactive canvas:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>::: {.plot-function id="wave-sin"}</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>expr: sin(2 * x) * exp(-0.2 * x)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>label: $e^{-0.2x}\sin(2x)$</span>
@@ -642,76 +642,84 @@ window.Quarto = {
 </section>
 <section id="block-configuration" class="level1">
 <h1>Block Configuration</h1>
-<p>All plot blocks are configured using <code>key: value</code> pairs inside fenced divs[cite: 10]. Every <code>.plot-function</code> and <code>.plot-file</code> block requires a unique <code>id</code> attribute so it can be referenced in <code>curves:</code>[cite: 10].</p>
-<section id="canvas-options-.dynamic-plot" class="level2">
-<h2 class="anchored" data-anchor-id="canvas-options-.dynamic-plot">Canvas Options (<code>.dynamic-plot</code>)</h2>
-<p>The <code>::: {.dynamic-plot}</code> block controls axes, layout, and interactive widgets[cite: 10]:</p>
-<ul>
-<li><code>curves</code>: Comma-separated list of curve IDs to display together (required)[cite: 10]. All curves must share the same dimensionality (all 2D or all 3D), with at most one parameter-sweep curve per canvas[cite: 10].</li>
-<li><code>xlabel</code>, <code>ylabel</code>, <code>zlabel</code>: Axis titles, supporting inline LaTeX math (<code>$ ... $</code>, <code>\( ... \)</code>)[cite: 10].</li>
-<li><code>xscale</code>, <code>yscale</code>, <code>zscale</code>: Axis scaling (<code>linear</code> or <code>log</code>, default <code>linear</code>)[cite: 10].</li>
-<li><code>xrange</code>, <code>yrange</code>, <code>zrange</code>: Explicit axis bounds formatted as <code>[min, max]</code> (must be strictly positive for <code>log</code> axes)[cite: 10].</li>
-<li><code>height</code>: Canvas height in pixels (integer <span class="math inline">\(\ge 200\)</span>, default <code>480</code>)[cite: 10].</li>
-<li><code>legend</code>: Shows or hides the collapsible right-hand legend sidebar with per-curve visibility checkboxes (<code>true</code> or <code>false</code>, default <code>true</code>)[cite: 10].</li>
-<li><code>play</code>: Adds a Play/Pause animation toggle beside the parameter readout (<code>true</code> or <code>false</code>, default <code>false</code>, valid only when <code>curves</code> includes a sweep)[cite: 10].</li>
-</ul>
-</section>
+<p>All plot blocks are configured using <code>key: value</code> pairs inside fenced divs. Every <code>.plot-function</code> and <code>.plot-file</code> block requires a unique <code>id</code> attribute so it can be referenced in <code>curves:</code>.</p>
 <section id="analytical-functions-.plot-function" class="level2">
 <h2 class="anchored" data-anchor-id="analytical-functions-.plot-function">Analytical Functions (<code>.plot-function</code>)</h2>
-<p>Use <code>::: {.plot-function id="..."}</code> to evaluate explicit functions or implicit equations directly in the browser[cite: 10]:</p>
+<p>Use <code>::: {.plot-function id="..."}</code> to evaluate analytical expressions. Expressions support <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>^</code>, implicit multiplication (<code>2x</code>, <code>x sin(x)</code>), constants (<code>pi</code>, <code>e</code>), and standard functions (<code>sin</code>, <code>cos</code>, <code>tan</code>, <code>asin</code>, <code>acos</code>, <code>atan</code>, <code>sinh</code>, <code>cosh</code>, <code>tanh</code>, <code>exp</code>, <code>log</code>, <code>ln</code>, <code>log10</code>, <code>log2</code>, <code>sqrt</code>, <code>abs</code>, <code>sign</code>, <code>floor</code>, <code>ceil</code>, <code>min</code>, <code>max</code>):</p>
 <ul>
-<li><code>expr</code>: Mathematical expression (required)[cite: 10]. Expressions without <code>=</code> define explicit curves <code>y = f(x)</code> or surfaces <code>z = f(x, y)</code>; equations with <code>=</code> define implicit 2D contours <code>f(x, y) = g(x, y)</code> or 3D isosurfaces <code>f(x, y, z) = g(x, y, z)</code>[cite: 10]. Supports <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>^</code>, implicit multiplication (<code>2x</code>), constants (<code>pi</code>, <code>e</code>), and standard functions (<code>sin</code>, <code>cos</code>, <code>tan</code>, <code>asin</code>, <code>acos</code>, <code>atan</code>, <code>sinh</code>, <code>cosh</code>, <code>tanh</code>, <code>exp</code>, <code>log</code>, <code>ln</code>, <code>log10</code>, <code>log2</code>, <code>sqrt</code>, <code>abs</code>, <code>sign</code>, <code>floor</code>, <code>ceil</code>, <code>min</code>, <code>max</code>)[cite: 10]. Explicit 2D functions automatically resample on zoom and pan[cite: 10].</li>
-<li><code>label</code>: Legend entry, supporting inline LaTeX math (default: the block’s <code>id</code>)[cite: 10].</li>
-<li><code>color</code>: Trace or surface CSS color, such as <code>#1f77b4</code>, <code>crimson</code>, or <code>rgb(31, 119, 180)</code> (default: automatic colorway)[cite: 10].</li>
-<li><code>xrange</code>, <code>yrange</code>, <code>zrange</code>: Sampling domain <code>[min, max]</code> along each axis (default: canvas range, co-plotted file extent, or <code>[-10, 10]</code>)[cite: 10].</li>
-<li><code>points</code>: Sample resolution per axis, integer <span class="math inline">\(\ge 2\)</span> (defaults: <code>100</code> for 2D explicit, <code>60</code> for 2D implicit and 3D explicit, <code>25</code> per axis for 3D implicit)[cite: 10].</li>
-<li><code>mode</code>: Drawing style for explicit 2D curves (<code>lines</code>, <code>markers</code>, or <code>lines+markers</code>, default <code>lines</code>)[cite: 10].</li>
-<li><code>smooth</code>: Enables spline interpolation between sample points (<code>true</code> or <code>false</code>, default <code>true</code>)[cite: 10].</li>
+<li><code>expr</code>: Mathematical expression (required). Whether <code>=</code> is present determines how the expression is evaluated:
+<ul>
+<li><strong>Explicit</strong> (no <code>=</code>): Defines <span class="math inline">\(y = f(x)\)</span> in 2D (using <code>x</code>) or <span class="math inline">\(z = f(x, y)\)</span> in 3D (using <code>x</code> and <code>y</code>). Explicit expressions cannot contain <code>z</code>. 2D explicit curves sample along <code>xrange</code> only and automatically resample when zooming or panning.</li>
+<li><strong>Implicit</strong> (contains one <code>=</code>): Defines a 2D contour <span class="math inline">\(f(x, y) = g(x, y)\)</span> (using <code>x</code> and <code>y</code>) or a 3D isosurface <span class="math inline">\(f(x, y, z) = g(x, y, z)\)</span> (using <code>x</code>, <code>y</code>, and <code>z</code>). Because implicit equations are solved on a grid, they use sampling bounds along every active variable (<code>xrange</code> and <code>yrange</code> in 2D; <code>xrange</code>, <code>yrange</code>, and <code>zrange</code> in 3D), and <code>mode</code> and <code>smooth</code> are ignored.</li>
+</ul></li>
+<li><code>xrange</code>, <code>yrange</code>, <code>zrange</code>: Sampling domain <code>[min, max]</code> (<code>min &lt; max</code>) along each axis (default: the canvas range if set, otherwise the co-plotted file extent, or <code>[-10, 10]</code>).</li>
+<li><code>points</code>: Sample resolution per axis, integer <span class="math inline">\(\ge 2\)</span> (defaults: <code>100</code> for 2D explicit, <code>60</code> per axis for 2D implicit and 3D explicit, <code>25</code> per axis for 3D implicit).</li>
+<li><code>label</code>: Legend title, supporting inline LaTeX math (default: the block’s <code>id</code>).</li>
+<li><code>color</code>: Trace or surface color, passed directly as any valid CSS/Plotly color string (default: automatic colorway).</li>
+<li><code>mode</code>: Drawing style for explicit 2D curves (<code>lines</code>, <code>markers</code>, or <code>lines+markers</code>, default <code>lines</code>).</li>
+<li><code>smooth</code>: Enables spline interpolation between sample points on explicit 2D curves (<code>true</code> or <code>false</code>, default <code>true</code>).</li>
 </ul>
 </section>
-<section id="data-files-and-logarithmic-axes-.plot-file" class="level2">
-<h2 class="anchored" data-anchor-id="data-files-and-logarithmic-axes-.plot-file">Data Files and Logarithmic Axes (<code>.plot-file</code>)</h2>
-<p>Use <code>::: {.plot-file id="..."}</code> to plot numeric columns from <code>.csv</code>, <code>.tsv</code>, or whitespace-delimited text files (blank lines and lines starting with <code>#</code>, <code>%</code>, or <code>//</code> are ignored automatically)[cite: 10]:</p>
+<section id="data-files-.plot-file" class="level2">
+<h2 class="anchored" data-anchor-id="data-files-.plot-file">Data Files (<code>.plot-file</code>)</h2>
+<p>Use <code>::: {.plot-file id="..."}</code> to plot numeric columns from <code>.csv</code> (comma-separated) or whitespace/tab-delimited text files (blank lines and comment lines starting with <code>#</code>, <code>%</code>, or <code>//</code> are ignored automatically):</p>
 <ul>
-<li><code>src</code>: Path to the input data file (required)[cite: 10].</li>
-<li><code>x</code>, <code>y</code>, <code>z</code>: Column expressions using <strong>0-based column tokens</strong> (<code>c0</code>, <code>c1</code>, <code>c2</code>, …) and any supported math operators or functions (<code>x</code> and <code>y</code> required; <code>z</code> enables 3D scatter/line traces)[cite: 10].</li>
-<li><code>skip</code>: Number of leading non-comment header rows to ignore, integer <span class="math inline">\(\ge 0\)</span> (default <code>0</code>)[cite: 10].</li>
-<li><code>label</code>, <code>color</code>: Legend title (with inline LaTeX support) and CSS trace color[cite: 10].</li>
-<li><code>mode</code>: Drawing style (<code>lines</code>, <code>markers</code>, or <code>lines+markers</code>, default <code>lines+markers</code>)[cite: 10].</li>
-<li><code>smooth</code>: Enables spline interpolation (<code>true</code> or <code>false</code>, default <code>false</code>)[cite: 10].</li>
+<li><code>src</code>: Path to the input data file (required).</li>
+<li><code>skip</code>: Number of leading non-comment header rows to ignore, integer <span class="math inline">\(\ge 0\)</span> (default <code>0</code>).</li>
+<li><code>x</code>: Column expression for the horizontal axis using <strong>0-based column tokens</strong> (<code>c0</code>, <code>c1</code>, <code>c2</code>, …) and any supported math operators, constants, or functions (required).</li>
+<li><code>y</code>: Vertical-axis column expression in standard mode (e.g., <code>c1</code> or <code>sqrt(c1^2 + c2^2)</code>), or the sweep column selection when <code>param</code> is set (required).</li>
+<li><code>z</code>: Column expression for the third axis in 3D scatter/line traces (e.g., <code>c2</code>). Cannot be combined with <code>param</code>.</li>
+<li><code>label</code>: Legend title, supporting inline LaTeX math (default: the block’s <code>id</code>).</li>
+<li><code>color</code>: Trace color, passed directly as any valid CSS/Plotly color string (default: automatic colorway).</li>
+<li><code>mode</code>: Drawing style (<code>lines</code>, <code>markers</code>, or <code>lines+markers</code>, default <code>lines+markers</code>).</li>
+<li><code>smooth</code>: Enables spline interpolation between points on 2D line traces (<code>true</code> or <code>false</code>, default <code>false</code>).</li>
+<li><strong>Parameter sweep keys</strong> (enabled when <code>param</code> is provided; <code>param-label</code> and <code>transform</code> require <code>param</code>):
+<ul>
+<li><code>param</code>: Numeric parameter values mapped one-to-one onto the columns selected by <code>y</code>. Set <code>y</code> to an ascending column range (<code>c1..c7</code>) or an explicit comma-separated list (<code>c1, c3, c5, c7</code>), and specify <code>param</code> either as a uniform range <code>start..end</code> (<code>0..3</code>, which interpolates linearly across at least 2 columns) or as a matching comma-separated list (<code>0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0</code>).</li>
+<li><code>param-label</code>: Label displayed next to the active parameter value above the slider, supporting inline LaTeX math (default <code>Parameter</code>).</li>
+<li><code>transform</code>: Optional mathematical expression applied to every sweep column value before plotting. Inside <code>transform</code>, <code>y</code> refers to the active sweep column’s value in that row, and any column token (<code>c0</code>, <code>c1</code>, …) from the same row may also be referenced (for example, <code>transform: y^2</code> to plot squared amplitude, or <code>transform: y / c1</code> to normalize against <code>c1</code>).</li>
+</ul></li>
 </ul>
-<p>File traces can be overlaid directly with analytical <code>.plot-function</code> models and plotted on logarithmic axes (<code>yscale: log</code> or <code>xscale: log</code>, which automatically filters non-positive values when auto-scaling)[cite: 10]:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>::: {.plot-file id="energy-data"}</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>::: {.plot-file id="damped-data"}</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>src: data/example-plot-damped.csv</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>skip: 1</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>x: c0</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>y: c2</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>label: Measured energy</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>y: c1</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>label: Measured amplitude</span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>mode: markers</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>color: #2ca02c</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>color: #ff7f0e</span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>::: {.plot-function id="energy-fit"}</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>expr: exp(-0.70 * x)</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>label: $E_0 e^{-0.70t}$</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>::: {.plot-function id="damped-model"}</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>expr: exp(-0.35 * x) * cos(2 * x)</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>label: $e^{-0.35t}\cos(2t)$</span>
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>color: #1f77b4</span>
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-plot}</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>curves: energy-data, energy-fit</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>curves: damped-data, damped-model</span>
 <span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>xlabel: Time $t$ <span class="co">[</span><span class="ot">s</span><span class="co">]</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>ylabel: Energy $E(t)$ <span class="co">[</span><span class="ot">J</span><span class="co">]</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>yscale: log</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>height: 400</span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;energy-data&quot;,&quot;energy-fit&quot;],&quot;height&quot;:400,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;Time \\(t\\) [s]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;Energy \\(E(t)\\) [J]&quot;,&quot;yscale&quot;:&quot;log&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>ylabel: Amplitude $A(t)$ <span class="co">[</span><span class="ot">m</span><span class="co">]</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>height: 400</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;damped-data&quot;,&quot;damped-model&quot;],&quot;height&quot;:400,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;Time \\(t\\) [s]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;Amplitude \\(A(t)\\) [m]&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+</section>
+<section id="plot-canvas-.dynamic-plot" class="level2">
+<h2 class="anchored" data-anchor-id="plot-canvas-.dynamic-plot">Plot Canvas (<code>.dynamic-plot</code>)</h2>
+<p>The <code>::: {.dynamic-plot}</code> block mounts the responsive Plotly canvas and configures axes and interactive controls:</p>
+<ul>
+<li><code>curves</code>: Comma-separated list of <code>.plot-function</code> and/or <code>.plot-file</code> IDs to display together (required). All curves in a plot must share the same dimensionality (all 2D or all 3D), with at most one parameter-sweep curve per canvas.</li>
+<li><code>xlabel</code>, <code>ylabel</code>, <code>zlabel</code>: Axis titles, supporting inline LaTeX math (<code>$ ... $</code>, <code>\( ... \)</code>). In 3D scenes, axes default to <code>x</code>, <code>y</code>, and <code>z</code>.</li>
+<li><code>xscale</code>, <code>yscale</code>, <code>zscale</code>: Axis scaling (<code>linear</code> or <code>log</code>, default <code>linear</code>).</li>
+<li><code>xrange</code>, <code>yrange</code>, <code>zrange</code>: Explicit axis bounds formatted as <code>[min, max]</code> (<code>min &lt; max</code>; bounds must be strictly positive when the corresponding axis uses <code>log</code> scale).</li>
+<li><code>height</code>: Canvas height in pixels, integer <span class="math inline">\(\ge 200\)</span> (default <code>480</code>). Width automatically fills 100% of the enclosing Quarto container.</li>
+<li><code>legend</code>: Shows or hides the collapsible right-hand legend sidebar with per-curve visibility checkboxes (<code>true</code> or <code>false</code>, default <code>true</code>; when <code>false</code>, no legend is shown).</li>
+<li><code>play</code>: Adds a Play/Pause animation toggle button next to the parameter slider (<code>true</code> or <code>false</code>, default <code>false</code>). Valid only when <code>curves</code> includes a parameter-sweep curve.</li>
+</ul>
 </section>
 <section id="parameter-sweeps-and-3d-scenes" class="level2">
 <h2 class="anchored" data-anchor-id="parameter-sweeps-and-3d-scenes">Parameter Sweeps and 3D Scenes</h2>
-<p>Two specialized capabilities support multi-snapshot datasets and 3D visualization[cite: 10]:</p>
-<ul>
-<li><strong>Parameter sweeps (<code>.plot-file</code> + <code>play: true</code>):</strong> When a file stores snapshots across multiple columns, set <code>y</code> to a column range (<code>c1..c7</code>) or list (<code>c1, c3, c5, c7</code>) and supply matching <code>param</code> values (<code>0..3</code> or <code>0.0, 0.5, 1.0, ...</code>)[cite: 10]. Optional <code>param-label</code> formats the live parameter readout (with inline LaTeX math), <code>transform</code> applies a formula to each sweep value <code>y</code> (such as <code>y^2</code>), and <code>play: true</code> on <code>.dynamic-plot</code> adds a Play/Pause button[cite: 10].</li>
-</ul>
+<p>Combining sweep options in <code>.plot-file</code> with <code>play: true</code> in <code>.dynamic-plot</code> creates an animated slider plot:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>::: {.plot-file id="wave-sweep"}</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>src: data/example-plot-sweep.csv</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>x: c0</span>
@@ -730,9 +738,7 @@ window.Quarto = {
 <span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>height: 440</span>
 <span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sweep&quot;],&quot;height&quot;:440,&quot;legend&quot;:true,&quot;play&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\) [m]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(\\psi(x, t)\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
-<ul>
-<li><strong>3D surfaces, implicit volumes, and trajectories:</strong> Combining 3D <code>.plot-function</code> definitions (explicit <code>z = f(x, y)</code> surfaces or implicit <code>=</code> isosurfaces) with 3D <code>.plot-file</code> traces (<code>z:</code> specified) renders an interactive WebGL 3D scene[cite: 10]:</li>
-</ul>
+<p>Combining 3D <code>.plot-function</code> definitions (explicit <span class="math inline">\(z = f(x, y)\)</span> surfaces or implicit <code>=</code> isosurfaces) with 3D <code>.plot-file</code> traces (<code>z:</code> specified) renders an interactive WebGL 3D scene:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>::: {.plot-function id="saddle-surface"}</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>expr: 0.25 * (x^2 - y^2)</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>label: $z = \frac{1}{4}(x^2 - y^2)$</span>
@@ -1507,8 +1513,8 @@ window.MathRenderer = window.MathRenderer || {
 </script>
 <script type="application/json" class="dynamic-plot-def" data-id="wave-sin">{"dim":"2d","expr":"sin(2 * x) * exp(-0.2 * x)","id":"wave-sin","isSweep":false,"kind":"function","label":"\\(e^{-0.2x}\\sin(2x)\\)","mode":"lines","subtype":"2d-explicit","xrange":[0,8]}</script>
 <script type="application/json" class="dynamic-plot-def" data-id="circle-eq">{"color":"crimson","dim":"2d","expr":"(x - 4)^2 + y^2 = 0.64","id":"circle-eq","isSweep":false,"kind":"function","label":"\\((x - 4)^2 + y^2 = 0.8^2\\)","mode":"lines","subtype":"2d-implicit","xrange":[0,8],"yrange":[-1.2,1.2]}</script>
-<script type="application/json" class="dynamic-plot-def" data-id="energy-data">{"color":"#2ca02c","dim":"2d","id":"energy-data","isSweep":false,"kind":"file","label":"Measured energy","mode":"markers","paramLabel":"Parameter","rows":[[0,1,1],[0.3333,0.6993,0.79189],[0.6667,0.1863,0.62709],[1,-0.2933,0.49659],[1.3333,-0.5577,0.39324],[1.6667,-0.5478,0.3114],[2,-0.3246,0.2466],[2.3333,-2.02e-2,0.19528],[2.6667,0.2288,0.15464],[3,0.336,0.12246],[3.3333,0.2888,9.6972e-2],[3.6667,0.1378,7.6791e-2],[4,-3.59e-2,6.081e-2],[4.3333,-0.1593,4.8155e-2],[4.6667,-0.1945,3.8133e-2],[5,-0.1458,3.0197e-2],[5.3333,-4.99e-2,2.3913e-2],[5.6667,4.56e-2,1.8936e-2],[6,0.1033,1.4996e-2]],"smooth":false,"x":"c0","y":"c2"}</script>
-<script type="application/json" class="dynamic-plot-def" data-id="energy-fit">{"color":"#1f77b4","dim":"2d","expr":"exp(-0.70 * x)","id":"energy-fit","isSweep":false,"kind":"function","label":"\\(E_0 e^{-0.70t}\\)","mode":"lines","subtype":"2d-explicit"}</script>
+<script type="application/json" class="dynamic-plot-def" data-id="damped-data">{"color":"#ff7f0e","dim":"2d","id":"damped-data","isSweep":false,"kind":"file","label":"Measured amplitude","mode":"markers","paramLabel":"Parameter","rows":[[0,1,1],[0.3333,0.6993,0.79189],[0.6667,0.1863,0.62709],[1,-0.2933,0.49659],[1.3333,-0.5577,0.39324],[1.6667,-0.5478,0.3114],[2,-0.3246,0.2466],[2.3333,-2.02e-2,0.19528],[2.6667,0.2288,0.15464],[3,0.336,0.12246],[3.3333,0.2888,9.6972e-2],[3.6667,0.1378,7.6791e-2],[4,-3.59e-2,6.081e-2],[4.3333,-0.1593,4.8155e-2],[4.6667,-0.1945,3.8133e-2],[5,-0.1458,3.0197e-2],[5.3333,-4.99e-2,2.3913e-2],[5.6667,4.56e-2,1.8936e-2],[6,0.1033,1.4996e-2]],"smooth":false,"x":"c0","y":"c1"}</script>
+<script type="application/json" class="dynamic-plot-def" data-id="damped-model">{"color":"#1f77b4","dim":"2d","expr":"exp(-0.35 * x) * cos(2 * x)","id":"damped-model","isSweep":false,"kind":"function","label":"\\(e^{-0.35t}\\cos(2t)\\)","mode":"lines","subtype":"2d-explicit"}</script>
 <script type="application/json" class="dynamic-plot-def" data-id="wave-sweep">{"dim":"2d","id":"wave-sweep","isSweep":true,"kind":"file","label":"Wave amplitude","mode":"lines+markers","paramLabel":"\\(t\\) [s]","params":["0","0.5","1","1.5","2","2.5","3"],"rows":[[0,0,0.2474,0.4794,0.6816,0.8415,0.949,0.9975],[0.25,0.2588,0.4897,0.6902,0.8478,0.9526,0.9983,0.9818],[0.5,0.5,0.6987,0.854,0.9562,0.9989,0.9795,0.8992],[0.75,0.7071,0.8601,0.9595,0.9994,0.9771,0.894,0.7554],[1,0.866,0.9628,0.9997,0.9745,0.8887,0.7476,0.56],[1.25,0.9659,0.9999,0.9718,0.8832,0.7397,0.5502,0.3265],[1.5,1,0.9689,0.8776,0.7317,0.5403,0.3153,7.07e-2],[1.75,0.9659,0.8719,0.7236,0.5303,0.3041,5.9e-2,-0.1898],[2,0.866,0.7154,0.5203,0.2928,4.72e-2,-0.2014,-0.4375],[2.25,0.7071,0.5102,0.2815,3.54e-2,-0.213,-0.4481,-0.6553],[2.5,0.5,0.2702,2.36e-2,-0.2245,-0.4586,-0.6642,-0.8285],[2.75,0.2588,1.18e-2,-0.236,-0.469,-0.673,-0.835,-0.9452],[3,0,-0.2474,-0.4794,-0.6816,-0.8415,-0.949,-0.9975]],"smooth":true,"sweepCols":[1,2,3,4,5,6,7],"x":"c0","y":"c1..c7"}</script>
 <script type="application/json" class="dynamic-plot-def" data-id="saddle-surface">{"dim":"3d","expr":"0.25 * (x^2 - y^2)","id":"saddle-surface","isSweep":false,"kind":"function","label":"\\(z = \\frac{1}{4}(x^2 - y^2)\\)","mode":"lines","points":40,"subtype":"3d-explicit","xrange":[-1.5,1.5],"yrange":[-1.5,1.5]}</script>
 <script type="application/json" class="dynamic-plot-def" data-id="unit-sphere">{"color":"#2ca02c","dim":"3d","expr":"x^2 + y^2 + z^2 = 1","id":"unit-sphere","isSweep":false,"kind":"function","label":"\\(x^2 + y^2 + z^2 = 1\\)","mode":"lines","points":22,"subtype":"3d-implicit","xrange":[-1.2,1.2],"yrange":[-1.2,1.2],"zrange":[-1.2,1.2]}</script>
