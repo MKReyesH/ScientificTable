@@ -28,8 +28,10 @@ format:
     respect-user-color-scheme: true
     theme: # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
       light: flatly
-      dark: darkly
+      dark: [flatly, include/theme/dark-theme.scss]
     css: include/theme/css-config.css
+    include-after-body:
+      - include/theme/dark-theme-toggle.html
 
 bibliography: bib/references.bib
 csl: bib/jcap.csl
