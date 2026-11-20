@@ -83,9 +83,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-c01cc8f646cb504cfcca280090608b2f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-475f040a9e4374a41dda30f8ed32f70d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-c01cc8f646cb504cfcca280090608b2f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-62702c64308498ea70e7e43e5dd5b943.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-3f2e95da7c1a02af4281bb2046e9b78d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-62702c64308498ea70e7e43e5dd5b943.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -636,13 +636,13 @@ window.Quarto = {
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>xlabel: $x$</span>
 <span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>ylabel: $y(x)$</span>
 <span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sin&quot;,&quot;circle-eq&quot;],&quot;height&quot;:480,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\)&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(y(x)\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sin&quot;,&quot;circle-eq&quot;],&quot;height&quot;:400,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\)&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(y(x)\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
 </section>
 <section id="block-configuration" class="level1">
 <h1>Block Configuration</h1>
 <p>All plot blocks are configured using <code>key: value</code> pairs inside fenced divs. Every <code>.plot-function</code> and <code>.plot-file</code> block requires a unique <code>id</code> attribute so it can be referenced in <code>curves:</code>.</p>
-<section id="analytical-functions-.plot-function" class="level2">
-<h2 class="anchored" data-anchor-id="analytical-functions-.plot-function">Analytical Functions (<code>.plot-function</code>)</h2>
+<section id="analytical-functions" class="level2">
+<h2 class="anchored" data-anchor-id="analytical-functions">Analytical Functions</h2>
 <p>Use <code>::: {.plot-function id="..."}</code> to evaluate analytical expressions. Expressions support <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>^</code>, implicit multiplication (<code>2x</code>, <code>x sin(x)</code>), constants (<code>pi</code>, <code>e</code>), and standard functions (<code>sin</code>, <code>cos</code>, <code>tan</code>, <code>asin</code>, <code>acos</code>, <code>atan</code>, <code>sinh</code>, <code>cosh</code>, <code>tanh</code>, <code>exp</code>, <code>log</code>, <code>ln</code>, <code>log10</code>, <code>log2</code>, <code>sqrt</code>, <code>abs</code>, <code>sign</code>, <code>floor</code>, <code>ceil</code>, <code>min</code>, <code>max</code>):</p>
 <ul>
 <li><code>expr</code>: Mathematical expression (required). Whether <code>=</code> is present determines how the expression is evaluated:
@@ -658,8 +658,8 @@ window.Quarto = {
 <li><code>smooth</code>: Enables spline interpolation between sample points on explicit 2D curves (<code>true</code> or <code>false</code>, default <code>true</code>).</li>
 </ul>
 </section>
-<section id="data-files-.plot-file" class="level2">
-<h2 class="anchored" data-anchor-id="data-files-.plot-file">Data Files (<code>.plot-file</code>)</h2>
+<section id="data-files" class="level2">
+<h2 class="anchored" data-anchor-id="data-files">Data Files</h2>
 <p>Use <code>::: {.plot-file id="..."}</code> to plot numeric columns from <code>.csv</code> (comma-separated) or whitespace/tab-delimited text files (blank lines and comment lines starting with <code>#</code>, <code>%</code>, or <code>//</code> are ignored automatically):</p>
 <ul>
 <li><code>src</code>: Path to the input data file (required).</li>
@@ -699,17 +699,17 @@ window.Quarto = {
 <span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>xlabel: Time $t$ <span class="co">[</span><span class="ot">s</span><span class="co">]</span></span>
 <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>ylabel: Amplitude $A(t)$ <span class="co">[</span><span class="ot">m</span><span class="co">]</span></span>
 <span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;damped-data&quot;,&quot;damped-model&quot;],&quot;height&quot;:480,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;Time \\(t\\) [s]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;Amplitude \\(A(t)\\) [m]&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;damped-data&quot;,&quot;damped-model&quot;],&quot;height&quot;:400,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;Time \\(t\\) [s]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;Amplitude \\(A(t)\\) [m]&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
 </section>
-<section id="plot-canvas-.dynamic-plot" class="level2">
-<h2 class="anchored" data-anchor-id="plot-canvas-.dynamic-plot">Plot Canvas (<code>.dynamic-plot</code>)</h2>
+<section id="plot-canvas" class="level2">
+<h2 class="anchored" data-anchor-id="plot-canvas">Plot Canvas</h2>
 <p>The <code>::: {.dynamic-plot}</code> block mounts the responsive Plotly canvas and configures axes and interactive controls:</p>
 <ul>
 <li><code>curves</code>: Comma-separated list of <code>.plot-function</code> and/or <code>.plot-file</code> IDs to display together (required). All curves in a plot must share the same dimensionality (all 2D or all 3D), with at most one parameter-sweep curve per canvas.</li>
 <li><code>xlabel</code>, <code>ylabel</code>, <code>zlabel</code>: Axis titles, supporting inline LaTeX math (<code>$ ... $</code>, <code>\( ... \)</code>). In 3D scenes, axes default to <code>x</code>, <code>y</code>, and <code>z</code>.</li>
 <li><code>xscale</code>, <code>yscale</code>, <code>zscale</code>: Axis scaling (<code>linear</code> or <code>log</code>, default <code>linear</code>).</li>
 <li><code>xrange</code>, <code>yrange</code>, <code>zrange</code>: Initial visible axis bounds formatted as <code>[min, max]</code> (<code>min &lt; max</code>; bounds must be strictly positive when the corresponding axis uses <code>log</code> scale).</li>
-<li><code>width</code>, <code>height</code>: Canvas dimensions in pixels, integer <span class="math inline">\(\ge 200\)</span>. <code>height</code> defaults to <code>480</code>; when <code>width</code> is omitted, the canvas automatically adapts to the available container width.</li>
+<li><code>width</code>, <code>height</code>: Canvas dimensions in pixels, integer <span class="math inline">\(\ge 200\)</span>. <code>height</code> defaults to <code>400</code>; when <code>width</code> is omitted, the canvas automatically adapts to the available container width.</li>
 <li><code>legend</code>: Shows or hides the collapsible right-hand legend sidebar with per-curve visibility checkboxes (<code>true</code> or <code>false</code>, default <code>true</code>; when <code>false</code>, no legend is shown).</li>
 <li><code>play</code>: Adds a Play/Pause animation toggle button next to the parameter slider (<code>true</code> or <code>false</code>, default <code>false</code>). Valid only when <code>curves</code> includes a parameter-sweep curve.</li>
 </ul>
@@ -733,7 +733,7 @@ window.Quarto = {
 <span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>ylabel: $\psi(x, t)$</span>
 <span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>play: true</span>
 <span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sweep&quot;],&quot;height&quot;:480,&quot;legend&quot;:true,&quot;play&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\) [m]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(\\psi(x, t)\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sweep&quot;],&quot;height&quot;:400,&quot;legend&quot;:true,&quot;play&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\) [m]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(\\psi(x, t)\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
 
 
 
