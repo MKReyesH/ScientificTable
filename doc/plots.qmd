@@ -27,7 +27,6 @@ color: crimson
 curves: wave-sin, circle-eq
 xlabel: $x$
 ylabel: $y(x)$
-height: 400
 :::
 ```
 
@@ -49,7 +48,6 @@ color: crimson
 curves: wave-sin, circle-eq
 xlabel: $x$
 ylabel: $y(x)$
-height: 400
 :::
 
 # Block Configuration
@@ -109,7 +107,6 @@ color: #1f77b4
 curves: damped-data, damped-model
 xlabel: Time $t$ [s]
 ylabel: Amplitude $A(t)$ [m]
-height: 400
 :::
 ```
 
@@ -133,7 +130,6 @@ color: #1f77b4
 curves: damped-data, damped-model
 xlabel: Time $t$ [s]
 ylabel: Amplitude $A(t)$ [m]
-height: 400
 :::
 
 ## Plot Canvas (`.dynamic-plot`)
@@ -144,7 +140,7 @@ The `::: {.dynamic-plot}` block mounts the responsive Plotly canvas and configur
 - `xlabel`, `ylabel`, `zlabel`: Axis titles, supporting inline LaTeX math (`$ ... $`, `\( ... \)`). In 3D scenes, axes default to `x`, `y`, and `z`.
 - `xscale`, `yscale`, `zscale`: Axis scaling (`linear` or `log`, default `linear`).
 - `xrange`, `yrange`, `zrange`: Initial visible axis bounds formatted as `[min, max]` (`min < max`; bounds must be strictly positive when the corresponding axis uses `log` scale).
-- `width`, `height`: Canvas dimensions in pixels, integer $\ge 200$ (`height` defaults to `480`; `width` defaults to `100%` of the enclosing container).
+- `width`, `height`: Canvas dimensions in pixels, integer $\ge 200$. `height` defaults to `480`; when `width` is omitted, the canvas automatically adapts to the available container width.
 - `legend`: Shows or hides the collapsible right-hand legend sidebar with per-curve visibility checkboxes (`true` or `false`, default `true`; when `false`, no legend is shown).
 - `play`: Adds a Play/Pause animation toggle button next to the parameter slider (`true` or `false`, default `false`). Valid only when `curves` includes a parameter-sweep curve.
 
@@ -168,7 +164,6 @@ curves: wave-sweep
 xlabel: $x$ [m]
 ylabel: $\psi(x, t)$
 play: true
-height: 440
 :::
 ```
 
@@ -187,5 +182,4 @@ curves: wave-sweep
 xlabel: $x$ [m]
 ylabel: $\psi(x, t)$
 play: true
-height: 440
 :::
