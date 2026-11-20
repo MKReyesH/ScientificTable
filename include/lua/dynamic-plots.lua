@@ -142,23 +142,6 @@ local function parse_enum(val, key, valid_map, context)
     return val
 end
 
--- Validates a CSS color string (hex, named CSS color, or rgb/rgba/hsl/hsla)
-local function parse_color(val, key, context)
-    if val == nil then return nil end
-    local trimmed = U.trim(val)
-    local hex = trimmed:match("^#(%x+)$")
-    if hex and (#hex == 3 or #hex == 4 or #hex == 6 or #hex == 8) then
-        return trimmed
-    end
-    if trimmed:match("^[a-zA-Z]+$") then
-        return trimmed:lower()
-    end
-    if trimmed:match("^rgba?%([%d%s%.,%%]+%)$") or trimmed:match("^hsla?%([%d%s%.,%%a-zA-Z]+%)$") then
-        return trimmed
-    end
-    error(string.format("[%s] Error: Invalid color '%s' for '%s' in %s (use hex like '#1f77b4', CSS color name, or 'rgb(...)')", TAG, val, key, context))
-end
-
 -- Validates identifiers and '=' usage in a mathematical expression and returns referenced variables
 local function validate_expr(expr, allowed_vars, allow_equals, context)
     local _, eq_count = expr:gsub("=", "")
@@ -346,7 +329,7 @@ local function register_function_def(el)
         isSweep = false,
         expr    = kv.expr,
         label   = label,
-        color   = parse_color(kv.color, "color", context),
+        color   = kv.color,
         xrange  = parse_range(kv.xrange, "xrange", context),
         yrange  = parse_range(kv.yrange, "yrange", context),
         zrange  = parse_range(kv.zrange, "zrange", context),
@@ -423,7 +406,7 @@ local function register_file_def(el)
         paramLabel = param_label,
         transform  = kv.transform,
         label      = label,
-        color      = parse_color(kv.color, "color", context),
+        color      = kv.color,
         mode       = parse_enum(kv.mode, "mode", MODES, context) or "lines+markers",
         smooth     = parse_bool(kv.smooth, "smooth", context) or false
     })

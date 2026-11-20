@@ -34,8 +34,8 @@
     .replace(/\\[a-zA-Z]+/g, "x")
     .replace(/[{}^_]/g, "");
 
-  function resolveCurveColor(spec, idx) {
-    return spec.color || TRACE_COLORWAY[idx % TRACE_COLORWAY.length];
+  function resolveCurveColor(spec) {
+    return spec.color || TRACE_COLORWAY[spec.colorIdx % TRACE_COLORWAY.length];
   }
 
   function applyTraceColor(trace, color) {
@@ -358,7 +358,7 @@
       this.wrapEl = wrapEl;
       this.cfg = JSON.parse(wrapEl.dataset.plotConfig || "{}");
 
-      const rawSpecs = this.cfg.curves.map((id) => registry.get(id));
+      const rawSpecs = this.cfg.curves.map((id, colorIdx) => ({ ...registry.get(id), colorIdx }));
       const sweep = rawSpecs.find((s) => s.isSweep);
       this.is3d = rawSpecs[0].dim === "3d";
       this.hasSlider = Boolean(sweep);
@@ -391,11 +391,12 @@
     buildTraces(domains) {
       const scales = { xscale: this.cfg.xscale, yscale: this.cfg.yscale, zscale: this.cfg.zscale };
       return this.specs.map((spec, idx) => {
-        const color = resolveCurveColor(spec, idx);
         const trace = spec.kind === "function"
           ? FunctionBuilder.evaluate(spec, domains, scales)
-          : { ...(spec.isSweep ? spec.initialTrace : spec.trace) };
-        applyTraceColor(trace, color);
+          : spec.isSweep
+            ? { ...spec.initialTrace, ...(spec.frames[this.activeStepIdx]?.data[0] || {}) }
+            : { ...spec.trace };
+        applyTraceColor(trace, resolveCurveColor(spec));
         trace.visible = this.traceVisible[idx] ? true : "legendonly";
         return trace;
       });
@@ -421,7 +422,7 @@
       sidebar.className = "dynamic-plot-sidebar";
 
       this.specs.forEach((spec, idx) => {
-        const color = resolveCurveColor(spec, idx);
+        const color = resolveCurveColor(spec);
         const item = document.createElement("label");
         item.className = "dynamic-plot-curve-toggle";
 
@@ -635,6 +636,9 @@
           if (nextX && Number.isFinite(nextX[0]) && Number.isFinite(nextX[1]) && nextX[0] < nextX[1]) {
             this.isResampling = true;
             try {
+              if (this.hasSlider && this.canvas.layout?.sliders?.[0]) {
+                this.canvas.layout.sliders[0].active = this.activeStepIdx;
+              }
               Plotly.react(this.canvas, this.buildTraces({ xrange: nextX, yrange: nextY, zrange: null }), this.canvas.layout, { responsive: true });
             } finally {
               this.isResampling = false;
