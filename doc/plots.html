@@ -635,9 +635,8 @@ window.Quarto = {
 <span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>curves: wave-sin, circle-eq</span>
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>xlabel: $x$</span>
 <span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>ylabel: $y(x)$</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>height: 400</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sin&quot;,&quot;circle-eq&quot;],&quot;height&quot;:400,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\)&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(y(x)\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sin&quot;,&quot;circle-eq&quot;],&quot;height&quot;:480,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\)&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(y(x)\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
 </section>
 <section id="block-configuration" class="level1">
 <h1>Block Configuration</h1>
@@ -699,9 +698,8 @@ window.Quarto = {
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>curves: damped-data, damped-model</span>
 <span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>xlabel: Time $t$ <span class="co">[</span><span class="ot">s</span><span class="co">]</span></span>
 <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>ylabel: Amplitude $A(t)$ <span class="co">[</span><span class="ot">m</span><span class="co">]</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>height: 400</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;damped-data&quot;,&quot;damped-model&quot;],&quot;height&quot;:400,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;Time \\(t\\) [s]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;Amplitude \\(A(t)\\) [m]&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;damped-data&quot;,&quot;damped-model&quot;],&quot;height&quot;:480,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;Time \\(t\\) [s]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;Amplitude \\(A(t)\\) [m]&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
 </section>
 <section id="plot-canvas-.dynamic-plot" class="level2">
 <h2 class="anchored" data-anchor-id="plot-canvas-.dynamic-plot">Plot Canvas (<code>.dynamic-plot</code>)</h2>
@@ -711,7 +709,7 @@ window.Quarto = {
 <li><code>xlabel</code>, <code>ylabel</code>, <code>zlabel</code>: Axis titles, supporting inline LaTeX math (<code>$ ... $</code>, <code>\( ... \)</code>). In 3D scenes, axes default to <code>x</code>, <code>y</code>, and <code>z</code>.</li>
 <li><code>xscale</code>, <code>yscale</code>, <code>zscale</code>: Axis scaling (<code>linear</code> or <code>log</code>, default <code>linear</code>).</li>
 <li><code>xrange</code>, <code>yrange</code>, <code>zrange</code>: Initial visible axis bounds formatted as <code>[min, max]</code> (<code>min &lt; max</code>; bounds must be strictly positive when the corresponding axis uses <code>log</code> scale).</li>
-<li><code>width</code>, <code>height</code>: Canvas dimensions in pixels, integer <span class="math inline">\(\ge 200\)</span> (<code>height</code> defaults to <code>480</code>; <code>width</code> defaults to <code>100%</code> of the enclosing container).</li>
+<li><code>width</code>, <code>height</code>: Canvas dimensions in pixels, integer <span class="math inline">\(\ge 200\)</span>. <code>height</code> defaults to <code>480</code>; when <code>width</code> is omitted, the canvas automatically adapts to the available container width.</li>
 <li><code>legend</code>: Shows or hides the collapsible right-hand legend sidebar with per-curve visibility checkboxes (<code>true</code> or <code>false</code>, default <code>true</code>; when <code>false</code>, no legend is shown).</li>
 <li><code>play</code>: Adds a Play/Pause animation toggle button next to the parameter slider (<code>true</code> or <code>false</code>, default <code>false</code>). Valid only when <code>curves</code> includes a parameter-sweep curve.</li>
 </ul>
@@ -734,9 +732,8 @@ window.Quarto = {
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>xlabel: $x$ <span class="co">[</span><span class="ot">m</span><span class="co">]</span></span>
 <span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>ylabel: $\psi(x, t)$</span>
 <span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>play: true</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>height: 440</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sweep&quot;],&quot;height&quot;:440,&quot;legend&quot;:true,&quot;play&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\) [m]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(\\psi(x, t)\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sweep&quot;],&quot;height&quot;:480,&quot;legend&quot;:true,&quot;play&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\) [m]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(\\psi(x, t)\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
 
 
 
