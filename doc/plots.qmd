@@ -54,7 +54,7 @@ ylabel: $y(x)$
 
 All plot blocks are configured using `key: value` pairs inside fenced divs. Every `.plot-function` and `.plot-file` block requires a unique `id` attribute so it can be referenced in `curves:`.
 
-## Analytical Functions (`.plot-function`)
+## Analytical Functions
 
 Use `::: {.plot-function id="..."}` to evaluate analytical expressions. Expressions support `+`, `-`, `*`, `/`, `^`, implicit multiplication (`2x`, `x sin(x)`), constants (`pi`, `e`), and standard functions (`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `sinh`, `cosh`, `tanh`, `exp`, `log`, `ln`, `log10`, `log2`, `sqrt`, `abs`, `sign`, `floor`, `ceil`, `min`, `max`):
 
@@ -68,7 +68,7 @@ Use `::: {.plot-function id="..."}` to evaluate analytical expressions. Expressi
 - `mode`: Drawing style for explicit 2D curves (`lines`, `markers`, or `lines+markers`, default `lines`).
 - `smooth`: Enables spline interpolation between sample points on explicit 2D curves (`true` or `false`, default `true`).
 
-## Data Files (`.plot-file`)
+## Data Files
 
 Use `::: {.plot-file id="..."}` to plot numeric columns from `.csv` (comma-separated) or whitespace/tab-delimited text files (blank lines and comment lines starting with `#`, `%`, or `//` are ignored automatically):
 
@@ -132,7 +132,7 @@ xlabel: Time $t$ [s]
 ylabel: Amplitude $A(t)$ [m]
 :::
 
-## Plot Canvas (`.dynamic-plot`)
+## Plot Canvas
 
 The `::: {.dynamic-plot}` block mounts the responsive Plotly canvas and configures axes and interactive controls:
 
@@ -140,7 +140,7 @@ The `::: {.dynamic-plot}` block mounts the responsive Plotly canvas and configur
 - `xlabel`, `ylabel`, `zlabel`: Axis titles, supporting inline LaTeX math (`$ ... $`, `\( ... \)`). In 3D scenes, axes default to `x`, `y`, and `z`.
 - `xscale`, `yscale`, `zscale`: Axis scaling (`linear` or `log`, default `linear`).
 - `xrange`, `yrange`, `zrange`: Initial visible axis bounds formatted as `[min, max]` (`min < max`; bounds must be strictly positive when the corresponding axis uses `log` scale).
-- `width`, `height`: Canvas dimensions in pixels, integer $\ge 200$. `height` defaults to `480`; when `width` is omitted, the canvas automatically adapts to the available container width.
+- `width`, `height`: Canvas dimensions in pixels, integer $\ge 200$. `height` defaults to `400`; when `width` is omitted, the canvas automatically adapts to the available container width.
 - `legend`: Shows or hides the collapsible right-hand legend sidebar with per-curve visibility checkboxes (`true` or `false`, default `true`; when `false`, no legend is shown).
 - `play`: Adds a Play/Pause animation toggle button next to the parameter slider (`true` or `false`, default `false`). Valid only when `curves` includes a parameter-sweep curve.
 

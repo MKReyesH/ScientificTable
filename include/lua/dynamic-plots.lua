@@ -20,7 +20,7 @@ do
 end
 
 local DEFAULTS = {
-    height = 480,
+    height = 400,
     points = 100,
     skip   = 0,
     xscale = "linear",
