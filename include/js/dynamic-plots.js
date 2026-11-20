@@ -679,6 +679,11 @@
     mount() {
       this.homeDomains = this.computeInitialDomains();
 
+      if (this.cfg.width) {
+        this.wrapEl.style.width = `${this.cfg.width}px`;
+        this.wrapEl.style.maxWidth = "100%";
+      }
+
       const bodyEl = document.createElement("div");
       bodyEl.className = "dynamic-plot-body";
 

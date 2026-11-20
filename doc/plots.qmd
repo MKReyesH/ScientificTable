@@ -27,7 +27,6 @@ color: crimson
 curves: wave-sin, circle-eq
 xlabel: $x$
 ylabel: $y(x)$
-yrange: [-1.2, 1.2]
 height: 400
 :::
 ```
@@ -50,7 +49,6 @@ color: crimson
 curves: wave-sin, circle-eq
 xlabel: $x$
 ylabel: $y(x)$
-yrange: [-1.2, 1.2]
 height: 400
 :::
 
@@ -145,14 +143,14 @@ The `::: {.dynamic-plot}` block mounts the responsive Plotly canvas and configur
 - `curves`: Comma-separated list of `.plot-function` and/or `.plot-file` IDs to display together (required). All curves in a plot must share the same dimensionality (all 2D or all 3D), with at most one parameter-sweep curve per canvas.
 - `xlabel`, `ylabel`, `zlabel`: Axis titles, supporting inline LaTeX math (`$ ... $`, `\( ... \)`). In 3D scenes, axes default to `x`, `y`, and `z`.
 - `xscale`, `yscale`, `zscale`: Axis scaling (`linear` or `log`, default `linear`).
-- `xrange`, `yrange`, `zrange`: Explicit axis bounds formatted as `[min, max]` (`min < max`; bounds must be strictly positive when the corresponding axis uses `log` scale).
-- `height`: Canvas height in pixels, integer $\ge 200$ (default `480`). Width automatically fills 100% of the enclosing Quarto container.
+- `xrange`, `yrange`, `zrange`: Initial visible axis bounds formatted as `[min, max]` (`min < max`; bounds must be strictly positive when the corresponding axis uses `log` scale).
+- `width`, `height`: Canvas dimensions in pixels, integer $\ge 200$ (`height` defaults to `480`; `width` defaults to `100%` of the enclosing container).
 - `legend`: Shows or hides the collapsible right-hand legend sidebar with per-curve visibility checkboxes (`true` or `false`, default `true`; when `false`, no legend is shown).
 - `play`: Adds a Play/Pause animation toggle button next to the parameter slider (`true` or `false`, default `false`). Valid only when `curves` includes a parameter-sweep curve.
 
-## Parameter Sweeps and 3D Scenes
+## Animated Parameter Sweeps
 
-Combining sweep options in `.plot-file` with `play: true` in `.dynamic-plot` creates an animated slider plot:
+Combining sweep options in `.plot-file` with `play: true` in `.dynamic-plot` creates an interactive slider plot:
 
 ```markdown
 ::: {.plot-file id="wave-sweep"}
@@ -190,80 +188,4 @@ xlabel: $x$ [m]
 ylabel: $\psi(x, t)$
 play: true
 height: 440
-:::
-
-Combining 3D `.plot-function` definitions (explicit $z = f(x, y)$ surfaces or implicit `=` isosurfaces) with 3D `.plot-file` traces (`z:` specified) renders an interactive WebGL 3D scene:
-
-```markdown
-::: {.plot-function id="saddle-surface"}
-expr: 0.25 * (x^2 - y^2)
-label: $z = \frac{1}{4}(x^2 - y^2)$
-xrange: [-1.5, 1.5]
-yrange: [-1.5, 1.5]
-points: 40
-:::
-
-::: {.plot-function id="unit-sphere"}
-expr: x^2 + y^2 + z^2 = 1
-label: $x^2 + y^2 + z^2 = 1$
-xrange: [-1.2, 1.2]
-yrange: [-1.2, 1.2]
-zrange: [-1.2, 1.2]
-points: 22
-color: #2ca02c
-:::
-
-::: {.plot-file id="helix-path"}
-src: data/example-plot-3d.csv
-x: c0
-y: c1
-z: c2
-label: Helix trajectory
-mode: lines+markers
-color: #ff7f0e
-:::
-
-::: {.dynamic-plot}
-curves: saddle-surface, unit-sphere, helix-path
-xlabel: x
-ylabel: y
-zlabel: z
-height: 500
-:::
-```
-
-::: {.plot-function id="saddle-surface"}
-expr: 0.25 * (x^2 - y^2)
-label: $z = \frac{1}{4}(x^2 - y^2)$
-xrange: [-1.5, 1.5]
-yrange: [-1.5, 1.5]
-points: 40
-:::
-
-::: {.plot-function id="unit-sphere"}
-expr: x^2 + y^2 + z^2 = 1
-label: $x^2 + y^2 + z^2 = 1$
-xrange: [-1.2, 1.2]
-yrange: [-1.2, 1.2]
-zrange: [-1.2, 1.2]
-points: 22
-color: #2ca02c
-:::
-
-::: {.plot-file id="helix-path"}
-src: data/example-plot-3d.csv
-x: c0
-y: c1
-z: c2
-label: Helix trajectory
-mode: lines+markers
-color: #ff7f0e
-:::
-
-::: {.dynamic-plot}
-curves: saddle-surface, unit-sphere, helix-path
-xlabel: x
-ylabel: y
-zlabel: z
-height: 500
 :::

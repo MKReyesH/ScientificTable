@@ -55,7 +55,8 @@ local FILE_KEYS = {
 local PLOT_KEYS = {
     curves = true, xlabel = true, ylabel = true, zlabel = true,
     xscale = true, yscale = true, zscale = true,
-    xrange = true, yrange = true, zrange = true, height = true,
+    xrange = true, yrange = true, zrange = true,
+    width = true, height = true,
     legend = true, play = true
 }
 
@@ -447,6 +448,7 @@ local function render_plot_canvas(el)
         xrange = parse_range(kv.xrange, "xrange", context),
         yrange = parse_range(kv.yrange, "yrange", context),
         zrange = parse_range(kv.zrange, "zrange", context),
+        width  = parse_int(kv.width, "width", 200, context),
         height = parse_int(kv.height, "height", 200, context) or DEFAULTS.height,
         legend = legend_opt,
         play   = parse_bool(kv.play, "play", context)
