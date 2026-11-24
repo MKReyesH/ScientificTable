@@ -48,9 +48,9 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-db5644bd31ccd64b84ac585b807e3660.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-604a4dcb9110d1172d8a9d3431592d5a.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-db5644bd31ccd64b84ac585b807e3660.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-972ff4b653dda3823e4ca8e4eb795c65.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-d40cd6b467a96c0c701d39b13ce3fcd9.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-972ff4b653dda3823e4ca8e4eb795c65.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -79,19 +79,20 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 <style>
-/* Sidebar layout*/
-.sidebar-search.has-theme-toggle {
+/* Sidebar layout: inline beside search input when present, top-right fallback otherwise */
+#quarto-sidebar .sidebar-search.has-theme-toggle {
   display: flex;
   align-items: stretch;
   gap: 0.4rem;
 }
 
-.sidebar-search.has-theme-toggle #quarto-search {
+#quarto-sidebar .sidebar-search.has-theme-toggle #quarto-search {
   flex: 1 1 auto;
   min-width: 0;
+  margin: 0;
 }
 
-.sidebar-search.has-theme-toggle .sidebar-tools-main {
+#quarto-sidebar .sidebar-search.has-theme-toggle .sidebar-tools-main {
   display: flex;
   align-items: stretch;
   flex: 0 0 auto;
@@ -99,18 +100,19 @@ ul.task-list li input[type="checkbox"] {
   padding: 0;
 }
 
-.sidebar-header {
+#quarto-sidebar .sidebar-header {
   position: relative;
 }
 
-.sidebar-header > .sidebar-tools-main {
+#quarto-sidebar .sidebar-header > .sidebar-tools-main {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
   margin: 0;
+  padding: 0;
 }
 
-#quarto-sidebar .quarto-color-scheme-toggle {
+#quarto-sidebar .sidebar-tools-main .quarto-color-scheme-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -126,7 +128,7 @@ ul.task-list li input[type="checkbox"] {
   transition: opacity 0.15s ease, background-color 0.15s ease;
 }
 
-#quarto-sidebar .quarto-color-scheme-toggle:hover {
+#quarto-sidebar .sidebar-tools-main .quarto-color-scheme-toggle:hover {
   opacity: 1;
   background-color: var(--bs-tertiary-bg);
 }
