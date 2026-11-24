@@ -581,8 +581,8 @@ local function register_curve_def(el, kind)
         dim     = dim,
         subtype = subtype,
         rows    = rows,
-        params  = params,
-        vars    = vars,
+        params  = (#params > 0) and params or nil,
+        vars    = (#vars > 0) and vars or nil,
         x       = kv.x,
         y       = kv.y,
         z       = kv.z,
@@ -730,7 +730,7 @@ local function render_plot_canvas(el)
 
     local cfg = {
         curves = curves,
-        shade  = shade,
+        shade  = (#shade > 0) and shade or nil,
         xlabel = xlabel,
         ylabel = ylabel,
         zlabel = zlabel,
@@ -797,7 +797,7 @@ local function validate_plots()
                 fail("Cannot mix 2D and 3D curves in %s", ctx)
             end
 
-            for _, p in ipairs(def.params) do
+            for _, p in ipairs(def.params or {}) do
                 if p.isSlider then
                     if not shared_sliders[p.name] then
                         shared_sliders[p.name] = p
@@ -816,11 +816,11 @@ local function validate_plots()
             cfg.play = DEFAULTS.play
         end
 
-        if #cfg.shade > 0 and dim ~= "2d" then
+        if cfg.shade and #cfg.shade > 0 and dim ~= "2d" then
             fail("Key 'shade' is only supported in 2D plots (%s)", ctx)
         end
 
-        for _, rule in ipairs(cfg.shade) do
+        for _, rule in ipairs(cfg.shade or {}) do
             if not curve_set[rule.from] then
                 fail("Shading source '%s' must be listed in 'curves' of %s", rule.from, ctx)
             end

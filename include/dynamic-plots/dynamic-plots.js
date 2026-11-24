@@ -192,7 +192,7 @@
       compilePointEvaluator(def) {
         const isFile = def.kind === "file";
         const is3d = def.dim === "3d";
-        const paramNames = def.params.map((p) => p.name);
+        const paramNames = (def.params || []).map((p) => p.name);
         const declared = new Set(paramNames);
         const lines = [];
 
@@ -237,7 +237,7 @@
 
       // Compiles a fast scalar y(x) evaluator for explicit 2D functions
       compileScalarY(def) {
-        const paramNames = def.params.map((p) => p.name);
+        const paramNames = (def.params || []).map((p) => p.name);
         const declared = new Set(paramNames);
         const lines = [];
 
@@ -292,13 +292,15 @@
   // Compiles and evaluates unified curve/surface definitions
   const CurveEvaluator = {
     prepare(def) {
-      const domainParams = def.params.filter((p) => !p.isSlider);
-      const sliderParams = def.params.filter((p) => p.isSlider);
-      const paramIndexByName = new Map(def.params.map((p, idx) => [p.name, idx]));
+      const params = def.params || [];
+      const domainParams = params.filter((p) => !p.isSlider);
+      const sliderParams = params.filter((p) => p.isSlider);
+      const paramIndexByName = new Map(params.map((p, idx) => [p.name, idx]));
       const isExplicitYX = def.kind === "function" && def.dim === "2d" && domainParams[0]?.name === "x" && def.x === "x";
 
       return {
         ...def,
+        params,
         rawLabel: def.label,
         domainParams,
         sliderParams,
