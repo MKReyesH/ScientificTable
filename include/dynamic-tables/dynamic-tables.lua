@@ -344,7 +344,7 @@ local function render_table(opts, columns_meta)
     end
 
     local html = string.format(
-        '<div class="tabulator-container-wrap column-page" data-headers="%s" data-rows="%s" data-columns="%s" data-searchable="%s" data-perpage="%s" data-sortable="%s"></div>',
+        '<div class="tabulator-container-wrap" data-headers="%s" data-rows="%s" data-columns="%s" data-searchable="%s" data-perpage="%s" data-sortable="%s"></div>',
         U.html_escape(pandoc.json.encode(headers)),
         U.html_escape(pandoc.json.encode(rows)),
         U.html_escape(pandoc.json.encode(final_columns_meta)),
@@ -447,7 +447,7 @@ function Pandoc(doc)
             U.ensure_quarto_math(doc)
         end
         U.inject_widget(doc, "dynamic-tables", SCRIPT_DIR, {
-            head = '<link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">',
+            head = '<link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator.min.css">',
             body_prefix = '<script src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>'
         })
         has_dynamic_table = false

@@ -5,9 +5,6 @@
   width: fit-content;
   max-width: 80vw;
 }
-.tabulator-container-wrap.column-page {
-  max-width: 100%;
-}
 
 .tabulator {
   border: 1px solid var(--bs-border-color);
