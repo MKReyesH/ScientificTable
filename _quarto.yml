@@ -22,14 +22,13 @@ website:
   #    - href: about.qmd
   navbar:
     logo:
-      light: img/logo/logo_black.png
+      light: img/logo/logo_white.png
       dark: img/logo/logo_white.png
     left:
       - text: "Home"
         href: index.qmd
-      - text: "Topics"
+      - text: "Examples"
         menu:
-          - text: "Examples"
           - href: doc/Examples/example1.qmd
           - href: doc/Examples/example2.qmd
           - href: doc/Examples/example3.qmd
