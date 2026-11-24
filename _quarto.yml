@@ -4,19 +4,38 @@ project:
 website:
   title: "Scientific Wiki Template"
   search: true
-  sidebar:
-    style: docked
-    logo: 
-      light: img/logo/logo_black.png
+  #sidebar:
+  #  style: docked
+  #  logo: 
+  #    light: img/logo/logo_black.png
+  #    dark: img/logo/logo_white.png
+  #  contents:
+  #    - href: index.qmd
+  #      text: "Home"
+  #    - section: "Topics"
+  #      contents:
+  #      - section: "Examples"
+  #        contents:
+  #        - auto: "doc/Examples/*.qmd"
+  #    - href: https://github.com/MKReyesH/ScientificTable
+  #      text: "GitHub Project"
+  #    - href: about.qmd
+  navbar:
+    logo:
+      light: img/logo/logo_white.png
       dark: img/logo/logo_white.png
-    contents:
+    left:
       - href: index.qmd
         text: "Home"
-      - section: "Topics"
-        contents:
-        - section: "Examples"
-          contents:
-          - auto: "doc/Examples/*.qmd"
+      - text: "Topics"
+        menu:
+          - text: "Examples"
+          - doc/Examples/markdown.qmd
+          - doc/Examples/latex.qmd
+          - doc/Examples/tables.qmd
+          - doc/Examples/plots.qmd
+          - doc/Examples/mindmaps.qmd
+    right:
       - href: https://github.com/MKReyesH/ScientificTable
         text: "GitHub Project"
       - href: about.qmd
@@ -27,8 +46,8 @@ format:
     css: include/theme-config.css
     respect-user-color-scheme: true
     theme: # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
-      light: flatly
-      dark: [flatly, include/theme-dark-patch.scss]
+      light: cosmo
+      dark: [cosmo, include/theme-dark-patch.scss]
 
 bibliography: bib/references.bib
 csl: bib/jcap.csl
