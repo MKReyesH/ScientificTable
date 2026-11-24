@@ -17,7 +17,7 @@ $btn-close-color: $body-color;
 
 /*-- scss:rules --*/
 
-// Keep theme accent colors at their defaults, only brightening dark link colors for contrast
+// Brighten dark link colors for dark-background contrast
 @if lightness($link-color) < 55% {
   $dark-link: mix(#ffffff, $link-color, 45%);
   $dark-link-hover: mix(#ffffff, $link-color, 60%);
@@ -35,5 +35,21 @@ $btn-close-color: $body-color;
     &:hover {
       color: var(--bs-link-hover-color);
     }
+  }
+}
+
+// Brighten dark inline code colors while preserving the theme's hue
+@if lightness($code-color) < 65% {
+  $dark-code: mix(#ffffff, $code-color, 55%);
+
+  :root {
+    --bs-code-color: #{$dark-code};
+  }
+
+  code:not(.sourceCode),
+  p code:not(.sourceCode),
+  li code:not(.sourceCode),
+  td code:not(.sourceCode) {
+    color: var(--bs-code-color);
   }
 }
