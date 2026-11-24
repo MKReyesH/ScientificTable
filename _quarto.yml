@@ -1,3 +1,6 @@
+project:
+  type: website
+
 website:
   search: true
   navbar:
@@ -19,25 +22,22 @@ website:
       - text: "About"
         href: about.qmd
 
-project:
-  type: website
-
 format:
   html:
     math: mathjax
+    css: include/css-config.css
     respect-user-color-scheme: true
     theme: # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
       light: flatly
-      dark: [flatly, include/theme/dark-theme.scss]
-    css: include/theme/css-config.css
+      dark: [flatly, include/dark-theme/dark-theme.scss]
     include-after-body:
-      - include/theme/dark-theme-toggle.html
+      - include/dark-theme/dark-theme-toggle.html
 
 bibliography: bib/references.bib
 csl: bib/jcap.csl
 
 filters: # The order matters
-  - include/lua/latex-to-quarto.lua
-  - include/lua/dynamic-tables.lua
-  - include/lua/dynamic-plots.lua
-  - include/lua/mindmap-graph.lua
+  - include/latex-to-quarto/latex-to-quarto.lua
+  - include/dynamic-tables/dynamic-tables.lua
+  - include/dynamic-plots/dynamic-plots.lua
+  - include/dynamic-mindmaps/dynamic-mindmaps.lua

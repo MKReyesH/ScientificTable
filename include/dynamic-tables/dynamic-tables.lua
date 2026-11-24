@@ -8,13 +8,11 @@ local SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")
 local U
 do
     local orig_path = package.path
-    if SCRIPT_DIR ~= "" then
-        package.path = SCRIPT_DIR .. "?.lua;" .. orig_path
-    end
+    package.path = SCRIPT_DIR .. "../?.lua;" .. orig_path
     local ok, mod = pcall(require, "shared-utils")
     package.path = orig_path
     if not ok then
-        error(string.format("[%s] Error: Required module 'shared-utils.lua' not found in '%s': %s", TAG, SCRIPT_DIR, tostring(mod)))
+        error(string.format("[%s] Error: Required module 'shared-utils.lua' not found: %s", TAG, tostring(mod)))
     end
     U = mod
 end

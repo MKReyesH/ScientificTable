@@ -4,7 +4,6 @@
 
 local U = {}
 
-U.SCRIPT_DIR = (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
 U._file_cache = {}
 U._math_injected = setmetatable({}, { __mode = "k" })
 
@@ -110,6 +109,19 @@ window.MathRenderer = window.MathRenderer || {
 };
 </script>]]
 
+-- Resolves the directory of the calling feature filter
+local function resolve_caller_dir(explicit_dir)
+    if explicit_dir and explicit_dir ~= "" then
+        return explicit_dir
+    end
+    if debug and debug.getinfo then
+        local info = debug.getinfo(3, "S")
+        local src = info and info.source and info.source:match("^@(.*[/\\])")
+        if src then return src end
+    end
+    return (PANDOC_SCRIPT_FILE and PANDOC_SCRIPT_FILE:match("(.*[/\\])")) or ""
+end
+
 -- Trims leading and trailing whitespace
 function U.trim(s)
     return s and s:match("^%s*(.-)%s*$") or ""
@@ -140,17 +152,14 @@ function U.read_asset(path, tag)
     return content
 end
 
--- Opens a data file relative to working directory, project root (from include/lua/), or active document
+-- Opens a data file relative to working directory, project root (from include/<feature>/), or active document
 function U.open_data_file(src, script_dir)
     local file = io.open(src, "r")
     if file then return file end
 
-    local dir = script_dir or U.SCRIPT_DIR
+    local dir = resolve_caller_dir(script_dir)
     if dir ~= "" then
         file = io.open(dir .. "../../" .. src, "r")
-        if file then return file end
-
-        file = io.open(dir .. "../" .. src, "r")
         if file then return file end
     end
 
@@ -170,26 +179,22 @@ function U.stringify_inline_with_math(inline)
     if not inline then return "" end
 
     if inline.t == "Math" then
-        if inline.mathtype == "DisplayMath" or inline.mathtype == pandoc.DisplayMath then
-            return "\\[" .. inline.text .. "\\]"
+        local is_display = inline.mathtype == "DisplayMath" or inline.mathtype == pandoc.DisplayMath
+        return is_display and ("\\[" .. inline.text .. "\\]") or ("\\(" .. inline.text .. "\\)")
+    end
+
+    local children = inline.content or inline.c
+    if type(children) == "table" then
+        local res = {}
+        for _, child in ipairs(children) do
+            table.insert(res, U.stringify_inline_with_math(child))
         end
-        return "\\(" .. inline.text .. "\\)"
-    elseif inline.t == "Quoted" then
-        local q_char = (inline.quotetype == "SingleQuote" or inline.quotetype == pandoc.SingleQuote) and "'" or '"'
-        local inner = {}
-        for _, child in ipairs(inline.content or inline.c or {}) do
-            table.insert(inner, U.stringify_inline_with_math(child))
+        local joined = table.concat(res)
+        if inline.t == "Quoted" then
+            local q = (inline.quotetype == "SingleQuote" or inline.quotetype == pandoc.SingleQuote) and "'" or '"'
+            return q .. joined .. q
         end
-        return q_char .. table.concat(inner) .. q_char
-    elseif inline.c or inline.content then
-        local children = inline.content or inline.c
-        if type(children) == "table" then
-            local res = {}
-            for _, child in ipairs(children) do
-                table.insert(res, U.stringify_inline_with_math(child))
-            end
-            return table.concat(res)
-        end
+        return joined
     end
 
     return pandoc.utils.stringify(inline)
@@ -243,22 +248,39 @@ function U.inject_after_body(doc, html)
     U.inject_html(doc, "after-body", payload)
 end
 
--- Injects a widget's paired ../css/<name>.css (in-header) and ../js/<name>.js (after-body)
+-- Injects a widget's co-located <name>.css (in-header) and/or <name>.js (after-body)
 function U.inject_widget(doc, name, script_dir, opts)
     opts = opts or {}
-    local dir = script_dir or U.SCRIPT_DIR
-    local css = U.read_asset(dir .. "../css/" .. name .. ".css", name)
-    local js  = U.read_asset(dir .. "../js/" .. name .. ".js", name)
+    local dir = resolve_caller_dir(script_dir)
+    local css_path = dir .. name .. ".css"
+    local js_path  = dir .. name .. ".js"
 
-    local head_parts = {}
-    if opts.head then table.insert(head_parts, opts.head) end
-    table.insert(head_parts, "<style>\n" .. css .. "\n</style>")
-    U.inject_html(doc, "in-header", table.concat(head_parts, "\n"))
+    local has_css = io.open(css_path, "r")
+    if has_css then has_css:close() end
+    local has_js = io.open(js_path, "r")
+    if has_js then has_js:close() end
 
-    local body_parts = {}
-    if opts.body_prefix then table.insert(body_parts, opts.body_prefix) end
-    table.insert(body_parts, "<script>\n" .. js .. "\n</script>")
-    U.inject_after_body(doc, table.concat(body_parts, "\n"))
+    if not has_css and not has_js then
+        error(string.format("[%s] Error: No '%s.css' or '%s.js' found in '%s'", name, name, name, dir))
+    end
+
+    if opts.head or has_css then
+        local head_parts = {}
+        if opts.head then table.insert(head_parts, opts.head) end
+        if has_css then
+            table.insert(head_parts, "<style>\n" .. U.read_asset(css_path, name) .. "\n</style>")
+        end
+        U.inject_html(doc, "in-header", table.concat(head_parts, "\n"))
+    end
+
+    if opts.body_prefix or has_js then
+        local body_parts = {}
+        if opts.body_prefix then table.insert(body_parts, opts.body_prefix) end
+        if has_js then
+            table.insert(body_parts, "<script>\n" .. U.read_asset(js_path, name) .. "\n</script>")
+        end
+        U.inject_after_body(doc, table.concat(body_parts, "\n"))
+    end
 end
 
 return U
