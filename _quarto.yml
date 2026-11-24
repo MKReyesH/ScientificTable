@@ -44,6 +44,7 @@ format:
   html:
     math: mathjax
     css: include/theme-config.css
+    syntax-highlighting: github
     respect-user-color-scheme: true
     theme: # default, cerulean, cosmo, flatly, journal, litera, lumen, lux, materia, minty, morph, pulse, quartz, sandstone, simplex, sketchy, spacelab, united, yeti, zephyr
       light: flatly
