@@ -101,6 +101,35 @@ local has_plot_math = false
 local plot_defs = {}
 local plot_configs = {}
 
+-- Raises an immediate unwindable error that logs cleanly once in Quarto/Pandoc
+local active_err = nil
+
+local function fail(fmt, ...)
+    active_err = string.format("[%s] Error: " .. fmt, TAG, ...)
+    return (nil)()
+end
+
+local function run_safe(fallback, fn, ...)
+    active_err = nil
+    local ok, res = xpcall(fn, function(err)
+        return active_err or debug.traceback(tostring(err), 2)
+    end, ...)
+    if not ok then
+        local msg = active_err or res
+        active_err = nil
+        error(msg, 0)
+        return fallback
+    end
+    return res
+end
+
+local function reset_state()
+    has_dynamic_plot = false
+    has_plot_math = false
+    plot_defs = {}
+    plot_configs = {}
+end
+
 local function track_math(str)
     if U.has_math(str) then
         has_plot_math = true
@@ -120,35 +149,37 @@ end
 local function eval_const_expr(src, context)
     local trimmed = U.trim(src)
     if trimmed == "" or trimmed:find("[^0-9a-zA-Z_%.%+%-%*/%^%(%),%s]") then
-        error(string.format("[%s] Error: Invalid constant expression '%s' in %s", TAG, src, context))
-        return nil
+        fail("Invalid constant expression '%s' in %s", src, context)
     end
 
+    local sci_literals = {}
+    local stash_sci = function(m)
+        sci_literals[#sci_literals + 1] = "(" .. m .. ")"
+        return "\1" .. #sci_literals .. "\2"
+    end
     local protected = trimmed
-        :gsub("(%d+%.?%d*[eE][+-]?%d+)", "(%1)")
-        :gsub("(%.%d+[eE][+-]?%d+)", "(%1)")
+        :gsub("(%d+%.?%d*[eE][+-]?%d+)", stash_sci)
+        :gsub("(%.%d+[eE][+-]?%d+)", stash_sci)
 
     for ident in protected:gmatch("[a-zA-Z_][a-zA-Z0-9_]*") do
         if CONST_ENV[ident] == nil then
-            error(string.format("[%s] Error: Identifier '%s' is not a constant in '%s' in %s", TAG, ident, src, context))
-            return nil
+            fail("Identifier '%s' is not a constant in '%s' in %s", ident, src, context)
         end
     end
 
     local lua_expr = protected
-        :gsub("(%d)([a-zA-Z_(])", "%1*%2")
-        :gsub("%)([%d%a_(])", ")*%1")
+        :gsub("%f[%w_](%d+%.?%d*)([a-zA-Z_(\1])", "%1*%2")
+        :gsub("%f[%.%w_](%.%d+)([a-zA-Z_(\1])", "%1*%2")
+        :gsub("([\2%)])([%d%a_(\1])", "%1*%2")
+        :gsub("\1(%d+)\2", function(idx) return sci_literals[tonumber(idx)] end)
 
     local chunk = load("return (" .. lua_expr .. ")", "const", "t", CONST_ENV)
-    if not chunk then
-        error(string.format("[%s] Error: Failed to evaluate constant expression '%s' in %s", TAG, src, context))
-        return nil
+    local ok, val = false, nil
+    if chunk then
+        ok, val = pcall(chunk)
     end
-
-    local ok, val = pcall(chunk)
     if not ok or type(val) ~= "number" or val ~= val or math.abs(val) == math.huge then
-        error(string.format("[%s] Error: Failed to evaluate constant expression '%s' in %s", TAG, src, context))
-        return nil
+        fail("Failed to evaluate constant expression '%s' in %s", src, context)
     end
     return val
 end
@@ -158,16 +189,14 @@ local function parse_bool(val, key, context)
     local lower = val:lower()
     if lower == "true" then return true end
     if lower == "false" then return false end
-    error(string.format("[%s] Error: Key '%s' in %s must be 'true' or 'false' (got '%s')", TAG, key, context, val))
-    return nil
+    fail("Key '%s' in %s must be 'true' or 'false' (got '%s')", key, context, val)
 end
 
 local function parse_int(val, key, min_val, context)
     if val == nil then return nil end
     local n = tonumber(val)
     if not n or math.floor(n) ~= n or n < min_val then
-        error(string.format("[%s] Error: Key '%s' in %s must be an integer >= %d (got '%s')", TAG, key, context, min_val, val))
-        return nil
+        fail("Key '%s' in %s must be an integer >= %d (got '%s')", key, context, min_val, val)
     end
     return n
 end
@@ -176,8 +205,7 @@ local function parse_float(val, key, min_val, max_val, context)
     if val == nil then return nil end
     local n = tonumber(val)
     if not n or n < min_val or n > max_val then
-        error(string.format("[%s] Error: Key '%s' in %s must be a number in [%g, %g] (got '%s')", TAG, key, context, min_val, max_val, val))
-        return nil
+        fail("Key '%s' in %s must be a number in [%g, %g] (got '%s')", key, context, min_val, max_val, val)
     end
     return n
 end
@@ -185,8 +213,7 @@ end
 local function parse_enum(val, key, valid_map, context)
     if val == nil then return nil end
     if not valid_map[val] then
-        error(string.format("[%s] Error: Invalid value '%s' for '%s' in %s", TAG, val, key, context))
-        return nil
+        fail("Invalid value '%s' for '%s' in %s", val, key, context)
     end
     return val
 end
@@ -213,14 +240,11 @@ local function parse_range(val, key, context)
     local inner = val:match("^%[%s*(.-)%s*%]$")
     local parts = inner and split_top_commas(inner) or {}
     if #parts ~= 2 then
-        error(string.format("[%s] Error: Key '%s' in %s must be '[min, max]' (got '%s')", TAG, key, context, val))
-        return nil
+        fail("Key '%s' in %s must be '[min, max]' (got '%s')", key, context, val)
     end
     local lo, hi = eval_const_expr(parts[1], context), eval_const_expr(parts[2], context)
-    if not lo or not hi then return nil end
     if lo >= hi then
-        error(string.format("[%s] Error: Key '%s' in %s must have min < max (got '%s')", TAG, key, context, val))
-        return nil
+        fail("Key '%s' in %s must have min < max (got '%s')", key, context, val)
     end
     return { lo, hi }
 end
@@ -229,17 +253,14 @@ end
 local function parse_param_spec(name, val, context)
     local inner = val:match("^%[%s*(.-)%s*%]$")
     if not inner or inner == "" then
-        error(string.format("[%s] Error: Parameter '%s' in %s must be enclosed in '[...]' (got '%s')", TAG, name, context, val))
-        return nil
+        fail("Parameter '%s' in %s must be enclosed in '[...]' (got '%s')", name, context, val)
     end
 
     local s_tok, e_tok = inner:match("^(.-)%s*%.%.%s*(.-)$")
     if s_tok and e_tok then
         local lo, hi = eval_const_expr(s_tok, context), eval_const_expr(e_tok, context)
-        if not lo or not hi then return nil end
         if math.floor(lo) ~= lo or math.floor(hi) ~= hi or lo >= hi then
-            error(string.format("[%s] Error: Integer step range '%s' for parameter '%s' in %s must have integer min < max", TAG, val, name, context))
-            return nil
+            fail("Integer step range '%s' for parameter '%s' in %s must have integer min < max", val, name, context)
         end
         local values = {}
         for v = lo, hi do table.insert(values, v) end
@@ -249,74 +270,67 @@ local function parse_param_spec(name, val, context)
     local parts = split_top_commas(inner)
     if #parts == 2 then
         local lo, hi = eval_const_expr(parts[1], context), eval_const_expr(parts[2], context)
-        if not lo or not hi then return nil end
         if lo >= hi then
-            error(string.format("[%s] Error: Range '%s' for parameter '%s' in %s must have min < max", TAG, val, name, context))
-            return nil
+            fail("Range '%s' for parameter '%s' in %s must have min < max", val, name, context)
         end
         return { name = name, kind = "range", min = lo, max = hi }
     elseif #parts >= 3 then
         local values = {}
         for _, item in ipairs(parts) do
-            local v = eval_const_expr(item, context)
-            if not v then return nil end
-            table.insert(values, v)
+            table.insert(values, eval_const_expr(item, context))
         end
         return { name = name, kind = "list", values = values }
     end
-    error(string.format("[%s] Error: Parameter '%s' in %s must be '[min, max]', '[a..b]', or '[v1, v2, v3, ...]' (got '%s')", TAG, name, context, val))
-    return nil
+    fail("Parameter '%s' in %s must be '[min, max]', '[a..b]', or '[v1, v2, v3, ...]' (got '%s')", name, context, val)
 end
 
 -- Validates identifiers and dynamic column indexing 'c[...]' in an expression
 local function validate_expr(expr, allowed_vars, allow_cols, context)
-    if U.trim(expr) == "" then
-        error(string.format("[%s] Error: Empty expression in %s", TAG, context))
-        return
+    local trimmed = U.trim(expr)
+    if trimmed == "" then
+        fail("Empty expression in %s", context)
     end
-    if expr:find("=", 1, true) then
-        error(string.format("[%s] Error: Expression '%s' in %s must not contain '='", TAG, expr, context))
-        return
+    if trimmed:find("=", 1, true) then
+        fail("Expression '%s' in %s must not contain '='", expr, context)
+    end
+    if trimmed:find("[^0-9a-zA-Z_%.%+%-%*/%^%(%)%[%],%s]") then
+        fail("Invalid character in expression '%s' in %s", expr, context)
     end
 
-    local stripped, pos, len = {}, 1, #expr
+    local stripped, pos, len = {}, 1, #trimmed
     while pos <= len do
-        local s_idx, e_idx = expr:find("%f[%w_]c%[", pos)
+        local s_idx, e_idx = trimmed:find("%f[%w_]c%[", pos)
         if not s_idx then
-            table.insert(stripped, expr:sub(pos))
+            table.insert(stripped, trimmed:sub(pos))
             break
         end
         if not allow_cols then
-            error(string.format("[%s] Error: Column indexing 'c[...]' is only allowed in '.plot-file' (%s)", TAG, context))
-            return
+            fail("Column indexing 'c[...]' is only allowed in '.plot-file' (%s)", context)
         end
-        table.insert(stripped, expr:sub(pos, s_idx - 1))
+        table.insert(stripped, trimmed:sub(pos, s_idx - 1))
         local depth, cur = 1, e_idx + 1
         while cur <= len and depth > 0 do
-            local ch = expr:sub(cur, cur)
+            local ch = trimmed:sub(cur, cur)
             if ch == "[" then depth = depth + 1 elseif ch == "]" then depth = depth - 1 end
             cur = cur + 1
         end
         if depth ~= 0 then
-            error(string.format("[%s] Error: Unclosed 'c[...]' bracket in '%s' in %s", TAG, expr, context))
-            return
+            fail("Unclosed 'c[...]' bracket in '%s' in %s", expr, context)
         end
-        validate_expr(expr:sub(e_idx + 1, cur - 2), allowed_vars, allow_cols, context)
+        validate_expr(trimmed:sub(e_idx + 1, cur - 2), allowed_vars, allow_cols, context)
         table.insert(stripped, "0")
         pos = cur
     end
 
     local clean = table.concat(stripped)
     if clean:find("[", 1, true) or clean:find("]", 1, true) then
-        error(string.format("[%s] Error: Unexpected '[' or ']' in expression '%s' in %s", TAG, expr, context))
-        return
+        fail("Unexpected '[' or ']' in expression '%s' in %s", expr, context)
     end
 
     local scrubbed = clean:gsub("%d+%.?%d*[eE][+-]?%d+", "0"):gsub("%.%d+[eE][+-]?%d+", "0")
     for ident in scrubbed:gmatch("[a-zA-Z_][a-zA-Z0-9_]*") do
         if CONST_ENV[ident] == nil and not allowed_vars[ident] then
-            error(string.format("[%s] Error: Unknown or disallowed identifier '%s' in %s", TAG, ident, context))
-            return
+            fail("Unknown or disallowed identifier '%s' in %s", ident, context)
         end
     end
 end
@@ -339,66 +353,54 @@ local function parse_curve_block(lines, reserved_keys, required_keys, context)
         if section == "vars" then
             local vname, vexpr = line:match("^([a-zA-Z_][a-zA-Z0-9_]*)%s*=%s*(.+)$")
             if not vname or not is_valid_ident(vname) then
-                error(string.format("[%s] Error: Invalid assignment inside 'vars:' in %s (expected 'name = expr'): %s", TAG, context, line))
-                return nil
+                fail("Invalid assignment inside 'vars:' in %s (expected 'name = expr'): %s", context, line)
             end
             table.insert(vars, { name = vname, expr = U.trim(vexpr) })
         elseif section == "labels" then
             local lval = U.trim(v_raw)
             if lval == "" then
-                error(string.format("[%s] Error: Empty label for '%s' in 'labels:' of %s", TAG, k_raw, context))
-                return nil
+                fail("Empty label for '%s' in 'labels:' of %s", k_raw, context)
             end
             if labels[k_raw] ~= nil then
-                error(string.format("[%s] Error: Duplicate label for '%s' in 'labels:' of %s", TAG, k_raw, context))
-                return nil
+                fail("Duplicate label for '%s' in 'labels:' of %s", k_raw, context)
             end
             labels[k_raw] = strip_quotes(lval)
         elseif k_raw then
             local val = U.trim(v_raw)
             if reserved_keys[k_lower] then
                 if kv[k_lower] ~= nil then
-                    error(string.format("[%s] Error: Duplicate key '%s' in %s", TAG, k_lower, context))
-                    return nil
+                    fail("Duplicate key '%s' in %s", k_lower, context)
                 end
                 if k_lower == "vars" or k_lower == "labels" then
                     if val ~= "" then
-                        error(string.format("[%s] Error: Key '%s' in %s must start a multi-line block (no inline value)", TAG, k_lower, context))
-                        return nil
+                        fail("Key '%s' in %s must start a multi-line block (no inline value)", k_lower, context)
                     end
                     kv[k_lower] = true
                     section = k_lower
                 else
                     if val == "" then
-                        error(string.format("[%s] Error: Key '%s' in %s requires a value", TAG, k_lower, context))
-                        return nil
+                        fail("Key '%s' in %s requires a value", k_lower, context)
                     end
                     kv[k_lower] = val
                 end
             else
                 if not is_valid_ident(k_raw) then
-                    error(string.format("[%s] Error: Unknown or invalid key '%s' in %s", TAG, k_raw, context))
-                    return nil
+                    fail("Unknown or invalid key '%s' in %s", k_raw, context)
                 end
                 if param_specs[k_raw] ~= nil then
-                    error(string.format("[%s] Error: Duplicate parameter '%s' in %s", TAG, k_raw, context))
-                    return nil
+                    fail("Duplicate parameter '%s' in %s", k_raw, context)
                 end
-                local pspec = parse_param_spec(k_raw, val, context)
-                if not pspec then return nil end
                 table.insert(param_order, k_raw)
-                param_specs[k_raw] = pspec
+                param_specs[k_raw] = parse_param_spec(k_raw, val, context)
             end
         else
-            error(string.format("[%s] Error: Invalid line in %s (expected 'key: value'): %s", TAG, context, line))
-            return nil
+            fail("Invalid line in %s (expected 'key: value'): %s", context, line)
         end
     end
 
     for _, req in ipairs(required_keys) do
         if not kv[req] or kv[req] == "" then
-            error(string.format("[%s] Error: Missing required key '%s' in %s", TAG, req, context))
-            return nil
+            fail("Missing required key '%s' in %s", req, context)
         end
     end
     return kv, vars, labels, param_order, param_specs
@@ -408,8 +410,7 @@ end
 local function read_numeric_matrix(src, skip, context)
     local file = U.open_data_file(src, SCRIPT_DIR)
     if not file then
-        error(string.format("[%s] Error: Cannot open data file at '%s' in %s. Check file path.", TAG, src, context))
-        return nil
+        fail("Cannot open data file at '%s' in %s. Check file path.", src, context)
     end
 
     local rows, skipped, expected_cols, line_num = {}, 0, nil, 0
@@ -427,11 +428,7 @@ local function read_numeric_matrix(src, skip, context)
                     local num = tonumber(clean)
                     if not num then
                         file:close()
-                        error(string.format(
-                            "[%s] Error: Non-numeric value '%s' at line %d of '%s' in %s (use 'skip: N' to skip header rows)",
-                            TAG, clean, line_num, src, context
-                        ))
-                        return nil
+                        fail("Non-numeric value '%s' at line %d of '%s' in %s (use 'skip: N' to skip header rows)", clean, line_num, src, context)
                     end
                     table.insert(row, num)
                 end
@@ -440,11 +437,7 @@ local function read_numeric_matrix(src, skip, context)
                         expected_cols = #row
                     elseif #row ~= expected_cols then
                         file:close()
-                        error(string.format(
-                            "[%s] Error: Inconsistent column count at line %d of '%s' in %s (expected %d, got %d)",
-                            TAG, line_num, src, context, expected_cols, #row
-                        ))
-                        return nil
+                        fail("Inconsistent column count at line %d of '%s' in %s (expected %d, got %d)", line_num, src, context, expected_cols, #row)
                     end
                     table.insert(rows, row)
                 end
@@ -454,8 +447,7 @@ local function read_numeric_matrix(src, skip, context)
     file:close()
 
     if #rows == 0 then
-        error(string.format("[%s] Error: No numeric data rows found in '%s' for %s", TAG, src, context))
-        return nil
+        fail("No numeric data rows found in '%s' for %s", src, context)
     end
     return rows
 end
@@ -469,26 +461,22 @@ local function finalize_curve_params_and_exprs(kv, vars, labels, param_order, pa
             local sname = U.trim(tok)
             if sname ~= "" then
                 if not param_specs[sname] then
-                    error(string.format("[%s] Error: Slider '%s' in %s does not match any declared parameter", TAG, sname, context))
-                    return nil
+                    fail("Slider '%s' in %s does not match any declared parameter", sname, context)
                 end
                 if slider_set[sname] then
-                    error(string.format("[%s] Error: Duplicate slider '%s' in %s", TAG, sname, context))
-                    return nil
+                    fail("Duplicate slider '%s' in %s", sname, context)
                 end
                 slider_set[sname] = true
             end
         end
         if not next(slider_set) then
-            error(string.format("[%s] Error: Key 'sliders' in %s cannot be empty", TAG, context))
-            return nil
+            fail("Key 'sliders' in %s cannot be empty", context)
         end
     end
 
     for lname in pairs(labels) do
         if not slider_set[lname] then
-            error(string.format("[%s] Error: Label '%s' in 'labels:' of %s must correspond to a parameter in 'sliders:'", TAG, lname, context))
-            return nil
+            fail("Label '%s' in 'labels:' of %s must correspond to a parameter in 'sliders:'", lname, context)
         end
     end
 
@@ -512,8 +500,7 @@ local function finalize_curve_params_and_exprs(kv, vars, labels, param_order, pa
 
     for _, v in ipairs(vars) do
         if param_specs[v.name] or base_vars[v.name] then
-            error(string.format("[%s] Error: Variable '%s' in 'vars:' of %s cannot shadow a parameter or data column", TAG, v.name, context))
-            return nil
+            fail("Variable '%s' in 'vars:' of %s cannot shadow a parameter or data column", v.name, context)
         end
         validate_expr(v.expr, allowed_vars, allow_cols, context)
         allowed_vars[v.name] = true
@@ -534,8 +521,7 @@ local function register_curve_def(el, kind)
     local tag_name = is_fn and ".plot-function" or ".plot-file"
     local id = U.trim(el.identifier)
     if id == "" then
-        error(string.format("[%s] Error: '%s' block requires an 'id' attribute (e.g. ::: {%s id=\"c1\"})", TAG, tag_name, tag_name))
-        return {}
+        fail("'%s' block requires an 'id' attribute (e.g. ::: {%s id=\"c1\"})", tag_name, tag_name)
     end
     local context = tag_name .. "#" .. id
     local kv, vars, labels, param_order, param_specs = parse_curve_block(
@@ -544,35 +530,29 @@ local function register_curve_def(el, kind)
         is_fn and {} or { "src", "x", "y" },
         context
     )
-    if not kv then return {} end
 
     local rows, base_vars = nil, {}
     if is_fn then
         for _, coord in ipairs({ "x", "y", "z" }) do
             local val = kv[coord]
             if val and val:match("^%[.*%]$") then
-                local pspec = parse_param_spec(coord, val, context)
-                if not pspec then return {} end
                 table.insert(param_order, coord)
-                param_specs[coord] = pspec
+                param_specs[coord] = parse_param_spec(coord, val, context)
                 kv[coord] = coord
             end
         end
         if not kv.x or not kv.y then
-            error(string.format("[%s] Error: Both 'x' and 'y' must be defined (as parameters or coordinate expressions) in %s", TAG, context))
-            return {}
+            fail("Both 'x' and 'y' must be defined (as parameters or coordinate expressions) in %s", context)
         end
     else
         local skip = parse_int(kv.skip, "skip", 0, context) or DEFAULTS.skip
         rows = read_numeric_matrix(strip_quotes(kv.src), skip, context)
-        if not rows then return {} end
         for i = 0, #rows[1] - 1 do base_vars["c" .. i] = true end
     end
 
     local params, domain_count = finalize_curve_params_and_exprs(
         kv, vars, labels, param_order, param_specs, base_vars, not is_fn, context
     )
-    if not params then return {} end
 
     local dim = kv.z and "3d" or "2d"
     local subtype = "curve"
@@ -580,19 +560,16 @@ local function register_curve_def(el, kind)
 
     if is_fn then
         if domain_count < 1 or domain_count > 2 then
-            error(string.format("[%s] Error: %s must have 1 domain parameter (curve) or 2 domain parameters (3D surface); got %d", TAG, context, domain_count))
-            return {}
+            fail("%s must have 1 domain parameter (curve) or 2 domain parameters (3D surface); got %d", context, domain_count)
         end
         if dim == "2d" and domain_count == 2 then
-            error(string.format("[%s] Error: 2D curve in %s cannot have 2 domain parameters (define 'z' for a 3D surface)", TAG, context))
-            return {}
+            fail("2D curve in %s cannot have 2 domain parameters (define 'z' for a 3D surface)", context)
         end
         subtype = (domain_count == 2) and "surface" or "curve"
         points = parse_int(kv.points, "points", 2, context)
             or (subtype == "surface" and DEFAULTS.points_surface or DEFAULTS.points_curve)
     elseif domain_count > 0 then
-        error(string.format("[%s] Error: Every parameter declared in %s must be listed in 'sliders:'", TAG, context))
-        return {}
+        fail("Every parameter declared in %s must be listed in 'sliders:'", context)
     end
 
     local label = strip_quotes(kv.label) or id
@@ -630,8 +607,7 @@ local function parse_shade_header(line, context)
     lhs, rhs = U.trim(lhs), U.trim(rhs)
 
     if lhs == "" or rhs == "" then
-        error(string.format("[%s] Error: Invalid shading rule '%s' in %s (expected 'curve -> target')", TAG, line, context))
-        return nil
+        fail("Invalid shading rule '%s' in %s (expected 'curve -> target')", line, context)
     end
 
     local rule = { from = lhs, opacity = DEFAULTS.shade_opacity }
@@ -640,9 +616,7 @@ local function parse_shade_header(line, context)
     elseif is_valid_ident(rhs) then
         rule.toKind, rule.to = "curve", rhs
     else
-        local cval = eval_const_expr(rhs, context)
-        if cval == nil then return nil end
-        rule.toKind, rule.to = "const", cval
+        rule.toKind, rule.to = "const", eval_const_expr(rhs, context)
     end
     return rule, has_opts
 end
@@ -654,7 +628,7 @@ local function parse_plot_block(lines, context)
 
     local function close_rule()
         if active_rule and active_has_opts and active_opt_count == 0 then
-            error(string.format("[%s] Error: Shading rule '%s -> %s:' in %s has ':' but no options", TAG, active_rule.from, tostring(active_rule.to), context))
+            fail("Shading rule '%s -> %s:' in %s has ':' but no options", active_rule.from, tostring(active_rule.to), context)
         end
         active_rule, active_has_opts, active_opt_count = nil, false, 0
     end
@@ -672,13 +646,11 @@ local function parse_plot_block(lines, context)
             if line:find("->", 1, true) then
                 close_rule()
                 local rule, has_opts = parse_shade_header(line, context)
-                if not rule then return nil end
                 table.insert(shade, rule)
                 active_rule, active_has_opts = rule, has_opts
             elseif active_has_opts and opt_lower and SHADE_OPTION_KEYS[opt_lower] then
                 if active_rule[opt_lower] ~= nil then
-                    error(string.format("[%s] Error: Duplicate shading option '%s' in %s", TAG, opt_lower, context))
-                    return nil
+                    fail("Duplicate shading option '%s' in %s", opt_lower, context)
                 end
                 active_opt_count = active_opt_count + 1
                 local val = U.trim(opt_v)
@@ -693,48 +665,40 @@ local function parse_plot_block(lines, context)
                     track_math(active_rule.label)
                 end
             else
-                error(string.format("[%s] Error: Invalid line '%s' inside 'shade:' of %s", TAG, line, context))
-                return nil
+                fail("Invalid line '%s' inside 'shade:' of %s", line, context)
             end
         elseif opt_lower then
             if not PLOT_KEYS[opt_lower] then
-                error(string.format("[%s] Error: Unknown key '%s' in %s", TAG, opt_lower, context))
-                return nil
+                fail("Unknown key '%s' in %s", opt_lower, context)
             end
             if kv[opt_lower] ~= nil then
-                error(string.format("[%s] Error: Duplicate key '%s' in %s", TAG, opt_lower, context))
-                return nil
+                fail("Duplicate key '%s' in %s", opt_lower, context)
             end
             local val = U.trim(opt_v)
             if opt_lower == "shade" then
                 if val ~= "" then
-                    error(string.format("[%s] Error: Key 'shade' in %s must start a multi-line block (no inline value)", TAG, context))
-                    return nil
+                    fail("Key 'shade' in %s must start a multi-line block (no inline value)", context)
                 end
                 kv.shade = true
                 in_shade = true
             else
                 if val == "" then
-                    error(string.format("[%s] Error: Key '%s' in %s requires a value", TAG, opt_lower, context))
-                    return nil
+                    fail("Key '%s' in %s requires a value", opt_lower, context)
                 end
                 kv[opt_lower] = val
             end
         else
-            error(string.format("[%s] Error: Invalid line in %s (expected 'key: value'): %s", TAG, context, line))
-            return nil
+            fail("Invalid line in %s (expected 'key: value'): %s", context, line)
         end
     end
 
     close_rule()
 
     if kv.shade and #shade == 0 then
-        error(string.format("[%s] Error: Key 'shade' in %s must contain at least one shading rule", TAG, context))
-        return nil
+        fail("Key 'shade' in %s must contain at least one shading rule", context)
     end
     if not kv.curves or kv.curves == "" then
-        error(string.format("[%s] Error: Missing required key 'curves' in %s", TAG, context))
-        return nil
+        fail("Missing required key 'curves' in %s", context)
     end
     return kv, shade
 end
@@ -744,7 +708,6 @@ local function render_plot_canvas(el)
     local id = U.trim(el.identifier)
     local context = (id ~= "") and (".dynamic-plot#" .. id) or ".dynamic-plot"
     local kv, shade = parse_plot_block(U.extract_lines_from_div(el), context)
-    if not kv then return {} end
 
     local curves = {}
     for item in kv.curves:gmatch("[^,]+") do
@@ -752,8 +715,7 @@ local function render_plot_canvas(el)
         if cid ~= "" then table.insert(curves, cid) end
     end
     if #curves == 0 then
-        error(string.format("[%s] Error: Key 'curves' in %s must list at least one curve ID", TAG, context))
-        return {}
+        fail("Key 'curves' in %s must list at least one curve ID", context)
     end
 
     local xlabel = strip_quotes(kv.xlabel)
@@ -814,8 +776,7 @@ local function validate_plots()
     local defs_by_id = {}
     for _, def in ipairs(plot_defs) do
         if defs_by_id[def.id] then
-            error(string.format("[%s] Error: Duplicate curve ID '%s'", TAG, def.id))
-            return
+            fail("Duplicate curve ID '%s'", def.id)
         end
         defs_by_id[def.id] = def
     end
@@ -827,15 +788,13 @@ local function validate_plots()
         for _, cid in ipairs(cfg.curves) do
             local def = defs_by_id[cid]
             if not def then
-                error(string.format("[%s] Error: Unknown curve ID '%s' referenced in %s", TAG, cid, ctx))
-                return
+                fail("Unknown curve ID '%s' referenced in %s", cid, ctx)
             end
             curve_set[cid] = def
             if dim == nil then
                 dim = def.dim
             elseif dim ~= def.dim then
-                error(string.format("[%s] Error: Cannot mix 2D and 3D curves in %s", TAG, ctx))
-                return
+                fail("Cannot mix 2D and 3D curves in %s", ctx)
             end
 
             for _, p in ipairs(def.params) do
@@ -844,52 +803,44 @@ local function validate_plots()
                         shared_sliders[p.name] = p
                         slider_count = slider_count + 1
                     elseif not sliders_compatible(shared_sliders[p.name], p) then
-                        error(string.format("[%s] Error: Conflicting definitions for shared slider '%s' in %s", TAG, p.name, ctx))
-                        return
+                        fail("Conflicting definitions for shared slider '%s' in %s", p.name, ctx)
                     end
                 end
             end
         end
 
         if cfg.play ~= nil and slider_count == 0 then
-            error(string.format("[%s] Error: Key 'play' in %s requires at least one slider parameter", TAG, ctx))
-            return
+            fail("Key 'play' in %s requires at least one slider parameter", ctx)
         end
         if cfg.play == nil then
             cfg.play = DEFAULTS.play
         end
 
         if #cfg.shade > 0 and dim ~= "2d" then
-            error(string.format("[%s] Error: Key 'shade' is only supported in 2D plots (%s)", TAG, ctx))
-            return
+            fail("Key 'shade' is only supported in 2D plots (%s)", ctx)
         end
 
         for _, rule in ipairs(cfg.shade) do
             if not curve_set[rule.from] then
-                error(string.format("[%s] Error: Shading source '%s' must be listed in 'curves' of %s", TAG, rule.from, ctx))
-                return
+                fail("Shading source '%s' must be listed in 'curves' of %s", rule.from, ctx)
             end
             if rule.toKind == "curve" then
                 if not curve_set[rule.to] then
-                    error(string.format("[%s] Error: Shading target '%s' must be listed in 'curves' of %s", TAG, rule.to, ctx))
-                    return
+                    fail("Shading target '%s' must be listed in 'curves' of %s", rule.to, ctx)
                 end
                 if rule.from == rule.to and rule.xrange ~= nil then
-                    error(string.format("[%s] Error: Closed-curve shading '%s -> %s' cannot specify 'xrange' in %s", TAG, rule.from, rule.to, ctx))
-                    return
+                    fail("Closed-curve shading '%s -> %s' cannot specify 'xrange' in %s", rule.from, rule.to, ctx)
                 end
             end
             if rule.xrange and cfg.xscale == "log" and rule.xrange[1] <= 0 then
-                error(string.format("[%s] Error: Logarithmic xaxis requires positive shading 'xrange' bounds in %s", TAG, ctx))
-                return
+                fail("Logarithmic xaxis requires positive shading 'xrange' bounds in %s", ctx)
             end
         end
 
         for _, axis in ipairs({ "x", "y", "z" }) do
             local r = cfg[axis .. "range"]
             if cfg[axis .. "scale"] == "log" and r and r[1] <= 0 then
-                error(string.format("[%s] Error: Logarithmic %saxis requires positive bounds in %s", TAG, axis, ctx))
-                return
+                fail("Logarithmic %saxis requires positive bounds in %s", axis, ctx)
             end
         end
     end
@@ -898,11 +849,11 @@ end
 -- Pandoc filter hook for '.plot-function', '.plot-file', and '.dynamic-plot' fenced divs
 function Div(el)
     if el.classes:includes("plot-function") then
-        return register_curve_def(el, "function")
+        return run_safe({}, register_curve_def, el, "function")
     elseif el.classes:includes("plot-file") then
-        return register_curve_def(el, "file")
+        return run_safe({}, register_curve_def, el, "file")
     elseif el.classes:includes("dynamic-plot") then
-        return render_plot_canvas(el)
+        return run_safe({}, render_plot_canvas, el)
     end
     return nil
 end
@@ -913,28 +864,28 @@ function Pandoc(doc)
         return doc
     end
 
-    validate_plots()
+    local ok = run_safe(false, function()
+        validate_plots()
 
-    if has_plot_math then
-        U.ensure_quarto_math(doc)
-    end
+        if has_plot_math then
+            U.ensure_quarto_math(doc)
+        end
 
-    local payload = {}
-    for _, def in ipairs(plot_defs) do
-        local safe_json = pandoc.json.encode(def):gsub("</script>", "<\\/script>")
-        table.insert(payload, string.format(
-            '<script type="application/json" class="dynamic-plot-def" data-id="%s">%s</script>',
-            U.html_escape(def.id),
-            safe_json
-        ))
-    end
+        local payload = {}
+        for _, def in ipairs(plot_defs) do
+            local safe_json = pandoc.json.encode(def):gsub("</script>", "<\\/script>")
+            table.insert(payload, string.format(
+                '<script type="application/json" class="dynamic-plot-def" data-id="%s">%s</script>',
+                U.html_escape(def.id),
+                safe_json
+            ))
+        end
 
-    U.inject_after_body(doc, table.concat(payload, "\n"))
-    U.inject_widget(doc, "dynamic-plots", SCRIPT_DIR)
+        U.inject_after_body(doc, table.concat(payload, "\n"))
+        U.inject_widget(doc, "dynamic-plots", SCRIPT_DIR)
+        return true
+    end)
 
-    has_dynamic_plot = false
-    has_plot_math = false
-    plot_defs = {}
-    plot_configs = {}
-    return doc
+    reset_state()
+    return ok and doc or doc
 end
