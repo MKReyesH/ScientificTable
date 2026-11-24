@@ -611,13 +611,10 @@
       this.hasBoundShade = this.shadeRules.some((r) => r.toKind === "bound");
       this.is3d = this.specs[0].dim === "3d";
       this.sliders = this.collectSliders();
-      this.hasPlayButton = Boolean(this.sliders.length > 0 && this.cfg.play);
       this.curveVisible = this.specs.map(() => true);
       this.shadeVisible = this.shadeRules.map(() => true);
       this.evalCache = new Array(this.specs.length).fill(null);
       this.evalDirty = new Array(this.specs.length).fill(true);
-      this.isPlaying = false;
-      this.playRaf = null;
       this.isUpdating = false;
       this.zoomXRange = null;
       this.zoomYRange = null;
@@ -634,10 +631,16 @@
               name: p.name,
               label: p.label,
               values: Domain.sampleParam(p, p.steps, "linear"),
+              play: Boolean(p.play),
+              isPlaying: false,
+              playRaf: null,
+              playBtn: null,
               index: 0,
               inputEl: null,
               valueEl: null
             });
+          } else if (p.play) {
+            seen.get(p.name).play = true;
           }
         }
       }
@@ -939,25 +942,29 @@
       const controls = document.createElement("div");
       controls.className = "dynamic-plot-controls";
 
-      if (this.hasPlayButton) {
-        this.playBtn = document.createElement("button");
-        this.playBtn.type = "button";
-        this.playBtn.className = "dynamic-plot-play-btn";
-        this.playBtn.title = "Play / Pause";
-        this.playBtn.textContent = "\u25B6";
-        this.playBtn.addEventListener("click", () => {
-          if (this.isPlaying) this.stopPlay();
-          else this.startPlay();
-        });
-        controls.appendChild(this.playBtn);
-      }
-
       const list = document.createElement("div");
       list.className = "dynamic-plot-sliders";
 
       for (const s of this.sliders) {
         const row = document.createElement("div");
         row.className = "dynamic-plot-slider-row";
+
+        if (s.play) {
+          const playBtn = document.createElement("button");
+          playBtn.type = "button";
+          playBtn.className = "dynamic-plot-play-btn";
+          playBtn.title = "Play / Pause";
+          playBtn.textContent = "\u25B6";
+          playBtn.addEventListener("click", () => {
+            if (s.isPlaying) this.stopPlay(s);
+            else this.startPlay(s);
+          });
+          s.playBtn = playBtn;
+          row.appendChild(playBtn);
+        }
+
+        const main = document.createElement("div");
+        main.className = "dynamic-plot-slider-main";
 
         const header = document.createElement("div");
         header.className = "dynamic-plot-slider-header";
@@ -984,13 +991,14 @@
         input.step = "1";
         input.value = "0";
         input.addEventListener("input", () => {
-          this.stopPlay();
+          this.stopPlay(s);
           this.setSliderIndex(s, Number(input.value));
         });
 
         s.inputEl = input;
         s.valueEl = valSpan;
-        row.append(header, input);
+        main.append(header, input);
+        row.appendChild(main);
         list.appendChild(row);
       }
 
@@ -1005,37 +1013,36 @@
       this.updateAffectedTraces(slider.name, false);
     }
 
-    startPlay() {
-      const primary = this.sliders[0];
-      if (this.isPlaying || !primary || primary.values.length < 2) return;
-      this.isPlaying = true;
-      if (this.playBtn) this.playBtn.textContent = "\u275A\u275A";
-      if (primary.index >= primary.values.length - 1) {
-        this.setSliderIndex(primary, 0);
+    startPlay(slider) {
+      if (slider.isPlaying || slider.values.length < 2) return;
+      slider.isPlaying = true;
+      if (slider.playBtn) slider.playBtn.textContent = "\u275A\u275A";
+      if (slider.index >= slider.values.length - 1) {
+        this.setSliderIndex(slider, 0);
       }
       let lastTick = performance.now();
       const step = (now) => {
-        if (!this.isPlaying || !this.wrapEl.isConnected) {
-          this.stopPlay();
+        if (!slider.isPlaying || !this.wrapEl.isConnected) {
+          this.stopPlay(slider);
           return;
         }
         if (now - lastTick >= PLAY_INTERVAL_MS) {
           lastTick = now;
-          this.setSliderIndex(primary, (primary.index + 1) % primary.values.length);
+          this.setSliderIndex(slider, (slider.index + 1) % slider.values.length);
         }
-        this.playRaf = requestAnimationFrame(step);
+        slider.playRaf = requestAnimationFrame(step);
       };
-      this.playRaf = requestAnimationFrame(step);
+      slider.playRaf = requestAnimationFrame(step);
     }
 
-    stopPlay() {
-      if (this.playRaf !== null) {
-        cancelAnimationFrame(this.playRaf);
-        this.playRaf = null;
+    stopPlay(slider) {
+      if (slider.playRaf !== null) {
+        cancelAnimationFrame(slider.playRaf);
+        slider.playRaf = null;
       }
-      if (this.isPlaying) {
-        this.isPlaying = false;
-        if (this.playBtn) this.playBtn.textContent = "\u25B6";
+      if (slider.isPlaying) {
+        slider.isPlaying = false;
+        if (slider.playBtn) slider.playBtn.textContent = "\u25B6";
       }
     }
 
@@ -1060,6 +1067,7 @@
       } else {
         const lockY = this.sliders.length > 0 || this.hasBoundShade;
         const yRange = this.cfg.yrange || (lockY ? this.homeYRange : null);
+        layout.dragmode = "pan";
         layout.xaxis = ThemeSync.buildAxisTheme(this.cfg.xlabel, this.cfg.xscale, this.cfg.xrange, palette);
         layout.yaxis = ThemeSync.buildAxisTheme(this.cfg.ylabel, this.cfg.yscale, yRange, palette);
       }

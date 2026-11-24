@@ -71,16 +71,20 @@ local CONST_ENV = {
 
 local FUNCTION_RESERVED_KEYS = {
     x = true, y = true, z = true,
-    vars = true, sliders = true, labels = true,
-    steps = true, points = true,
+    vars = true, sliders = true,
+    points = true,
     label = true, mode = true, smooth = true, color = true
 }
 
 local FILE_RESERVED_KEYS = {
     src = true, skip = true,
     x = true, y = true, z = true,
-    vars = true, sliders = true, labels = true, steps = true,
+    vars = true, sliders = true,
     label = true, mode = true, smooth = true, color = true
+}
+
+local SLIDER_OPTION_KEYS = {
+    steps = true, label = true, play = true
 }
 
 local PLOT_KEYS = {
@@ -89,7 +93,7 @@ local PLOT_KEYS = {
     xscale = true, yscale = true, zscale = true,
     xrange = true, yrange = true, zrange = true,
     width = true, height = true,
-    legend = true, play = true
+    legend = true
 }
 
 local SHADE_OPTION_KEYS = {
@@ -335,19 +339,36 @@ local function validate_expr(expr, allowed_vars, allow_cols, context)
     end
 end
 
--- Parses a curve definition block (.plot-function or .plot-file) with multi-line 'vars:' and 'labels:'
-local function parse_curve_block(lines, reserved_keys, required_keys, context)
-    local kv, vars, labels, param_order, param_specs = {}, {}, {}, {}, {}
+-- Parses a curve definition block (.plot-function or .plot-file) with multi-line 'vars:' and 'sliders:'
+local function parse_curve_block(lines, reserved_keys, required_keys, allow_domain_params, context)
+    local kv, vars, domain_params, slider_params, seen_params = {}, {}, {}, {}, {}
     local section = nil
+    local active_slider, active_has_opts, active_opt_count = nil, false, 0
+
+    local function close_slider()
+        if active_slider and active_has_opts and active_opt_count == 0 then
+            fail("Slider '%s' in %s has ':' after '[...]' but no options", active_slider.name, context)
+        end
+        active_slider, active_has_opts, active_opt_count = nil, false, 0
+    end
 
     for _, line in ipairs(lines) do
         local k_raw, v_raw = line:match("^([a-zA-Z_][%w_%-]*)%s*:%s*(.*)$")
         local k_lower = k_raw and k_raw:lower() or nil
 
-        if section == "vars" and k_raw and (reserved_keys[k_lower] or is_valid_ident(k_raw)) then
+        -- Exit 'vars:' when a top-level key or domain parameter appears
+        if section == "vars" and k_raw and (reserved_keys[k_lower] or (allow_domain_params and is_valid_ident(k_raw))) then
             section = nil
-        elseif section == "labels" and (not k_raw or reserved_keys[k_lower] or (not param_specs[k_raw] and U.trim(v_raw):match("^%[.*%]$"))) then
-            section = nil
+        end
+
+        -- Exit 'sliders:' when a reserved top-level key (not a slider option) or domain parameter appears
+        if section == "sliders" and k_raw then
+            local is_slider_opt = active_has_opts and SLIDER_OPTION_KEYS[k_lower]
+            local is_new_slider = is_valid_ident(k_raw) and not reserved_keys[k_lower] and not is_slider_opt
+            if not is_slider_opt and not is_new_slider then
+                close_slider()
+                section = nil
+            end
         end
 
         if section == "vars" then
@@ -356,22 +377,58 @@ local function parse_curve_block(lines, reserved_keys, required_keys, context)
                 fail("Invalid assignment inside 'vars:' in %s (expected 'name = expr'): %s", context, line)
             end
             table.insert(vars, { name = vname, expr = U.trim(vexpr) })
-        elseif section == "labels" then
-            local lval = U.trim(v_raw)
-            if lval == "" then
-                fail("Empty label for '%s' in 'labels:' of %s", k_raw, context)
+        elseif section == "sliders" then
+            if not k_raw then
+                fail("Invalid line inside 'sliders:' of %s: %s", context, line)
             end
-            if labels[k_raw] ~= nil then
-                fail("Duplicate label for '%s' in 'labels:' of %s", k_raw, context)
+            if active_has_opts and SLIDER_OPTION_KEYS[k_lower] then
+                if active_slider._seenOpts[k_lower] then
+                    fail("Duplicate option '%s' for slider '%s' in %s", k_lower, active_slider.name, context)
+                end
+                active_slider._seenOpts[k_lower] = true
+                active_opt_count = active_opt_count + 1
+                local val = U.trim(v_raw)
+                if k_lower == "steps" then
+                    if active_slider.kind ~= "range" then
+                        fail("Option 'steps' for slider '%s' in %s is only valid for '[min, max]' ranges", active_slider.name, context)
+                    end
+                    active_slider.steps = parse_int(val, "steps", 2, context)
+                elseif k_lower == "label" then
+                    if val == "" then
+                        fail("Option 'label' for slider '%s' in %s cannot be empty", active_slider.name, context)
+                    end
+                    active_slider.label = strip_quotes(val)
+                elseif k_lower == "play" then
+                    active_slider.play = parse_bool(val, "play", context)
+                end
+            else
+                close_slider()
+                if not is_valid_ident(k_raw) then
+                    fail("Invalid slider parameter name '%s' in %s", k_raw, context)
+                end
+                if seen_params[k_raw] then
+                    fail("Duplicate parameter '%s' in %s", k_raw, context)
+                end
+                local spec_str = U.trim(v_raw)
+                local has_opts = spec_str:sub(-1) == ":"
+                if has_opts then
+                    spec_str = U.trim(spec_str:sub(1, -2))
+                end
+                local p = parse_param_spec(k_raw, spec_str, context)
+                p.isSlider = true
+                p.play = DEFAULTS.play
+                p._seenOpts = {}
+                seen_params[k_raw] = true
+                table.insert(slider_params, p)
+                active_slider, active_has_opts = p, has_opts
             end
-            labels[k_raw] = strip_quotes(lval)
         elseif k_raw then
             local val = U.trim(v_raw)
             if reserved_keys[k_lower] then
                 if kv[k_lower] ~= nil then
                     fail("Duplicate key '%s' in %s", k_lower, context)
                 end
-                if k_lower == "vars" or k_lower == "labels" then
+                if k_lower == "vars" or k_lower == "sliders" then
                     if val ~= "" then
                         fail("Key '%s' in %s must start a multi-line block (no inline value)", k_lower, context)
                     end
@@ -384,26 +441,36 @@ local function parse_curve_block(lines, reserved_keys, required_keys, context)
                     kv[k_lower] = val
                 end
             else
+                if not allow_domain_params then
+                    fail("Unknown key '%s' in %s (declare interactive sliders inside 'sliders:')", k_raw, context)
+                end
                 if not is_valid_ident(k_raw) then
                     fail("Unknown or invalid key '%s' in %s", k_raw, context)
                 end
-                if param_specs[k_raw] ~= nil then
+                if seen_params[k_raw] then
                     fail("Duplicate parameter '%s' in %s", k_raw, context)
                 end
-                table.insert(param_order, k_raw)
-                param_specs[k_raw] = parse_param_spec(k_raw, val, context)
+                local p = parse_param_spec(k_raw, val, context)
+                p.isSlider = false
+                seen_params[k_raw] = true
+                table.insert(domain_params, p)
             end
         else
             fail("Invalid line in %s (expected 'key: value'): %s", context, line)
         end
     end
 
+    close_slider()
+
+    if kv.sliders and #slider_params == 0 then
+        fail("Key 'sliders' in %s must define at least one slider parameter", context)
+    end
     for _, req in ipairs(required_keys) do
         if not kv[req] or kv[req] == "" then
             fail("Missing required key '%s' in %s", req, context)
         end
     end
-    return kv, vars, labels, param_order, param_specs
+    return kv, vars, domain_params, slider_params, seen_params
 end
 
 -- Reads a comma-, tab-, or whitespace-delimited numeric matrix after stripping comments and skipped lines
@@ -452,54 +519,28 @@ local function read_numeric_matrix(src, skip, context)
     return rows
 end
 
--- Finalizes parameter descriptors, slider assignments, and 'vars:' + coordinate expressions
-local function finalize_curve_params_and_exprs(kv, vars, labels, param_order, param_specs, base_vars, allow_cols, context)
-    local steps = parse_int(kv.steps, "steps", 2, context) or DEFAULTS.steps
-    local slider_set = {}
-    if kv.sliders then
-        for tok in kv.sliders:gmatch("[^,]+") do
-            local sname = U.trim(tok)
-            if sname ~= "" then
-                if not param_specs[sname] then
-                    fail("Slider '%s' in %s does not match any declared parameter", sname, context)
-                end
-                if slider_set[sname] then
-                    fail("Duplicate slider '%s' in %s", sname, context)
-                end
-                slider_set[sname] = true
-            end
-        end
-        if not next(slider_set) then
-            fail("Key 'sliders' in %s cannot be empty", context)
-        end
+-- Finalizes parameter descriptors, defaults, and 'vars:' + coordinate expressions
+local function finalize_curve_params_and_exprs(kv, vars, domain_params, slider_params, seen_params, base_vars, allow_cols, context)
+    local params = {}
+    for _, p in ipairs(domain_params) do
+        table.insert(params, p)
     end
-
-    for lname in pairs(labels) do
-        if not slider_set[lname] then
-            fail("Label '%s' in 'labels:' of %s must correspond to a parameter in 'sliders:'", lname, context)
+    for _, p in ipairs(slider_params) do
+        p._seenOpts = nil
+        if p.kind == "range" and p.steps == nil then
+            p.steps = DEFAULTS.steps
         end
-    end
-
-    local params, domain_count = {}, 0
-    for _, pname in ipairs(param_order) do
-        local p = param_specs[pname]
-        p.isSlider = slider_set[pname] == true
-        if p.isSlider then
-            if p.kind == "range" then p.steps = steps end
-            p.label = labels[pname] or pname
-            track_math(p.label)
-        else
-            domain_count = domain_count + 1
-        end
+        p.label = p.label or p.name
+        track_math(p.label)
         table.insert(params, p)
     end
 
     local allowed_vars = {}
     for k, v in pairs(base_vars) do allowed_vars[k] = v end
-    for _, pname in ipairs(param_order) do allowed_vars[pname] = true end
+    for pname in pairs(seen_params) do allowed_vars[pname] = true end
 
     for _, v in ipairs(vars) do
-        if param_specs[v.name] or base_vars[v.name] then
+        if seen_params[v.name] or base_vars[v.name] then
             fail("Variable '%s' in 'vars:' of %s cannot shadow a parameter or data column", v.name, context)
         end
         validate_expr(v.expr, allowed_vars, allow_cols, context)
@@ -512,7 +553,7 @@ local function finalize_curve_params_and_exprs(kv, vars, labels, param_order, pa
         validate_expr(kv.z, allowed_vars, allow_cols, context)
     end
 
-    return params, domain_count
+    return params
 end
 
 -- Registers either a '.plot-function' or '.plot-file' block through a unified pipeline
@@ -524,10 +565,11 @@ local function register_curve_def(el, kind)
         fail("'%s' block requires an 'id' attribute (e.g. ::: {%s id=\"c1\"})", tag_name, tag_name)
     end
     local context = tag_name .. "#" .. id
-    local kv, vars, labels, param_order, param_specs = parse_curve_block(
+    local kv, vars, domain_params, slider_params, seen_params = parse_curve_block(
         U.extract_lines_from_div(el),
         is_fn and FUNCTION_RESERVED_KEYS or FILE_RESERVED_KEYS,
         is_fn and {} or { "src", "x", "y" },
+        is_fn,
         context
     )
 
@@ -536,13 +578,18 @@ local function register_curve_def(el, kind)
         for _, coord in ipairs({ "x", "y", "z" }) do
             local val = kv[coord]
             if val and val:match("^%[.*%]$") then
-                table.insert(param_order, coord)
-                param_specs[coord] = parse_param_spec(coord, val, context)
+                if seen_params[coord] then
+                    fail("Duplicate domain parameter '%s' in %s", coord, context)
+                end
+                local p = parse_param_spec(coord, val, context)
+                p.isSlider = false
+                seen_params[coord] = true
+                table.insert(domain_params, p)
                 kv[coord] = coord
             end
         end
         if not kv.x or not kv.y then
-            fail("Both 'x' and 'y' must be defined (as parameters or coordinate expressions) in %s", context)
+            fail("Both 'x' and 'y' must be defined (as domain ranges or coordinate expressions) in %s", context)
         end
     else
         local skip = parse_int(kv.skip, "skip", 0, context) or DEFAULTS.skip
@@ -550,8 +597,8 @@ local function register_curve_def(el, kind)
         for i = 0, #rows[1] - 1 do base_vars["c" .. i] = true end
     end
 
-    local params, domain_count = finalize_curve_params_and_exprs(
-        kv, vars, labels, param_order, param_specs, base_vars, not is_fn, context
+    local params = finalize_curve_params_and_exprs(
+        kv, vars, domain_params, slider_params, seen_params, base_vars, not is_fn, context
     )
 
     local dim = kv.z and "3d" or "2d"
@@ -559,6 +606,7 @@ local function register_curve_def(el, kind)
     local points = nil
 
     if is_fn then
+        local domain_count = #domain_params
         if domain_count < 1 or domain_count > 2 then
             fail("%s must have 1 domain parameter (curve) or 2 domain parameters (3D surface); got %d", context, domain_count)
         end
@@ -568,8 +616,6 @@ local function register_curve_def(el, kind)
         subtype = (domain_count == 2) and "surface" or "curve"
         points = parse_int(kv.points, "points", 2, context)
             or (subtype == "surface" and DEFAULTS.points_surface or DEFAULTS.points_curve)
-    elseif domain_count > 0 then
-        fail("Every parameter declared in %s must be listed in 'sliders:'", context)
     end
 
     local label = strip_quotes(kv.label) or id
@@ -742,8 +788,7 @@ local function render_plot_canvas(el)
         zrange = parse_range(kv.zrange, "zrange", context),
         width  = parse_int(kv.width, "width", 200, context),
         height = parse_int(kv.height, "height", 200, context) or DEFAULTS.height,
-        legend = legend_opt,
-        play   = parse_bool(kv.play, "play", context)
+        legend = legend_opt
     }
 
     table.insert(plot_configs, { context = context, cfg = cfg })
@@ -758,7 +803,7 @@ local function render_plot_canvas(el)
     return pandoc.RawBlock("html", html)
 end
 
--- Checks whether two slider parameter descriptors have identical ranges/values
+-- Checks whether two shared slider parameter descriptors have identical ranges/values
 local function sliders_compatible(a, b)
     if a.kind ~= b.kind then return false end
     if a.kind == "range" then
@@ -783,7 +828,7 @@ local function validate_plots()
 
     for _, item in ipairs(plot_configs) do
         local ctx, cfg = item.context, item.cfg
-        local dim, curve_set, shared_sliders, slider_count = nil, {}, {}, 0
+        local dim, curve_set, shared_sliders = nil, {}, {}
 
         for _, cid in ipairs(cfg.curves) do
             local def = defs_by_id[cid]
@@ -801,19 +846,11 @@ local function validate_plots()
                 if p.isSlider then
                     if not shared_sliders[p.name] then
                         shared_sliders[p.name] = p
-                        slider_count = slider_count + 1
                     elseif not sliders_compatible(shared_sliders[p.name], p) then
                         fail("Conflicting definitions for shared slider '%s' in %s", p.name, ctx)
                     end
                 end
             end
-        end
-
-        if cfg.play ~= nil and slider_count == 0 then
-            fail("Key 'play' in %s requires at least one slider parameter", ctx)
-        end
-        if cfg.play == nil then
-            cfg.play = DEFAULTS.play
         end
 
         if cfg.shade and #cfg.shade > 0 and dim ~= "2d" then
