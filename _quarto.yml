@@ -46,9 +46,9 @@ format:
     math: mathjax
     css: include/theme-config.css
     respect-user-color-scheme: true
-    theme: # Options: cosmo, minty, flatly, slate, lux, etc.
-      light: slate
-      dark: [slate, include/theme-dark-patch.scss]
+    theme: # default, cerulean, cosmo, flatly, journal, litera, lumen, lux, materia, minty, morph, pulse, quartz, sandstone, simplex, sketchy, spacelab, united, yeti, zephyr
+      light: celurean
+      dark: [celurean, include/theme-dark-patch.scss]
 
 bibliography: bib/references.bib
 csl: bib/jcap.csl

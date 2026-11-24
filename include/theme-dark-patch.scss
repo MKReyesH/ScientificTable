@@ -2,7 +2,7 @@
 
 // Dark canvas background; all neutral surfaces and borders derive from this
 $body-bg: #16181d;
-$body-color: if(variable-exists(body-color), mix(#ffffff, $body-color, 88%), #dee2e6);
+$body-color: #dee2e6;
 
 $body-secondary-color: rgba($body-color, 0.72);
 $body-secondary-bg: mix($body-color, $body-bg, 6%);
@@ -13,6 +13,10 @@ $headings-color: mix(#ffffff, $body-color, 35%);
 $border-color: mix($body-color, $body-bg, 15%);
 $border-color-translucent: rgba($body-color, 0.14);
 $btn-close-color: $body-color;
+
+$card-bg: $body-secondary-bg;
+$dropdown-bg: $body-secondary-bg;
+$input-bg: $body-bg;
 
 // Quarto chrome (sidebar, default navbar, and footer)
 $sidebar-bg: $body-secondary-bg;
@@ -27,8 +31,13 @@ $footer-fg: $body-secondary-color !default;
 
 /*-- scss:rules --*/
 
+// Clear light background gradients (e.g., Quartz)
+body {
+  background-image: none;
+}
+
 // Brighten dark link colors for dark-background contrast
-@if lightness($link-color) < 55% {
+@if type-of($link-color) == "color" and lightness($link-color) < 55% {
   $dark-link: mix(#ffffff, $link-color, 45%);
   $dark-link-hover: mix(#ffffff, $link-color, 60%);
 
@@ -49,7 +58,7 @@ $footer-fg: $body-secondary-color !default;
 }
 
 // Brighten dark inline code colors while preserving the theme's hue
-@if lightness($code-color) < 65% {
+@if type-of($code-color) == "color" and lightness($code-color) < 65% {
   $dark-code: mix(#ffffff, $code-color, 55%);
 
   :root {
