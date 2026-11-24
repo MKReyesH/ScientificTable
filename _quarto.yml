@@ -36,10 +36,11 @@ website:
           - href: doc/Examples/example4.qmd
           - href: doc/Examples/example5.qmd
     right:
+      - text: "About"
+        href: about.qmd
       - icon: github
         aria-label: "GitHub Project"
         href: https://github.com/MKReyesH/ScientificTable
-      - href: about.qmd
 
 format:
   html:
