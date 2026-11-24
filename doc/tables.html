@@ -102,9 +102,9 @@ div.csl-indent {
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-7c9cdd1c06fe980010a99dce808b7c92.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-946248c5c8687e314eb1faac096561f6.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-7c9cdd1c06fe980010a99dce808b7c92.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-62702c64308498ea70e7e43e5dd5b943.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-b175aea4dc32f700c96ffa90040d660b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-62702c64308498ea70e7e43e5dd5b943.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -132,6 +132,32 @@ div.csl-indent {
     "search-label": "Search"
   }
 }</script>
+<style>
+.quarto-color-scheme-toggle[data-theme-mode] .bi::before {
+  background-image: none !important;
+  background-color: currentColor;
+  -webkit-mask: no-repeat center / 1rem 1rem;
+  mask: no-repeat center / 1rem 1rem;
+}
+
+/* Automatic (System) — half-circle */
+.quarto-color-scheme-toggle[data-theme-mode="auto"] .bi::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 15A7 7 0 1 0 8 1zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 15A7 7 0 1 0 8 1zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16'/%3E%3C/svg%3E");
+}
+
+/* Light — sun */
+.quarto-color-scheme-toggle[data-theme-mode="light"] .bi::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0m0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13m8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5M3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8m10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0m-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0m9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707M4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0m0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13m8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5M3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8m10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0m-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0m9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707M4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708'/%3E%3C/svg%3E");
+}
+
+/* Dark — moon */
+.quarto-color-scheme-toggle[data-theme-mode="dark"] .bi::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 .278a.77.77 0 0 1 .08.858 7.2 7.2 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277q.792-.001 1.533-.16a.79.79 0 0 1 .81.316.73.73 0 0 1-.031.893A8.35 8.35 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.75.75 0 0 1 6 .278'/%3E%3Cpath d='M10.794 3.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387a1.73 1.73 0 0 0-1.097 1.097l-.387 1.162a.217.217 0 0 1-.412 0l-.387-1.162A1.73 1.73 0 0 0 9.31 6.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387a1.73 1.73 0 0 0 1.097-1.097zM13.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 .278a.77.77 0 0 1 .08.858 7.2 7.2 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277q.792-.001 1.533-.16a.79.79 0 0 1 .81.316.73.73 0 0 1-.031.893A8.35 8.35 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.75.75 0 0 1 6 .278'/%3E%3Cpath d='M10.794 3.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387a1.73 1.73 0 0 0-1.097 1.097l-.387 1.162a.217.217 0 0 1-.412 0l-.387-1.162A1.73 1.73 0 0 0 9.31 6.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387a1.73 1.73 0 0 0 1.097-1.097zM13.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z'/%3E%3C/svg%3E");
+}
+</style>
 <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator_bootstrap5.min.css">
 <style>
 .tabulator-container-wrap {
@@ -307,7 +333,7 @@ window.Quarto = {
 };
 </script>
 
-<link rel="stylesheet" href="../include/css-config.css">
+<link rel="stylesheet" href="../include/theme-config.css">
 </head>
 
 <body class="nav-fixed fullcontent quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
@@ -498,7 +524,7 @@ window.Quarto = {
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a href="../index.html" class="navbar-brand navbar-brand-logo">
-    <img src="../img/logo/logo_black.png" alt="" class="navbar-logo light-content">
+    <img src="../img/logo/logo_white.png" alt="" class="navbar-logo light-content">
     <img src="../img/logo/logo_white.png" alt="" class="navbar-logo dark-content">
     </a>
   </div>
@@ -660,109 +686,6 @@ window.Quarto = {
 <div class="csl-left-margin">[7] </div><div class="csl-right-inline"><span class="nocase">Chatrchyan S et al</span> 2012 <a href="https://doi.org/10.1016/j.physletb.2012.08.021"><span class="nocase">Observation of a New Boson at a Mass of 125 GeV with the CMS Experiment at the LHC</span></a> <em>Phys. Lett. B</em> <strong>716</strong> 30–61</div>
 </div>
 </div></section></div></main> <!-- /main -->
-<style>
-  .quarto-color-scheme-toggle[data-theme-mode] .bi::before {
-    background-image: none !important;
-    background-color: currentColor;
-    -webkit-mask: no-repeat center / 1rem 1rem;
-    mask: no-repeat center / 1rem 1rem;
-  }
-
-  /* Automatic (System) — half-circle */
-  .quarto-color-scheme-toggle[data-theme-mode="auto"] .bi::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 15A7 7 0 1 0 8 1zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 15A7 7 0 1 0 8 1zm0 1A8 8 0 1 1 8 0a8 8 0 0 1 0 16'/%3E%3C/svg%3E");
-  }
-
-  /* Light — sun */
-  .quarto-color-scheme-toggle[data-theme-mode="light"] .bi::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0m0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13m8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5M3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8m10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0m-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0m9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707M4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0m0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13m8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5M3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8m10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0m-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0m9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707M4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708'/%3E%3C/svg%3E");
-  }
-
-  /* Dark — moon */
-  .quarto-color-scheme-toggle[data-theme-mode="dark"] .bi::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 .278a.77.77 0 0 1 .08.858 7.2 7.2 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277q.792-.001 1.533-.16a.79.79 0 0 1 .81.316.73.73 0 0 1-.031.893A8.35 8.35 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.75.75 0 0 1 6 .278'/%3E%3Cpath d='M10.794 3.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387a1.73 1.73 0 0 0-1.097 1.097l-.387 1.162a.217.217 0 0 1-.412 0l-.387-1.162A1.73 1.73 0 0 0 9.31 6.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387a1.73 1.73 0 0 0 1.097-1.097zM13.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 .278a.77.77 0 0 1 .08.858 7.2 7.2 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277q.792-.001 1.533-.16a.79.79 0 0 1 .81.316.73.73 0 0 1-.031.893A8.35 8.35 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.75.75 0 0 1 6 .278'/%3E%3Cpath d='M10.794 3.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387a1.73 1.73 0 0 0-1.097 1.097l-.387 1.162a.217.217 0 0 1-.412 0l-.387-1.162A1.73 1.73 0 0 0 9.31 6.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387a1.73 1.73 0 0 0 1.097-1.097zM13.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732l-.774-.258a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z'/%3E%3C/svg%3E");
-  }
-</style>
-
-<script>
-(() => {
-  const QUARTO_KEY = "quarto-color-scheme";
-  const LABELS = {
-    auto: "Theme: Automatic (System)",
-    light: "Theme: Light",
-    dark: "Theme: Dark"
-  };
-
-  const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  const nativeToggle = window.quartoToggleColorScheme;
-
-  const storage = {
-    get() { try { return localStorage.getItem(QUARTO_KEY); } catch { return null; } },
-    set(val) { try { localStorage.setItem(QUARTO_KEY, val); } catch {} },
-    remove() { try { localStorage.removeItem(QUARTO_KEY); } catch {} }
-  };
-
-  const isPageDark = () => document.body.classList.contains("quarto-dark");
-
-  const getMode = () => {
-    const val = storage.get();
-    return val === "alternate" ? "dark" : val === "default" ? "light" : "auto";
-  };
-
-  const syncVisual = (wantDark) => {
-    if (typeof nativeToggle === "function") {
-      if (isPageDark() !== wantDark) nativeToggle();
-    } else {
-      document.documentElement.setAttribute("data-bs-theme", wantDark ? "dark" : "light");
-    }
-  };
-
-  const syncButton = (mode) => {
-    document.querySelectorAll(".quarto-color-scheme-toggle").forEach((el) => {
-      el.dataset.themeMode = mode;
-      el.setAttribute("title", LABELS[mode]);
-      el.setAttribute("aria-label", LABELS[mode]);
-    });
-  };
-
-  const applyMode = (mode) => {
-    if (mode === "dark") {
-      syncVisual(true);
-      storage.set("alternate");
-    } else if (mode === "light") {
-      syncVisual(false);
-      storage.set("default");
-    } else {
-      syncVisual(mediaQuery.matches);
-      storage.remove();
-    }
-    syncButton(mode);
-  };
-
-  window.quartoToggleColorScheme = () => {
-    const current = getMode();
-    const next = current === "auto"
-      ? (isPageDark() ? "light" : "dark")
-      : current === "dark"
-        ? (mediaQuery.matches ? "auto" : "light")
-        : (!mediaQuery.matches ? "auto" : "dark");
-    applyMode(next);
-  };
-
-  mediaQuery.addEventListener("change", () => {
-    if (getMode() === "auto") applyMode("auto");
-  });
-
-  window.addEventListener("storage", (e) => {
-    if (e.key === QUARTO_KEY) applyMode(getMode());
-  });
-
-  applyMode(getMode());
-})();
-</script>
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     // Ensure there is a toggle, if there isn't float one in the top right
@@ -1289,6 +1212,89 @@ window.Quarto = {
   </script>
 </div> <!-- /content -->
 <script>
+(() => {
+  if (window.__quartoThemeToggleInit) return;
+  window.__quartoThemeToggleInit = true;
+
+  const QUARTO_KEY = "quarto-color-scheme";
+  const LABELS = {
+    auto: "Theme: Automatic (System)",
+    light: "Theme: Light",
+    dark: "Theme: Dark"
+  };
+
+  const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  const nativeToggle = window.quartoToggleColorScheme;
+
+  const storage = {
+    get() { try { return localStorage.getItem(QUARTO_KEY); } catch { return null; } },
+    set(val) { try { localStorage.setItem(QUARTO_KEY, val); } catch {} },
+    remove() { try { localStorage.removeItem(QUARTO_KEY); } catch {} }
+  };
+
+  const isPageDark = () => document.body.classList.contains("quarto-dark");
+
+  const getMode = () => {
+    const val = storage.get();
+    return val === "alternate" ? "dark" : val === "default" ? "light" : "auto";
+  };
+
+  const syncVisual = (wantDark) => {
+    if (typeof nativeToggle === "function") {
+      if (isPageDark() !== wantDark) nativeToggle();
+    } else {
+      document.documentElement.setAttribute("data-bs-theme", wantDark ? "dark" : "light");
+    }
+  };
+
+  const syncButton = (mode) => {
+    document.querySelectorAll(".quarto-color-scheme-toggle").forEach((el) => {
+      el.dataset.themeMode = mode;
+      el.setAttribute("title", LABELS[mode]);
+      el.setAttribute("aria-label", LABELS[mode]);
+    });
+  };
+
+  const applyMode = (mode) => {
+    if (mode === "dark") {
+      syncVisual(true);
+      storage.set("alternate");
+    } else if (mode === "light") {
+      syncVisual(false);
+      storage.set("default");
+    } else {
+      syncVisual(mediaQuery.matches);
+      storage.remove();
+    }
+    syncButton(mode);
+  };
+
+  window.quartoToggleColorScheme = () => {
+    const current = getMode();
+    const next = current === "auto"
+      ? (isPageDark() ? "light" : "dark")
+      : current === "dark"
+        ? (mediaQuery.matches ? "auto" : "light")
+        : (!mediaQuery.matches ? "auto" : "dark");
+    applyMode(next);
+  };
+
+  mediaQuery.addEventListener("change", () => {
+    if (getMode() === "auto") applyMode("auto");
+  });
+
+  window.addEventListener("storage", (e) => {
+    if (e.key === QUARTO_KEY) applyMode(getMode());
+  });
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => applyMode(getMode()));
+  } else {
+    applyMode(getMode());
+  }
+})();
+</script>
+<script>
 window.MathRenderer = window.MathRenderer || {
   cache: new Map(),
   readyPromise: null,
@@ -1719,7 +1725,10 @@ window.MathRenderer = window.MathRenderer || {
 
     // Initializes math cache, bibliography bindings, Tabulator instance, and search filter
     async init() {
-      await MathRenderer.prepare(this.collectInitialLatexStrings());
+      const latexStrings = this.collectInitialLatexStrings();
+      if (latexStrings.length > 0) {
+        await MathRenderer.prepare(latexStrings);
+      }
       this.container.innerHTML = "";
       this.initBibliography();
 

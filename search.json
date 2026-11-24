@@ -1,19 +1,5 @@
 [
   {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Scientific Table Template",
-    "section": "",
-    "text": "Welcome to the Scientific Table Template"
-  },
-  {
-    "objectID": "about.html",
-    "href": "about.html",
-    "title": "About this Wiki",
-    "section": "",
-    "text": "About us\n\n    MKReyesH\n\n\n\nPowered By\n\nGitHub Pages: Hosting and deployment infrastructure.\nQuarto: Markdown rendering, cross-referencing, and website generation.\nPandoc: Document format translation.\nBootstrap and Bootswatch: CSS support and user interface.\nMathJax: Mathematical notation rendering.\nGemini: Help writing the Lua filters.\n\n\n\nContributing\nIf you would like to contribute to the core template, add new LaTeX translation rules, or fix a bug, do not hesitate to open a Pull Request at the GitHub Repository."
-  },
-  {
     "objectID": "doc/tables.html",
     "href": "doc/tables.html",
     "title": "How to create dynamic tables",
@@ -40,6 +26,20 @@
     "title": "How to create dynamic tables",
     "section": "Scientific Units, LaTeX Math Numbers, and INSPIRE-HEP Citations",
     "text": "Scientific Units, LaTeX Math Numbers, and INSPIRE-HEP Citations\nThree specialized column tags support physical unit scaling, LaTeX scientific notation, and automated bibliography management:\n\nunits(Unit1: factor1, Unit2: factor2, ...): Implies number and adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor.\nlatexnum: Implies both number and latex, and transforms numeric cells into inline math expressions (1.057e-1 displayed as \\(1.06 \\times 10^{-1}\\)) that update automatically whenever the user switches units.\ninspire: Implies string and treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons, with or without a leading @). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP in batches, turns each valid key into a clickable [N] CitationKey link that highlights the target entry on click, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated.\n\n::: {.dynamic-table}\nsrc: data/example-table.csv\nsearchable: true\nper-page: 4\ncol 0: header=\"Sector\", dropdown\ncol 1: header=\"Particle\", latex\ncol 2: header=$m$, latexnum, units(GeV: 1, MeV: 1e3, TeV: 1e-3)\ncol 3: header=\"Discovery\", inspire, unsortable\n:::\n\n\n\n\n\n\\(\\)"
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About this Wiki",
+    "section": "",
+    "text": "About us\n\n    MKReyesH\n\n\n\nPowered By\n\nGitHub Pages: Hosting and deployment infrastructure.\nQuarto: Markdown rendering, cross-referencing, and website generation.\nPandoc: Document format translation.\nBootstrap and Bootswatch: CSS support and user interface.\nMathJax: Mathematical notation rendering.\nGemini: Help writing the Lua filters.\n\n\n\nContributing\nIf you would like to contribute to the core template, add new LaTeX translation rules, or fix a bug, do not hesitate to open a Pull Request at the GitHub Repository."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Scientific Table Template",
+    "section": "",
+    "text": "Welcome to the Scientific Table Template"
   },
   {
     "objectID": "doc/plots.html",
