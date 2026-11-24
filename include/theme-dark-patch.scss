@@ -14,6 +14,16 @@ $border-color: mix($body-color, $body-bg, 15%);
 $border-color-translucent: rgba($body-color, 0.14);
 $btn-close-color: $body-color;
 
+// Quarto chrome (sidebar, default navbar, and footer)
+$sidebar-bg: $body-secondary-bg;
+$sidebar-fg: $body-color;
+$sidebar-border-color: $border-color;
+
+$navbar-bg: $body-secondary-bg !default;
+$navbar-fg: $body-color !default;
+
+$footer-bg: $body-bg !default;
+$footer-fg: $body-secondary-color !default;
 
 /*-- scss:rules --*/
 
