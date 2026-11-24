@@ -15,10 +15,10 @@ website:
       - section: "Examples"
         contents:
         - auto: "doc/Examples/*.qmd"
-      - text: "GitHub Project"
-        href: https://github.com/MKReyesH/ScientificTable
       - text: "About"
         href: about.qmd
+      - text: "GitHub Project"
+        href: https://github.com/MKReyesH/ScientificTable
   #navbar:
   #  logo:
   #    light: img/logo/logo_white.png

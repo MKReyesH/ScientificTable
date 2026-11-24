@@ -18,44 +18,82 @@ do
 end
 
 local DEFAULTS = {
-    height = 400,
-    points = 100,
-    skip   = 0,
-    xscale = "linear",
-    yscale = "linear",
-    zscale = "linear",
-    play   = false,
-    legend = true
+    height         = 400,
+    points_curve   = 100,
+    points_surface = 40,
+    steps          = 25,
+    skip           = 0,
+    xscale         = "linear",
+    yscale         = "linear",
+    zscale         = "linear",
+    shade_opacity  = 0.2,
+    play           = false,
+    legend         = true
 }
 
 local MODES  = { lines = true, markers = true, ["lines+markers"] = true }
 local SCALES = { linear = true, log = true }
 
-local MATH_SYMBOLS = {
-    pi = true, e = true,
-    sin = true, cos = true, tan = true, asin = true, acos = true, atan = true,
-    sinh = true, cosh = true, tanh = true, exp = true, log = true, ln = true,
-    log10 = true, log2 = true, sqrt = true, abs = true, sign = true,
-    floor = true, ceil = true, min = true, max = true
+local CONST_ENV = {
+    pi    = math.pi,
+    e     = math.exp(1),
+    sin   = math.sin,
+    cos   = math.cos,
+    tan   = math.tan,
+    asin  = math.asin,
+    acos  = math.acos,
+    atan  = function(x) return math.atan(x) end,
+    atan2 = function(y, x) return math.atan(y, x) end,
+    sinh  = function(x) return (math.exp(x) - math.exp(-x)) / 2 end,
+    cosh  = function(x) return (math.exp(x) + math.exp(-x)) / 2 end,
+    tanh  = function(x) local e2 = math.exp(2 * x); return (e2 - 1) / (e2 + 1) end,
+    asinh = function(x) return math.log(x + math.sqrt(x * x + 1)) end,
+    acosh = function(x) return math.log(x + math.sqrt(x * x - 1)) end,
+    atanh = function(x) return 0.5 * math.log((1 + x) / (1 - x)) end,
+    exp   = math.exp,
+    log   = math.log,
+    ln    = math.log,
+    log10 = function(x) return math.log(x, 10) end,
+    log2  = function(x) return math.log(x, 2) end,
+    sqrt  = math.sqrt,
+    abs   = math.abs,
+    sign  = function(x) return x > 0 and 1 or (x < 0 and -1 or 0) end,
+    floor = math.floor,
+    ceil  = math.ceil,
+    min   = math.min,
+    max   = math.max,
+    hypot = function(...)
+        local s = 0
+        for _, v in ipairs({ ... }) do s = s + v * v end
+        return math.sqrt(s)
+    end
 }
 
-local FUNCTION_KEYS = {
-    expr = true, label = true, xrange = true, yrange = true, zrange = true,
-    points = true, mode = true, smooth = true, color = true
+local FUNCTION_RESERVED_KEYS = {
+    x = true, y = true, z = true,
+    vars = true, sliders = true, labels = true,
+    steps = true, points = true,
+    label = true, mode = true, smooth = true, color = true
 }
 
-local FILE_KEYS = {
-    src = true, skip = true, x = true, y = true, z = true,
-    param = true, ["param-label"] = true, transform = true,
+local FILE_RESERVED_KEYS = {
+    src = true, skip = true,
+    x = true, y = true, z = true,
+    vars = true, sliders = true, labels = true, steps = true,
     label = true, mode = true, smooth = true, color = true
 }
 
 local PLOT_KEYS = {
-    curves = true, xlabel = true, ylabel = true, zlabel = true,
+    curves = true, shade = true,
+    xlabel = true, ylabel = true, zlabel = true,
     xscale = true, yscale = true, zscale = true,
     xrange = true, yrange = true, zrange = true,
     width = true, height = true,
     legend = true, play = true
+}
+
+local SHADE_OPTION_KEYS = {
+    xrange = true, color = true, opacity = true, label = true
 }
 
 local has_dynamic_plot = false
@@ -69,33 +107,44 @@ local function track_math(str)
     end
 end
 
--- Parses key-value lines and enforces allowed and required key schemas
-local function parse_kv(lines, allowed_keys, required_keys, context)
-    local kv = {}
-    for _, line in ipairs(lines) do
-        local k, v = line:match("^([%w_%-]+)%s*:%s*(.+)$")
-        if not k then
-            error(string.format("[%s] Error: Invalid line in %s (expected 'key: value'): %s", TAG, context, line))
-        end
-        k = k:lower()
-        if not allowed_keys[k] then
-            error(string.format("[%s] Error: Unknown key '%s' in %s", TAG, k, context))
-        end
-        if kv[k] ~= nil then
-            error(string.format("[%s] Error: Duplicate key '%s' in %s", TAG, k, context))
-        end
-        kv[k] = U.trim(v)
-    end
-
-    for _, req in ipairs(required_keys) do
-        if not kv[req] or kv[req] == "" then
-            error(string.format("[%s] Error: Missing required key '%s' in %s", TAG, req, context))
-        end
-    end
-    return kv
+local function is_valid_ident(name)
+    return type(name) == "string" and name:match("^[a-zA-Z_][a-zA-Z0-9_]*$") ~= nil and CONST_ENV[name] == nil
 end
 
--- Parses a boolean option string ('true' or 'false')
+local function strip_quotes(s)
+    if type(s) ~= "string" then return s end
+    return s:match('^"(.*)"$') or s:match("^'(.*)'$") or s
+end
+
+-- Evaluates a constant numeric expression in a sandboxed math environment
+local function eval_const_expr(src, context)
+    local trimmed = U.trim(src)
+    if trimmed == "" or trimmed:find("[^0-9a-zA-Z_%.%+%-%*/%^%(%),%s]") then
+        error(string.format("[%s] Error: Invalid constant expression '%s' in %s", TAG, src, context))
+    end
+
+    local protected = trimmed
+        :gsub("(%d+%.?%d*[eE][+-]?%d+)", "(%1)")
+        :gsub("(%.%d+[eE][+-]?%d+)", "(%1)")
+
+    for ident in protected:gmatch("[a-zA-Z_][a-zA-Z0-9_]*") do
+        if CONST_ENV[ident] == nil then
+            error(string.format("[%s] Error: Identifier '%s' is not a constant in '%s' in %s", TAG, ident, src, context))
+        end
+    end
+
+    local lua_expr = protected
+        :gsub("(%d)([a-zA-Z_(])", "%1*%2")
+        :gsub("%)([%d%a_(])", ")*%1")
+
+    local chunk = load("return (" .. lua_expr .. ")", "const", "t", CONST_ENV)
+    local ok, val = chunk and pcall(chunk) or false, nil
+    if not ok or type(val) ~= "number" or val ~= val or math.abs(val) == math.huge then
+        error(string.format("[%s] Error: Failed to evaluate constant expression '%s' in %s", TAG, src, context))
+    end
+    return val
+end
+
 local function parse_bool(val, key, context)
     if val == nil then return nil end
     local lower = val:lower()
@@ -104,7 +153,6 @@ local function parse_bool(val, key, context)
     error(string.format("[%s] Error: Key '%s' in %s must be 'true' or 'false' (got '%s')", TAG, key, context, val))
 end
 
--- Parses an integer option string with a lower bound
 local function parse_int(val, key, min_val, context)
     if val == nil then return nil end
     local n = tonumber(val)
@@ -114,25 +162,15 @@ local function parse_int(val, key, min_val, context)
     return n
 end
 
--- Parses a numeric axis range '[min, max]'
-local function parse_range(val, key, context)
+local function parse_float(val, key, min_val, max_val, context)
     if val == nil then return nil end
-    local inner = U.trim(val:match("^%[?%s*(.-)%s*%]?$"))
-    local parts = {}
-    for item in inner:gmatch("[^,]+") do
-        local num = tonumber(U.trim(item))
-        if not num then
-            error(string.format("[%s] Error: Invalid numeric bound in '%s' of %s: %s", TAG, key, context, val))
-        end
-        table.insert(parts, num)
+    local n = tonumber(val)
+    if not n or n < min_val or n > max_val then
+        error(string.format("[%s] Error: Key '%s' in %s must be a number in [%g, %g] (got '%s')", TAG, key, context, min_val, max_val, val))
     end
-    if #parts ~= 2 or parts[1] >= parts[2] then
-        error(string.format("[%s] Error: Key '%s' in %s must be '[min, max]' with min < max (got '%s')", TAG, key, context, val))
-    end
-    return parts
+    return n
 end
 
--- Validates an option value against a set of allowed enum keys
 local function parse_enum(val, key, valid_map, context)
     if val == nil then return nil end
     if not valid_map[val] then
@@ -141,101 +179,186 @@ local function parse_enum(val, key, valid_map, context)
     return val
 end
 
--- Validates identifiers and '=' usage in a mathematical expression and returns referenced variables
-local function validate_expr(expr, allowed_vars, allow_equals, context)
-    local _, eq_count = expr:gsub("=", "")
-    if eq_count > 1 then
-        error(string.format("[%s] Error: Expression '%s' in %s cannot contain multiple '=' signs", TAG, expr, context))
+-- Splits top-level comma-separated items while respecting nested parentheses
+local function split_top_commas(str)
+    local items, depth, start = {}, 0, 1
+    for i = 1, #str do
+        local ch = str:sub(i, i)
+        if ch == "(" then depth = depth + 1
+        elseif ch == ")" then depth = depth - 1
+        elseif ch == "," and depth == 0 then
+            table.insert(items, U.trim(str:sub(start, i - 1)))
+            start = i + 1
+        end
     end
-    if eq_count == 1 and not allow_equals then
-        error(string.format("[%s] Error: Explicit expression '%s' in %s must not contain '='", TAG, expr, context))
+    table.insert(items, U.trim(str:sub(start)))
+    return items
+end
+
+-- Parses a strict '[min, max]' numeric range
+local function parse_range(val, key, context)
+    if val == nil then return nil end
+    local inner = val:match("^%[%s*(.-)%s*%]$")
+    local parts = inner and split_top_commas(inner) or {}
+    if #parts ~= 2 then
+        error(string.format("[%s] Error: Key '%s' in %s must be '[min, max]' (got '%s')", TAG, key, context, val))
+    end
+    local lo, hi = eval_const_expr(parts[1], context), eval_const_expr(parts[2], context)
+    if lo >= hi then
+        error(string.format("[%s] Error: Key '%s' in %s must have min < max (got '%s')", TAG, key, context, val))
+    end
+    return { lo, hi }
+end
+
+-- Parses a parameter specification: '[min, max]', '[a..b]', or '[v1, v2, v3, ...]'
+local function parse_param_spec(name, val, context)
+    local inner = val:match("^%[%s*(.-)%s*%]$")
+    if not inner or inner == "" then
+        error(string.format("[%s] Error: Parameter '%s' in %s must be enclosed in '[...]' (got '%s')", TAG, name, context, val))
     end
 
-    local scrubbed = expr:gsub("%d+%.?%d*[eE][+-]?%d+", "0"):gsub("%.%d+[eE][+-]?%d+", "0")
-    local used_vars = {}
+    local s_tok, e_tok = inner:match("^(.-)%s*%.%.%s*(.-)$")
+    if s_tok and e_tok then
+        local lo, hi = eval_const_expr(s_tok, context), eval_const_expr(e_tok, context)
+        if math.floor(lo) ~= lo or math.floor(hi) ~= hi or lo >= hi then
+            error(string.format("[%s] Error: Integer step range '%s' for parameter '%s' in %s must have integer min < max", TAG, val, name, context))
+        end
+        local values = {}
+        for v = lo, hi do table.insert(values, v) end
+        return { name = name, kind = "list", values = values }
+    end
+
+    local parts = split_top_commas(inner)
+    if #parts == 2 then
+        local lo, hi = eval_const_expr(parts[1], context), eval_const_expr(parts[2], context)
+        if lo >= hi then
+            error(string.format("[%s] Error: Range '%s' for parameter '%s' in %s must have min < max", TAG, val, name, context))
+        end
+        return { name = name, kind = "range", min = lo, max = hi }
+    elseif #parts >= 3 then
+        local values = {}
+        for _, item in ipairs(parts) do table.insert(values, eval_const_expr(item, context)) end
+        return { name = name, kind = "list", values = values }
+    end
+    error(string.format("[%s] Error: Parameter '%s' in %s must be '[min, max]', '[a..b]', or '[v1, v2, v3, ...]' (got '%s')", TAG, name, context, val))
+end
+
+-- Validates identifiers and dynamic column indexing 'c[...]' in an expression
+local function validate_expr(expr, allowed_vars, allow_cols, context)
+    if U.trim(expr) == "" then
+        error(string.format("[%s] Error: Empty expression in %s", TAG, context))
+    end
+    if expr:find("=", 1, true) then
+        error(string.format("[%s] Error: Expression '%s' in %s must not contain '='", TAG, expr, context))
+    end
+
+    local stripped, pos, len = {}, 1, #expr
+    while pos <= len do
+        local s_idx, e_idx = expr:find("%f[%w_]c%[", pos)
+        if not s_idx then
+            table.insert(stripped, expr:sub(pos))
+            break
+        end
+        if not allow_cols then
+            error(string.format("[%s] Error: Column indexing 'c[...]' is only allowed in '.plot-file' (%s)", TAG, context))
+        end
+        table.insert(stripped, expr:sub(pos, s_idx - 1))
+        local depth, cur = 1, e_idx + 1
+        while cur <= len and depth > 0 do
+            local ch = expr:sub(cur, cur)
+            if ch == "[" then depth = depth + 1 elseif ch == "]" then depth = depth - 1 end
+            cur = cur + 1
+        end
+        if depth ~= 0 then
+            error(string.format("[%s] Error: Unclosed 'c[...]' bracket in '%s' in %s", TAG, expr, context))
+        end
+        validate_expr(expr:sub(e_idx + 1, cur - 2), allowed_vars, allow_cols, context)
+        table.insert(stripped, "0")
+        pos = cur
+    end
+
+    local clean = table.concat(stripped)
+    if clean:find("[", 1, true) or clean:find("]", 1, true) then
+        error(string.format("[%s] Error: Unexpected '[' or ']' in expression '%s' in %s", TAG, expr, context))
+    end
+
+    local scrubbed = clean:gsub("%d+%.?%d*[eE][+-]?%d+", "0"):gsub("%.%d+[eE][+-]?%d+", "0")
     for ident in scrubbed:gmatch("[a-zA-Z_][a-zA-Z0-9_]*") do
-        if not MATH_SYMBOLS[ident] then
-            if not allowed_vars[ident] then
-                error(string.format("[%s] Error: Unknown or disallowed identifier '%s' in %s", TAG, ident, context))
+        if CONST_ENV[ident] == nil and not allowed_vars[ident] then
+            error(string.format("[%s] Error: Unknown or disallowed identifier '%s' in %s", TAG, ident, context))
+        end
+    end
+end
+
+-- Parses a curve definition block (.plot-function or .plot-file) with multi-line 'vars:' and 'labels:'
+local function parse_curve_block(lines, reserved_keys, required_keys, context)
+    local kv, vars, labels, param_order, param_specs = {}, {}, {}, {}, {}
+    local section = nil
+
+    for _, line in ipairs(lines) do
+        local k_raw, v_raw = line:match("^([a-zA-Z_][%w_%-]*)%s*:%s*(.*)$")
+        local k_lower = k_raw and k_raw:lower() or nil
+
+        if section == "vars" and k_raw and (reserved_keys[k_lower] or is_valid_ident(k_raw)) then
+            section = nil
+        elseif section == "labels" and (not k_raw or reserved_keys[k_lower] or (not param_specs[k_raw] and U.trim(v_raw):match("^%[.*%]$"))) then
+            section = nil
+        end
+
+        if section == "vars" then
+            local vname, vexpr = line:match("^([a-zA-Z_][a-zA-Z0-9_]*)%s*=%s*(.+)$")
+            if not vname or not is_valid_ident(vname) then
+                error(string.format("[%s] Error: Invalid assignment inside 'vars:' in %s (expected 'name = expr'): %s", TAG, context, line))
             end
-            used_vars[ident] = true
+            table.insert(vars, { name = vname, expr = U.trim(vexpr) })
+        elseif section == "labels" then
+            local lval = U.trim(v_raw)
+            if lval == "" then
+                error(string.format("[%s] Error: Empty label for '%s' in 'labels:' of %s", TAG, k_raw, context))
+            end
+            if labels[k_raw] ~= nil then
+                error(string.format("[%s] Error: Duplicate label for '%s' in 'labels:' of %s", TAG, k_raw, context))
+            end
+            labels[k_raw] = strip_quotes(lval)
+        elseif k_raw then
+            local val = U.trim(v_raw)
+            if reserved_keys[k_lower] then
+                if kv[k_lower] ~= nil then
+                    error(string.format("[%s] Error: Duplicate key '%s' in %s", TAG, k_lower, context))
+                end
+                if k_lower == "vars" or k_lower == "labels" then
+                    if val ~= "" then
+                        error(string.format("[%s] Error: Key '%s' in %s must start a multi-line block (no inline value)", TAG, k_lower, context))
+                    end
+                    kv[k_lower] = true
+                    section = k_lower
+                else
+                    if val == "" then
+                        error(string.format("[%s] Error: Key '%s' in %s requires a value", TAG, k_lower, context))
+                    end
+                    kv[k_lower] = val
+                end
+            else
+                if not is_valid_ident(k_raw) then
+                    error(string.format("[%s] Error: Unknown or invalid key '%s' in %s", TAG, k_raw, context))
+                end
+                if param_specs[k_raw] ~= nil then
+                    error(string.format("[%s] Error: Duplicate parameter '%s' in %s", TAG, k_raw, context))
+                end
+                table.insert(param_order, k_raw)
+                param_specs[k_raw] = parse_param_spec(k_raw, val, context)
+            end
+        else
+            error(string.format("[%s] Error: Invalid line in %s (expected 'key: value'): %s", TAG, context, line))
         end
     end
-    return eq_count == 1, used_vars
-end
 
--- Parses a column token 'cN' and verifies it falls within 0..num_cols-1
-local function parse_col_index(token, num_cols, context)
-    local idx_str = U.trim(token):match("^c(%d+)$")
-    local idx = idx_str and tonumber(idx_str) or nil
-    if not idx or idx < 0 or idx >= num_cols then
-        error(string.format("[%s] Error: Invalid or out-of-range column '%s' in %s (expected c0..c%d)", TAG, U.trim(token), context, num_cols - 1))
-    end
-    return idx
-end
-
--- Parses sweep columns ('c1..c5' or 'c1, c3, c5') into an array of 0-based indices
-local function parse_sweep_cols(spec, num_cols, context)
-    local start_tok, end_tok = U.trim(spec):match("^(c%d+)%s*%.%.%s*(c%d+)$")
-    if start_tok then
-        local s = parse_col_index(start_tok, num_cols, context)
-        local e = parse_col_index(end_tok, num_cols, context)
-        if s > e then
-            error(string.format("[%s] Error: Column range '%s' in %s must be ascending", TAG, spec, context))
+    for _, req in ipairs(required_keys) do
+        if not kv[req] or kv[req] == "" then
+            error(string.format("[%s] Error: Missing required key '%s' in %s", TAG, req, context))
         end
-        local cols = {}
-        for c = s, e do table.insert(cols, c) end
-        return cols
     end
-
-    local cols = {}
-    for tok in spec:gmatch("[^,]+") do
-        table.insert(cols, parse_col_index(tok, num_cols, context))
-    end
-    if #cols == 0 then
-        error(string.format("[%s] Error: 'y' sweep list cannot be empty in %s", TAG, context))
-    end
-    return cols
-end
-
--- Formats a numeric sweep parameter cleanly for slider labels
-local function format_param(val)
-    local abs = math.abs(val)
-    if abs > 0 and (abs < 1e-3 or abs >= 1e4) then
-        return string.format("%.2e", val):gsub("e([+-])0+(%d)", "e%1%2")
-    end
-    local s = string.format("%.4f", val):gsub("%.?0+$", "")
-    return s == "-0" and "0" or s
-end
-
--- Parses sweep parameter values ('0..1' or '0.1, 0.5, 1.0') into formatted label strings
-local function parse_sweep_params(spec, count, context)
-    local s_str, e_str = U.trim(spec):match("^([+-]?%d*%.?%d+[eE]?[+-]?%d*)%s*%.%.%s*([+-]?%d*%.?%d+[eE]?[+-]?%d*)$")
-    if s_str and tonumber(s_str) and tonumber(e_str) then
-        if count < 2 then
-            error(string.format("[%s] Error: 'param' range '%s' in %s requires at least 2 sweep columns", TAG, spec, context))
-        end
-        local start_v, end_v = tonumber(s_str), tonumber(e_str)
-        local step = (end_v - start_v) / (count - 1)
-        local labels = {}
-        for i = 0, count - 1 do
-            table.insert(labels, format_param(start_v + i * step))
-        end
-        return labels
-    end
-
-    local labels = {}
-    for tok in spec:gmatch("[^,]+") do
-        local num = tonumber(U.trim(tok))
-        if not num then
-            error(string.format("[%s] Error: Non-numeric parameter value '%s' in %s", TAG, U.trim(tok), context))
-        end
-        table.insert(labels, format_param(num))
-    end
-    if #labels ~= count then
-        error(string.format("[%s] Error: 'param' has %d values, but 'y' selects %d columns in %s", TAG, #labels, count, context))
-    end
-    return labels
+    return kv, vars, labels, param_order, param_specs
 end
 
 -- Reads a comma-, tab-, or whitespace-delimited numeric matrix after stripping comments and skipped lines
@@ -245,11 +368,7 @@ local function read_numeric_matrix(src, skip, context)
         error(string.format("[%s] Error: Cannot open data file at '%s' in %s. Check file path.", TAG, src, context))
     end
 
-    local rows = {}
-    local skipped = 0
-    local expected_cols = nil
-    local line_num = 0
-
+    local rows, skipped, expected_cols, line_num = {}, 0, nil, 0
     for line in file:lines() do
         line_num = line_num + 1
         local trimmed = U.trim(line:gsub("\r$", ""))
@@ -294,130 +413,262 @@ local function read_numeric_matrix(src, skip, context)
     return rows
 end
 
--- Registers an analytical function definition block
-local function register_function_def(el)
+-- Finalizes parameter descriptors, slider assignments, and 'vars:' + coordinate expressions
+local function finalize_curve_params_and_exprs(kv, vars, labels, param_order, param_specs, base_vars, allow_cols, context)
+    local steps = parse_int(kv.steps, "steps", 2, context) or DEFAULTS.steps
+    local slider_set = {}
+    if kv.sliders then
+        for tok in kv.sliders:gmatch("[^,]+") do
+            local sname = U.trim(tok)
+            if sname ~= "" then
+                if not param_specs[sname] then
+                    error(string.format("[%s] Error: Slider '%s' in %s does not match any declared parameter", TAG, sname, context))
+                end
+                if slider_set[sname] then
+                    error(string.format("[%s] Error: Duplicate slider '%s' in %s", TAG, sname, context))
+                end
+                slider_set[sname] = true
+            end
+        end
+        if not next(slider_set) then
+            error(string.format("[%s] Error: Key 'sliders' in %s cannot be empty", TAG, context))
+        end
+    end
+
+    for lname in pairs(labels) do
+        if not slider_set[lname] then
+            error(string.format("[%s] Error: Label '%s' in 'labels:' of %s must correspond to a parameter in 'sliders:'", TAG, lname, context))
+        end
+    end
+
+    local params, domain_count = {}, 0
+    for _, pname in ipairs(param_order) do
+        local p = param_specs[pname]
+        p.isSlider = slider_set[pname] == true
+        if p.isSlider then
+            if p.kind == "range" then p.steps = steps end
+            p.label = labels[pname] or pname
+            track_math(p.label)
+        else
+            domain_count = domain_count + 1
+        end
+        table.insert(params, p)
+    end
+
+    local allowed_vars = {}
+    for k, v in pairs(base_vars) do allowed_vars[k] = v end
+    for _, pname in ipairs(param_order) do allowed_vars[pname] = true end
+
+    for _, v in ipairs(vars) do
+        if param_specs[v.name] or base_vars[v.name] then
+            error(string.format("[%s] Error: Variable '%s' in 'vars:' of %s cannot shadow a parameter or data column", TAG, v.name, context))
+        end
+        validate_expr(v.expr, allowed_vars, allow_cols, context)
+        allowed_vars[v.name] = true
+    end
+
+    validate_expr(kv.x, allowed_vars, allow_cols, context)
+    validate_expr(kv.y, allowed_vars, allow_cols, context)
+    if kv.z then
+        validate_expr(kv.z, allowed_vars, allow_cols, context)
+    end
+
+    return params, domain_count
+end
+
+-- Registers either a '.plot-function' or '.plot-file' block through a unified pipeline
+local function register_curve_def(el, kind)
+    local is_fn = (kind == "function")
+    local tag_name = is_fn and ".plot-function" or ".plot-file"
     local id = U.trim(el.identifier)
     if id == "" then
-        error(string.format("[%s] Error: '.plot-function' block requires an 'id' attribute (e.g. ::: {.plot-function id=\"f1\"})", TAG))
+        error(string.format("[%s] Error: '%s' block requires an 'id' attribute (e.g. ::: {%s id=\"c1\"})", TAG, tag_name, tag_name))
     end
-    local context = ".plot-function#" .. id
-    local kv = parse_kv(U.extract_lines_from_div(el), FUNCTION_KEYS, { "expr" }, context)
-    local has_eq, vars = validate_expr(kv.expr, { x = true, y = true, z = true }, true, context)
+    local context = tag_name .. "#" .. id
+    local kv, vars, labels, param_order, param_specs = parse_curve_block(
+        U.extract_lines_from_div(el),
+        is_fn and FUNCTION_RESERVED_KEYS or FILE_RESERVED_KEYS,
+        is_fn and {} or { "src", "x", "y" },
+        context
+    )
 
-    if not has_eq and vars.z then
-        error(string.format("[%s] Error: Explicit expression '%s' in %s cannot contain 'z' (use '=' for implicit 3D surfaces)", TAG, kv.expr, context))
-    end
-
-    local dim, subtype
-    if has_eq then
-        dim = vars.z and "3d" or "2d"
-        subtype = vars.z and "3d-implicit" or "2d-implicit"
+    local rows, base_vars = nil, {}
+    if is_fn then
+        for _, coord in ipairs({ "x", "y", "z" }) do
+            local val = kv[coord]
+            if val and val:match("^%[.*%]$") then
+                table.insert(param_order, coord)
+                param_specs[coord] = parse_param_spec(coord, val, context)
+                kv[coord] = coord
+            end
+        end
+        if not kv.x or not kv.y then
+            error(string.format("[%s] Error: Both 'x' and 'y' must be defined (as parameters or coordinate expressions) in %s", TAG, context))
+        end
     else
-        dim = vars.y and "3d" or "2d"
-        subtype = vars.y and "3d-explicit" or "2d-explicit"
+        local skip = parse_int(kv.skip, "skip", 0, context) or DEFAULTS.skip
+        rows = read_numeric_matrix(strip_quotes(kv.src), skip, context)
+        for i = 0, #rows[1] - 1 do base_vars["c" .. i] = true end
     end
 
-    local label = kv.label or id
+    local params, domain_count = finalize_curve_params_and_exprs(
+        kv, vars, labels, param_order, param_specs, base_vars, not is_fn, context
+    )
+
+    local dim = kv.z and "3d" or "2d"
+    local subtype = "curve"
+    local points = nil
+
+    if is_fn then
+        if domain_count < 1 or domain_count > 2 then
+            error(string.format("[%s] Error: %s must have 1 domain parameter (curve) or 2 domain parameters (3D surface); got %d", TAG, context, domain_count))
+        end
+        if dim == "2d" and domain_count == 2 then
+            error(string.format("[%s] Error: 2D curve in %s cannot have 2 domain parameters (define 'z' for a 3D surface)", TAG, context))
+        end
+        subtype = (domain_count == 2) and "surface" or "curve"
+        points = parse_int(kv.points, "points", 2, context)
+            or (subtype == "surface" and DEFAULTS.points_surface or DEFAULTS.points_curve)
+    elseif domain_count > 0 then
+        error(string.format("[%s] Error: Every parameter declared in %s must be listed in 'sliders:'", TAG, context))
+    end
+
+    local label = strip_quotes(kv.label) or id
     track_math(label)
 
     table.insert(plot_defs, {
-        kind    = "function",
+        kind    = kind,
         id      = id,
         dim     = dim,
         subtype = subtype,
-        isSweep = false,
-        expr    = kv.expr,
+        rows    = rows,
+        params  = params,
+        vars    = vars,
+        x       = kv.x,
+        y       = kv.y,
+        z       = kv.z,
+        points  = points,
         label   = label,
-        color   = kv.color,
-        xrange  = parse_range(kv.xrange, "xrange", context),
-        yrange  = parse_range(kv.yrange, "yrange", context),
-        zrange  = parse_range(kv.zrange, "zrange", context),
-        points  = parse_int(kv.points, "points", 2, context),
-        mode    = has_eq and "lines" or (parse_enum(kv.mode, "mode", MODES, context) or "lines"),
-        smooth  = parse_bool(kv.smooth, "smooth", context)
+        color   = strip_quotes(kv.color),
+        mode    = parse_enum(kv.mode, "mode", MODES, context) or (is_fn and "lines" or "lines+markers"),
+        smooth  = is_fn and (parse_bool(kv.smooth, "smooth", context) ~= false)
+                        or (parse_bool(kv.smooth, "smooth", context) or false)
     })
     has_dynamic_plot = true
     return {}
 end
 
--- Registers a file-backed curve or parameter-sweep definition block
-local function register_file_def(el)
-    local id = U.trim(el.identifier)
-    if id == "" then
-        error(string.format("[%s] Error: '.plot-file' block requires an 'id' attribute (e.g. ::: {.plot-file id=\"data1\"})", TAG))
-    end
-    local context = ".plot-file#" .. id
-    local kv = parse_kv(U.extract_lines_from_div(el), FILE_KEYS, { "src", "x", "y" }, context)
+-- Parses a shading rule header ('f1 -> f2' or 'f1 -> bottom:')
+local function parse_shade_header(line, context)
+    local lhs, rhs = line:match("^(.-)%s*%->%s*(.-)$")
+    if not lhs then return nil end
 
-    local is_sweep = kv.param ~= nil
-    if is_sweep then
-        if kv.z ~= nil then
-            error(string.format("[%s] Error: Key 'z' is not allowed in parameter-sweep mode in %s", TAG, context))
-        end
+    local has_opts = rhs:sub(-1) == ":"
+    if has_opts then rhs = rhs:sub(1, -2) end
+    lhs, rhs = U.trim(lhs), U.trim(rhs)
+
+    if lhs == "" or rhs == "" then
+        error(string.format("[%s] Error: Invalid shading rule '%s' in %s (expected 'curve -> target')", TAG, line, context))
+    end
+
+    local rule = { from = lhs, opacity = DEFAULTS.shade_opacity }
+    if rhs == "bottom" or rhs == "top" then
+        rule.toKind, rule.to = "bound", rhs
+    elseif is_valid_ident(rhs) then
+        rule.toKind, rule.to = "curve", rhs
     else
-        for _, sweep_only in ipairs({ "transform", "param-label" }) do
-            if kv[sweep_only] ~= nil then
-                error(string.format("[%s] Error: Key '%s' requires 'param' in %s", TAG, sweep_only, context))
+        rule.toKind, rule.to = "const", eval_const_expr(rhs, context)
+    end
+    return rule, has_opts
+end
+
+-- Parses a '.dynamic-plot' block including optional multi-line 'shade:' rules
+local function parse_plot_block(lines, context)
+    local kv, shade = {}, {}
+    local in_shade, active_rule, active_has_opts, active_opt_count = false, nil, false, 0
+
+    local function close_rule()
+        if active_rule and active_has_opts and active_opt_count == 0 then
+            error(string.format("[%s] Error: Shading rule '%s -> %s:' in %s has ':' but no options", TAG, active_rule.from, tostring(active_rule.to), context))
+        end
+        active_rule, active_has_opts, active_opt_count = nil, false, 0
+    end
+
+    for _, line in ipairs(lines) do
+        local opt_k, opt_v = line:match("^([%w_%-]+)%s*:%s*(.*)$")
+        local opt_lower = opt_k and opt_k:lower() or nil
+
+        if in_shade and opt_lower and not (active_has_opts and SHADE_OPTION_KEYS[opt_lower]) and PLOT_KEYS[opt_lower] then
+            close_rule()
+            in_shade = false
+        end
+
+        if in_shade then
+            if line:find("->", 1, true) then
+                close_rule()
+                local rule, has_opts = parse_shade_header(line, context)
+                table.insert(shade, rule)
+                active_rule, active_has_opts = rule, has_opts
+            elseif active_has_opts and opt_lower and SHADE_OPTION_KEYS[opt_lower] then
+                if active_rule[opt_lower] ~= nil then
+                    error(string.format("[%s] Error: Duplicate shading option '%s' in %s", TAG, opt_lower, context))
+                end
+                active_opt_count = active_opt_count + 1
+                local val = U.trim(opt_v)
+                if opt_lower == "xrange" then
+                    active_rule.xrange = parse_range(val, "xrange", context)
+                elseif opt_lower == "color" then
+                    active_rule.color = strip_quotes(val)
+                elseif opt_lower == "opacity" then
+                    active_rule.opacity = parse_float(val, "opacity", 0, 1, context)
+                elseif opt_lower == "label" then
+                    active_rule.label = strip_quotes(val)
+                    track_math(active_rule.label)
+                end
+            else
+                error(string.format("[%s] Error: Invalid line '%s' inside 'shade:' of %s", TAG, line, context))
             end
+        elseif opt_lower then
+            if not PLOT_KEYS[opt_lower] then
+                error(string.format("[%s] Error: Unknown key '%s' in %s", TAG, opt_lower, context))
+            end
+            if kv[opt_lower] ~= nil then
+                error(string.format("[%s] Error: Duplicate key '%s' in %s", TAG, opt_lower, context))
+            end
+            local val = U.trim(opt_v)
+            if opt_lower == "shade" then
+                if val ~= "" then
+                    error(string.format("[%s] Error: Key 'shade' in %s must start a multi-line block (no inline value)", TAG, context))
+                end
+                kv.shade = true
+                in_shade = true
+            else
+                if val == "" then
+                    error(string.format("[%s] Error: Key '%s' in %s requires a value", TAG, opt_lower, context))
+                end
+                kv[opt_lower] = val
+            end
+        else
+            error(string.format("[%s] Error: Invalid line in %s (expected 'key: value'): %s", TAG, context, line))
         end
     end
 
-    local skip = parse_int(kv.skip, "skip", 0, context) or DEFAULTS.skip
-    local rows = read_numeric_matrix(kv.src, skip, context)
-    local num_cols = #rows[1]
-    local col_vars = {}
-    for i = 0, num_cols - 1 do col_vars["c" .. i] = true end
+    close_rule()
 
-    validate_expr(kv.x, col_vars, false, context)
-
-    local sweep_cols, params
-    if is_sweep then
-        sweep_cols = parse_sweep_cols(kv.y, num_cols, context)
-        params = parse_sweep_params(kv.param, #sweep_cols, context)
-        if kv.transform then
-            local t_vars = { y = true }
-            for k, v in pairs(col_vars) do t_vars[k] = v end
-            validate_expr(kv.transform, t_vars, false, context)
-        end
-    else
-        validate_expr(kv.y, col_vars, false, context)
-        if kv.z then
-            validate_expr(kv.z, col_vars, false, context)
-        end
+    if kv.shade and #shade == 0 then
+        error(string.format("[%s] Error: Key 'shade' in %s must contain at least one shading rule", TAG, context))
     end
-
-    local label = kv.label or id
-    local param_label = kv["param-label"] or "Parameter"
-    track_math(label)
-    track_math(param_label)
-
-    table.insert(plot_defs, {
-        kind       = "file",
-        id         = id,
-        dim        = (not is_sweep and kv.z) and "3d" or "2d",
-        isSweep    = is_sweep,
-        rows       = rows,
-        x          = kv.x,
-        y          = kv.y,
-        z          = kv.z,
-        sweepCols  = sweep_cols,
-        params     = params,
-        paramLabel = param_label,
-        transform  = kv.transform,
-        label      = label,
-        color      = kv.color,
-        mode       = parse_enum(kv.mode, "mode", MODES, context) or "lines+markers",
-        smooth     = parse_bool(kv.smooth, "smooth", context) or false
-    })
-    has_dynamic_plot = true
-    return {}
+    if not kv.curves or kv.curves == "" then
+        error(string.format("[%s] Error: Missing required key 'curves' in %s", TAG, context))
+    end
+    return kv, shade
 end
 
 -- Builds the HTML mount container for a dynamic-plot canvas
 local function render_plot_canvas(el)
     local id = U.trim(el.identifier)
     local context = (id ~= "") and (".dynamic-plot#" .. id) or ".dynamic-plot"
-    local kv = parse_kv(U.extract_lines_from_div(el), PLOT_KEYS, { "curves" }, context)
+    local kv, shade = parse_plot_block(U.extract_lines_from_div(el), context)
 
     local curves = {}
     for item in kv.curves:gmatch("[^,]+") do
@@ -428,18 +679,22 @@ local function render_plot_canvas(el)
         error(string.format("[%s] Error: Key 'curves' in %s must list at least one curve ID", TAG, context))
     end
 
-    track_math(kv.xlabel)
-    track_math(kv.ylabel)
-    track_math(kv.zlabel)
+    local xlabel = strip_quotes(kv.xlabel)
+    local ylabel = strip_quotes(kv.ylabel)
+    local zlabel = strip_quotes(kv.zlabel)
+    track_math(xlabel)
+    track_math(ylabel)
+    track_math(zlabel)
 
     local legend_opt = parse_bool(kv.legend, "legend", context)
     if legend_opt == nil then legend_opt = DEFAULTS.legend end
 
     local cfg = {
         curves = curves,
-        xlabel = kv.xlabel,
-        ylabel = kv.ylabel,
-        zlabel = kv.zlabel,
+        shade  = shade,
+        xlabel = xlabel,
+        ylabel = ylabel,
+        zlabel = zlabel,
         xscale = parse_enum(kv.xscale, "xscale", SCALES, context) or DEFAULTS.xscale,
         yscale = parse_enum(kv.yscale, "yscale", SCALES, context) or DEFAULTS.yscale,
         zscale = parse_enum(kv.zscale, "zscale", SCALES, context) or DEFAULTS.zscale,
@@ -464,7 +719,20 @@ local function render_plot_canvas(el)
     return pandoc.RawBlock("html", html)
 end
 
--- Validates curve references, dimensionality, sweep uniqueness, and log bounds across all plots
+-- Checks whether two slider parameter descriptors have identical ranges/values
+local function sliders_compatible(a, b)
+    if a.kind ~= b.kind then return false end
+    if a.kind == "range" then
+        return a.min == b.min and a.max == b.max and a.steps == b.steps
+    end
+    if #a.values ~= #b.values then return false end
+    for i = 1, #a.values do
+        if a.values[i] ~= b.values[i] then return false end
+    end
+    return true
+end
+
+-- Validates curve references, dimensionality, shared sliders, shading targets, and log bounds
 local function validate_plots()
     local defs_by_id = {}
     for _, def in ipairs(plot_defs) do
@@ -476,31 +744,58 @@ local function validate_plots()
 
     for _, item in ipairs(plot_configs) do
         local ctx, cfg = item.context, item.cfg
-        local dim, sweep_count = nil, 0
+        local dim, curve_set, shared_sliders, slider_count = nil, {}, {}, 0
 
         for _, cid in ipairs(cfg.curves) do
             local def = defs_by_id[cid]
             if not def then
                 error(string.format("[%s] Error: Unknown curve ID '%s' referenced in %s", TAG, cid, ctx))
             end
+            curve_set[cid] = def
             if dim == nil then
                 dim = def.dim
             elseif dim ~= def.dim then
                 error(string.format("[%s] Error: Cannot mix 2D and 3D curves in %s", TAG, ctx))
             end
-            if def.isSweep then
-                sweep_count = sweep_count + 1
+
+            for _, p in ipairs(def.params) do
+                if p.isSlider then
+                    if not shared_sliders[p.name] then
+                        shared_sliders[p.name] = p
+                        slider_count = slider_count + 1
+                    elseif not sliders_compatible(shared_sliders[p.name], p) then
+                        error(string.format("[%s] Error: Conflicting definitions for shared slider '%s' in %s", TAG, p.name, ctx))
+                    end
+                end
             end
         end
 
-        if sweep_count > 1 then
-            error(string.format("[%s] Error: Cannot combine multiple parameter-sweep curves in %s", TAG, ctx))
-        end
-        if cfg.play ~= nil and sweep_count == 0 then
-            error(string.format("[%s] Error: Key 'play' in %s requires a parameter-sweep curve", TAG, ctx))
+        if cfg.play ~= nil and slider_count == 0 then
+            error(string.format("[%s] Error: Key 'play' in %s requires at least one slider parameter", TAG, ctx))
         end
         if cfg.play == nil then
             cfg.play = DEFAULTS.play
+        end
+
+        if #cfg.shade > 0 and dim ~= "2d" then
+            error(string.format("[%s] Error: Key 'shade' is only supported in 2D plots (%s)", TAG, ctx))
+        end
+
+        for _, rule in ipairs(cfg.shade) do
+            if not curve_set[rule.from] then
+                error(string.format("[%s] Error: Shading source '%s' must be listed in 'curves' of %s", TAG, rule.from, ctx))
+            end
+            if rule.toKind == "curve" then
+                if not curve_set[rule.to] then
+                    error(string.format("[%s] Error: Shading target '%s' must be listed in 'curves' of %s", TAG, rule.to, ctx))
+                end
+                if rule.from == rule.to and rule.xrange ~= nil then
+                    error(string.format("[%s] Error: Closed-curve shading '%s -> %s' cannot specify 'xrange' in %s", TAG, rule.from, rule.to, ctx))
+                end
+            end
+            if rule.xrange and cfg.xscale == "log" and rule.xrange[1] <= 0 then
+                error(string.format("[%s] Error: Logarithmic xaxis requires positive shading 'xrange' bounds in %s", TAG, ctx))
+            end
         end
 
         for _, axis in ipairs({ "x", "y", "z" }) do
@@ -515,9 +810,9 @@ end
 -- Pandoc filter hook for '.plot-function', '.plot-file', and '.dynamic-plot' fenced divs
 function Div(el)
     if el.classes:includes("plot-function") then
-        return register_function_def(el)
+        return register_curve_def(el, "function")
     elseif el.classes:includes("plot-file") then
-        return register_file_def(el)
+        return register_curve_def(el, "file")
     elseif el.classes:includes("dynamic-plot") then
         return render_plot_canvas(el)
     end

@@ -26,6 +26,81 @@
   width: 100%;
 }
 
+.dynamic-plot-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem 0.75rem;
+  border-top: 1px solid var(--bs-border-color);
+  background-color: var(--bs-tertiary-bg, transparent);
+}
+
+.dynamic-plot-play-btn {
+  appearance: none;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.375rem;
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.dynamic-plot-play-btn:hover {
+  background-color: var(--bs-secondary-bg);
+}
+
+.dynamic-plot-sliders {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.6rem 1.1rem;
+}
+
+.dynamic-plot-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.dynamic-plot-slider-header {
+  display: flex;
+  align-items: baseline;
+  font-size: 0.85rem;
+  line-height: 1.25;
+  color: var(--bs-body-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dynamic-plot-slider-label mjx-container {
+  margin: 0 !important;
+}
+
+.dynamic-plot-slider-value {
+  margin-left: 0.15rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.dynamic-plot-slider-input {
+  width: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+
 .dynamic-plot-sidebar-wrap {
   position: relative;
   flex: 0 0 auto;
@@ -120,7 +195,7 @@
   flex-shrink: 0;
 }
 
-.dynamic-plot-swatch:not([data-mode="markers"])::before {
+.dynamic-plot-swatch:not([data-mode="markers"]):not([data-mode="area"])::before {
   content: "";
   position: absolute;
   left: 1px;
@@ -130,6 +205,15 @@
   transform: translateY(-50%);
   border-radius: 1px;
   background-color: var(--swatch-color);
+}
+
+.dynamic-plot-swatch[data-mode="area"]::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: 2px;
+  border: 1.5px solid var(--swatch-color);
+  background-color: color-mix(in srgb, var(--swatch-color) 30%, transparent);
 }
 
 .dynamic-plot-swatch[data-mode*="markers"]::after {

@@ -2,7 +2,7 @@
 title: 'How to create dynamic plots'
 ---
 
-Static figures, as shown in the [Quarto Markdown Guide](/doc/Examples/example1.qmd), work well for fixed illustrations. For interactive scientific plots requiring zoomable 2D/3D canvases, analytical curve evaluation, tabular data overlays, LaTeX math labels, or animated parameter sweeps, this template provides a custom `dynamic-plots` filter powered by Plotly.
+Static figures, as shown in the [Quarto Markdown Guide](/doc/Examples/example1.qmd), work well for fixed illustrations. For interactive scientific plots requiring zoomable 2D/3D canvases, parametric or explicit analytical curves and surfaces, tabular data overlays, shaded regions, LaTeX math labels, or animated multi-parameter sliders, this template provides a custom `dynamic-plots` filter powered by Plotly.
 
 # Defining Curves and Plotting a Canvas
 
@@ -10,42 +10,42 @@ Dynamic plots separate **curve definitions** from the **plot canvas**. Definitio
 
 ```markdown
 ::: {.plot-function id="wave-sin"}
-expr: sin(2 * x) * exp(-0.2 * x)
+x: [0, 8]
+y: sin(2 * x) * exp(-0.2 * x)
 label: $e^{-0.2x}\sin(2x)$
-xrange: [0, 8]
 :::
 
-::: {.plot-function id="circle-eq"}
-expr: (x - 4)^2 + y^2 = 0.64
+::: {.plot-function id="circle-param"}
+t: [0, 2 * pi]
+x: 4 + 0.8 * cos(t)
+y: 0.8 * sin(t)
 label: $(x - 4)^2 + y^2 = 0.8^2$
-xrange: [0, 8]
-yrange: [-1.2, 1.2]
 color: crimson
 :::
 
 ::: {.dynamic-plot}
-curves: wave-sin, circle-eq
+curves: wave-sin, circle-param
 xlabel: $x$
 ylabel: $y(x)$
 :::
 ```
 
 ::: {.plot-function id="wave-sin"}
-expr: sin(2 * x) * exp(-0.2 * x)
+x: [0, 8]
+y: sin(2 * x) * exp(-0.2 * x)
 label: $e^{-0.2x}\sin(2x)$
-xrange: [0, 8]
 :::
 
-::: {.plot-function id="circle-eq"}
-expr: (x - 4)^2 + y^2 = 0.64
+::: {.plot-function id="circle-param"}
+t: [0, 2 * pi]
+x: 4 + 0.8 * cos(t)
+y: 0.8 * sin(t)
 label: $(x - 4)^2 + y^2 = 0.8^2$
-xrange: [0, 8]
-yrange: [-1.2, 1.2]
 color: crimson
 :::
 
 ::: {.dynamic-plot}
-curves: wave-sin, circle-eq
+curves: wave-sin, circle-param
 xlabel: $x$
 ylabel: $y(x)$
 :::
@@ -54,19 +54,68 @@ ylabel: $y(x)$
 
 All plot blocks are configured using `key: value` pairs inside fenced divs. Every `.plot-function` and `.plot-file` block requires a unique `id` attribute so it can be referenced in `curves:`.
 
+## Parameters, Variables, and Expressions
+
+Both `.plot-function` and `.plot-file` share a unified parameter and expression syntax:
+
+- **Parameter declarations** (`<name>: [...]`): Any valid identifier (other than reserved keys or mathematical constants) assigned a bracketed domain defines a parameter. Three formats are supported, and bounds may use constant math expressions (such as `2 * pi`):
+  - **Continuous range** `[min, max]`: Uniformly samples between `min` and `max` (`min < max`).
+  - **Integer step list** `[a..b]`: Generates discrete integers $a, a+1, \dots, b$ (`a < b`).
+  - **Explicit value list** `[v1, v2, v3, ...]`: Evaluates three or more specific numeric values.
+- **Coordinate domain shorthand**: In `.plot-function`, writing `x: [min, max]` (or similarly for `y` or `z`) is shorthand for declaring a parameter named `x` with that domain and setting the coordinate expression to `x`.
+- **Domain parameters vs. `sliders:`**: Parameters listed in `sliders: p1, p2` become interactive UI sliders. Any remaining parameters in `.plot-function` act as domain parameters (1 domain parameter produces a 2D or 3D curve; 2 domain parameters with `z` produce a 3D surface). In `.plot-file`, all declared parameters must be listed in `sliders:`.
+- `vars:` (optional multi-line block): Defines intermediate variables (`name = expr`) evaluated sequentially before `x`, `y`, and `z`. Variables cannot shadow declared parameters or data columns (`c0`, `c1`, …).
+- `x`, `y`, `z`: Explicit coordinate expressions (must not contain `=`). Expressions support `+`, `-`, `*`, `/`, `^`, implicit multiplication (`2x`, `x sin(x)`), constants (`pi`, `e`), and standard functions (`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `exp`, `log`, `ln`, `log10`, `log2`, `sqrt`, `abs`, `sign`, `floor`, `ceil`, `min`, `max`, `hypot`).
+- `steps`: Number of discrete slider steps for `[min, max]` slider parameters, integer $\ge 2$ (default `25`).
+- `labels:` (optional multi-line block): Maps slider parameter names (`param: Label`) to display labels above each slider, supporting inline LaTeX math (default: the parameter's identifier).
+
 ## Analytical Functions
 
-Use `::: {.plot-function id="..."}` to evaluate analytical expressions. Expressions support `+`, `-`, `*`, `/`, `^`, implicit multiplication (`2x`, `x sin(x)`), constants (`pi`, `e`), and standard functions (`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `sinh`, `cosh`, `tanh`, `exp`, `log`, `ln`, `log10`, `log2`, `sqrt`, `abs`, `sign`, `floor`, `ceil`, `min`, `max`):
+Use `::: {.plot-function id="..."}` to evaluate 2D curves, 3D parametric curves, or 3D surfaces:
 
-- `expr`: Mathematical expression (required). Whether `=` is present determines how the expression is evaluated:
-  - **Explicit** (no `=`): Defines $y = f(x)$ in 2D (using `x`) or $z = f(x, y)$ in 3D (using `x` and `y`). Explicit expressions cannot contain `z`. 2D explicit curves sample along `xrange` only and automatically resample when zooming or panning.
-  - **Implicit** (contains one `=`): Defines a 2D contour $f(x, y) = g(x, y)$ (using `x` and `y`) or a 3D isosurface $f(x, y, z) = g(x, y, z)$ (using `x`, `y`, and `z`). Because implicit equations are solved on a grid, they use sampling bounds along every active variable (`xrange` and `yrange` in 2D; `xrange`, `yrange`, and `zrange` in 3D), and `mode` and `smooth` are ignored.
-- `xrange`, `yrange`, `zrange`: Sampling domain `[min, max]` (`min < max`) along each axis (default: the canvas range if set, otherwise the co-plotted file extent, or `[-10, 10]`).
-- `points`: Sample resolution per axis, integer $\ge 2$ (defaults: `100` for 2D explicit, `60` per axis for 2D implicit and 3D explicit, `25` per axis for 3D implicit).
+- `x`, `y`: Required coordinate expressions (or domain parameter shorthands). 2D explicit curves automatically resample along `x` when zooming or panning.
+- `z`: Optional third coordinate expression for 3D curves (1 domain parameter) or 3D surfaces (2 domain parameters).
+- `points`: Sample resolution per domain axis, integer $\ge 2$ (defaults: `100` for curves, `40` per axis for 3D surfaces).
 - `label`: Legend title, supporting inline LaTeX math (default: the block's `id`).
-- `color`: Trace or surface color, passed directly as any valid CSS/Plotly color string (default: automatic colorway).
-- `mode`: Drawing style for explicit 2D curves (`lines`, `markers`, or `lines+markers`, default `lines`).
-- `smooth`: Enables spline interpolation between sample points on explicit 2D curves (`true` or `false`, default `true`).
+- `color`: Trace or surface color as any valid CSS/Plotly color string (default: automatic colorway).
+- `mode`: Drawing style for curves (`lines`, `markers`, or `lines+markers`, default `lines`).
+- `smooth`: Enables spline interpolation between sample points on 2D curves (`true` or `false`, default `true`).
+
+```markdown
+::: {.plot-function id="ripple-surface"}
+x: [-4, 4]
+y: [-4, 4]
+vars:
+r = hypot(x, y)
+z: sin(2 * r) / (1 + 0.4 * r)
+points: 45
+color: #1f77b4
+:::
+
+::: {.dynamic-plot}
+curves: ripple-surface
+xlabel: $x$
+ylabel: $y$
+zlabel: $z(x, y)$
+:::
+```
+
+::: {.plot-function id="ripple-surface"}
+x: [-4, 4]
+y: [-4, 4]
+vars:
+r = hypot(x, y)
+z: sin(2 * r) / (1 + 0.4 * r)
+points: 45
+color: #1f77b4
+:::
+
+::: {.dynamic-plot}
+curves: ripple-surface
+xlabel: $x$
+ylabel: $y$
+zlabel: $z(x, y)$
+:::
 
 ## Data Files
 
@@ -74,17 +123,11 @@ Use `::: {.plot-file id="..."}` to plot numeric columns from `.csv` (comma-separ
 
 - `src`: Path to the input data file (required).
 - `skip`: Number of leading non-comment header rows to ignore, integer $\ge 0$ (default `0`).
-- `x`: Column expression for the horizontal axis using **0-based column tokens** (`c0`, `c1`, `c2`, …) and any supported math operators, constants, or functions (required).
-- `y`: Vertical-axis column expression in standard mode (e.g., `c1` or `sqrt(c1^2 + c2^2)`), or the sweep column selection when `param` is set (required).
-- `z`: Column expression for the third axis in 3D scatter/line traces (e.g., `c2`). Cannot be combined with `param`.
+- `x`, `y`, `z`: Coordinate expressions (`x` and `y` required; `z` optional for 3D traces) using **0-based column tokens** (`c0`, `c1`, `c2`, …) or **dynamic column indexing** (`c[expr]`, where `expr` evaluates to a 0-based column index, such as `c[k]` controlled by a slider `k`).
 - `label`: Legend title, supporting inline LaTeX math (default: the block's `id`).
-- `color`: Trace color, passed directly as any valid CSS/Plotly color string (default: automatic colorway).
+- `color`: Trace color as any valid CSS/Plotly color string (default: automatic colorway).
 - `mode`: Drawing style (`lines`, `markers`, or `lines+markers`, default `lines+markers`).
 - `smooth`: Enables spline interpolation between points on 2D line traces (`true` or `false`, default `false`).
-- **Parameter sweep keys** (enabled when `param` is provided; `param-label` and `transform` require `param`):
-  - `param`: Numeric parameter values mapped one-to-one onto the columns selected by `y`. Set `y` to an ascending column range (`c1..c7`) or an explicit comma-separated list (`c1, c3, c5, c7`), and specify `param` either as a uniform range `start..end` (`0..3`, which interpolates linearly across at least 2 columns) or as a matching comma-separated list (`0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0`).
-  - `param-label`: Label displayed next to the active parameter value above the slider, supporting inline LaTeX math (default `Parameter`).
-  - `transform`: Optional mathematical expression applied to every sweep column value before plotting. Inside `transform`, `y` refers to the active sweep column's value in that row, and any column token (`c0`, `c1`, …) from the same row may also be referenced (for example, `transform: y^2` to plot squared amplitude, or `transform: y / c1` to normalize against `c1`).
 
 ```markdown
 ::: {.plot-file id="damped-data"}
@@ -98,7 +141,8 @@ color: #ff7f0e
 :::
 
 ::: {.plot-function id="damped-model"}
-expr: exp(-0.35 * x) * cos(2 * x)
+x: [0, 10]
+y: exp(-0.35 * x) * cos(2 * x)
 label: $e^{-0.35t}\cos(2t)$
 color: #1f77b4
 :::
@@ -121,7 +165,8 @@ color: #ff7f0e
 :::
 
 ::: {.plot-function id="damped-model"}
-expr: exp(-0.35 * x) * cos(2 * x)
+x: [0, 10]
+y: exp(-0.35 * x) * cos(2 * x)
 label: $e^{-0.35t}\cos(2t)$
 color: #1f77b4
 :::
@@ -132,29 +177,153 @@ xlabel: Time $t$ [s]
 ylabel: Amplitude $A(t)$ [m]
 :::
 
-## Plot Canvas
+## Plot Canvas and Shading
 
-The `::: {.dynamic-plot}` block mounts the responsive Plotly canvas and configures axes and interactive controls:
+The `::: {.dynamic-plot}` block mounts the responsive Plotly canvas and configures axes, shaded regions, and interactive controls:
 
-- `curves`: Comma-separated list of `.plot-function` and/or `.plot-file` IDs to display together (required). All curves in a plot must share the same dimensionality (all 2D or all 3D), with at most one parameter-sweep curve per canvas.
+- `curves`: Comma-separated list of `.plot-function` and/or `.plot-file` IDs to display together (required). All curves in a plot must share the same dimensionality (all 2D or all 3D). If multiple curves declare sliders with the same parameter name, their parameter domains must match and they automatically synchronize under a shared slider.
+- `shade:` (optional multi-line block, 2D plots only): Fills regions between curves, horizontal levels, plot bounds, or closed-curve interiors. Each rule is written as `source -> target` (or `source -> target:` followed by indented options):
+  - `source`: Curve ID listed in `curves`.
+  - `target`: Another curve ID in `curves`, a constant expression (e.g., `0`), `bottom` or `top` (the vertical axis bounds), or the same curve ID (`f1 -> f1`) to fill a closed parametric curve.
+  - Optional indented keys (`xrange: [min, max]`, `color`, `opacity` in `[0, 1]` defaulting to `0.2`, and `label` to add a toggleable area entry to the legend). Closed-curve rules (`f1 -> f1`) cannot specify `xrange`.
 - `xlabel`, `ylabel`, `zlabel`: Axis titles, supporting inline LaTeX math (`$ ... $`, `\( ... \)`). In 3D scenes, axes default to `x`, `y`, and `z`.
 - `xscale`, `yscale`, `zscale`: Axis scaling (`linear` or `log`, default `linear`).
 - `xrange`, `yrange`, `zrange`: Initial visible axis bounds formatted as `[min, max]` (`min < max`; bounds must be strictly positive when the corresponding axis uses `log` scale).
 - `width`, `height`: Canvas dimensions in pixels, integer $\ge 200$. `height` defaults to `400`; when `width` is omitted, the canvas automatically adapts to the available container width.
-- `legend`: Shows or hides the collapsible right-hand legend sidebar with per-curve visibility checkboxes (`true` or `false`, default `true`; when `false`, no legend is shown).
-- `play`: Adds a Play/Pause animation toggle button next to the parameter slider (`true` or `false`, default `false`). Valid only when `curves` includes a parameter-sweep curve.
+- `legend`: Shows or hides the collapsible right-hand legend sidebar with per-curve and per-region visibility checkboxes (`true` or `false`, default `true`).
+- `play`: Adds a Play/Pause animation toggle button next to the sliders (`true` or `false`, default `false`). Animates the first slider and requires at least one slider parameter.
 
-## Animated Parameter Sweeps
+```markdown
+::: {.plot-function id="gauss-a"}
+x: [-4, 6]
+vars:
+z = (x - 0.5) / 1.1
+y: exp(-0.5 * z^2)
+label: $f_1(x)$
+color: #1f77b4
+:::
 
-Combining sweep options in `.plot-file` with `play: true` in `.dynamic-plot` creates an interactive slider plot:
+::: {.plot-function id="gauss-b"}
+x: [-4, 6]
+vars:
+z = (x - 2.0) / 1.3
+y: 0.85 * exp(-0.5 * z^2)
+label: $f_2(x)$
+color: #ff7f0e
+:::
+
+::: {.dynamic-plot}
+curves: gauss-a, gauss-b
+xlabel: $x$
+ylabel: Density
+shade:
+gauss-a -> 0:
+  xrange: [-4, 1.2]
+  color: #1f77b4
+  opacity: 0.15
+  label: Left tail
+gauss-b -> gauss-a:
+  xrange: [1.2, 6]
+  color: #2ca02c
+  opacity: 0.25
+  label: Excess area
+:::
+```
+
+::: {.plot-function id="gauss-a"}
+x: [-4, 6]
+vars:
+z = (x - 0.5) / 1.1
+y: exp(-0.5 * z^2)
+label: $f_1(x)$
+color: #1f77b4
+:::
+
+::: {.plot-function id="gauss-b"}
+x: [-4, 6]
+vars:
+z = (x - 2.0) / 1.3
+y: 0.85 * exp(-0.5 * z^2)
+label: $f_2(x)$
+color: #ff7f0e
+:::
+
+::: {.dynamic-plot}
+curves: gauss-a, gauss-b
+xlabel: $x$
+ylabel: Density
+shade:
+gauss-a -> 0:
+  xrange: [-4, 1.2]
+  color: #1f77b4
+  opacity: 0.15
+  label: Left tail
+gauss-b -> gauss-a:
+  xrange: [1.2, 6]
+  color: #2ca02c
+  opacity: 0.25
+  label: Excess area
+:::
+
+# Interactive Sliders and Animated Sweeps
+
+Declaring multiple parameters in `sliders:` creates a responsive multi-slider control bar, and setting `play: true` animates the primary slider:
+
+```markdown
+::: {.plot-function id="damped-osc"}
+x: [0, 10]
+gamma: [0.05, 0.8]
+omega: [1, 2, 3, 4, 5]
+sliders: gamma, omega
+steps: 30
+labels:
+gamma: Damping $\gamma$
+omega: Frequency $\omega$
+y: exp(-gamma * x) * cos(omega * x)
+label: $e^{-\gamma x}\cos(\omega x)$
+:::
+
+::: {.dynamic-plot}
+curves: damped-osc
+xlabel: $x$
+ylabel: $y(x)$
+yrange: [-1.1, 1.1]
+play: true
+:::
+```
+
+::: {.plot-function id="damped-osc"}
+x: [0, 10]
+gamma: [0.05, 0.8]
+omega: [1, 2, 3, 4, 5]
+sliders: gamma, omega
+steps: 30
+labels:
+gamma: Damping $\gamma$
+omega: Frequency $\omega$
+y: exp(-gamma * x) * cos(omega * x)
+label: $e^{-\gamma x}\cos(\omega x)$
+:::
+
+::: {.dynamic-plot}
+curves: damped-osc
+xlabel: $x$
+ylabel: $y(x)$
+yrange: [-1.1, 1.1]
+play: true
+:::
+
+In `.plot-file`, combining an integer slider parameter with dynamic column indexing (`c[k]`) sweeps across data columns interactively:
 
 ```markdown
 ::: {.plot-file id="wave-sweep"}
 src: data/example-plot-sweep.csv
+k: [1..7]
+sliders: k
+labels:
+k: Time index $k$
 x: c0
-y: c1..c7
-param: 0..3
-param-label: $t$ [s]
+y: c[k]
 label: Wave amplitude
 smooth: true
 :::
@@ -162,17 +331,19 @@ smooth: true
 ::: {.dynamic-plot}
 curves: wave-sweep
 xlabel: $x$ [m]
-ylabel: $\psi(x, t)$
+ylabel: $\psi(x, t_k)$
 play: true
 :::
 ```
 
 ::: {.plot-file id="wave-sweep"}
 src: data/example-plot-sweep.csv
+k: [1..7]
+sliders: k
+labels:
+k: Time index $k$
 x: c0
-y: c1..c7
-param: 0..3
-param-label: $t$ [s]
+y: c[k]
 label: Wave amplitude
 smooth: true
 :::
@@ -180,6 +351,6 @@ smooth: true
 ::: {.dynamic-plot}
 curves: wave-sweep
 xlabel: $x$ [m]
-ylabel: $\psi(x, t)$
+ylabel: $\psi(x, t_k)$
 play: true
 :::
