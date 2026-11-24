@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Mindmaps</title>
+<title>How to write a page using Quarto Markdown – Scientific Wiki Template</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -26,37 +26,91 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-</style>
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
-<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="../site_libs/quarto-nav/headroom.min.js"></script>
-<script src="../site_libs/clipboard/clipboard.min.js"></script>
-<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="../site_libs/quarto-search/fuse.min.js"></script>
-<script src="../site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="../">
-<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
-<script src="../site_libs/quarto-html/popper.min.js"></script>
-<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="../site_libs/quarto-html/anchor.min.js"></script>
-<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-447e42e69aaa9833c0ba1b986f430b20.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
-<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-8c387117e5eae8a1ba37adcdde59800d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-0b8c98ed9779f92132a2e8b0f81ced17.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-8c387117e5eae8a1ba37adcdde59800d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-447e42e69aaa9833c0ba1b986f430b20.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-74d89be6381c9cc62f5d274f2d7f5b19.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-44b8f89f584464130d6e70baf4cdc4c7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-74d89be6381c9cc62f5d274f2d7f5b19.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
-  "location": "navbar",
+  "location": "sidebar",
   "copy-button": false,
   "collapse-after": 3,
-  "panel-placement": "end",
-  "type": "overlay",
+  "panel-placement": "start",
+  "type": "textbox",
   "limit": 50,
   "keyboard-shortcut": [
     "f",
@@ -135,10 +189,10 @@ window.Quarto = {
 };
 </script>
 
-<link rel="stylesheet" href="../include/theme-config.css">
+<link rel="stylesheet" href="../../include/theme-config.css">
 </head>
 
-<body class="nav-fixed fullcontent quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar docked fullcontent quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -322,64 +376,117 @@ window.Quarto = {
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
-    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
-      <div class="navbar-container container-fluid">
-      <div class="navbar-brand-container mx-auto">
-    <a href="../index.html" class="navbar-brand navbar-brand-logo">
-    <img src="../img/logo/logo_white.png" alt="" class="navbar-logo light-content">
-    <img src="../img/logo/logo_white.png" alt="" class="navbar-logo dark-content">
-    </a>
-  </div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
-  <span class="navbar-toggler-icon"></span>
-</button>
-          <div class="collapse navbar-collapse" id="navbarCollapse">
-            <ul class="navbar-nav navbar-nav-scroll me-auto">
-  <li class="nav-item">
-    <a class="nav-link" href="../index.html"> 
-<span class="menu-text">Home</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="../doc/tables.html"> 
-<span class="menu-text">Tables</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="../doc/plots.html"> 
-<span class="menu-text">Plots</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link active" href="../doc/mindmaps.html" aria-current="page"> 
-<span class="menu-text">Mindmaps</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="https://github.com/MKReyesH/ScientificTable"> 
-<span class="menu-text">GitHub Project</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="../about.html"> 
-<span class="menu-text">About</span></a>
-  </li>  
-</ul>
-          </div> <!-- /navcollapse -->
-            <div class="quarto-navbar-tools">
-  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
-</div>
-            <div id="quarto-search" class="" title="Search"></div>
-      </div> <!-- /container-fluid -->
-    </nav>
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item">Topics</li><li class="breadcrumb-item"><a href="../../doc/Examples/example1.html">Examples</a></li><li class="breadcrumb-item"><a href="../../doc/Examples/example1.html">How to write a page using Quarto Markdown</a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
 </header>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
 <!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+      <a href="../../index.html" class="sidebar-logo-link">
+      <img src="../../img/logo/logo_black.png" alt="" class="sidebar-logo light-content py-0 d-lg-inline d-none">
+      <img src="../../img/logo/logo_white.png" alt="" class="sidebar-logo dark-content py-0 d-lg-inline d-none">
+      </a>
+      <div class="sidebar-tools-main">
+  <button type="button" role="switch" aria-checked="false" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode" aria-label="Toggle dark mode"><i class="bi"></i></button>
+</div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Home</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-controls="quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-1-label">Topics</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-1" aria-labelledby="quarto-sidebar-section-1-label" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <button type="button" class="sidebar-item-text sidebar-item-toggle sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-controls="quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text" id="quarto-sidebar-section-2-label">Examples</span><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <ul id="quarto-sidebar-section-2" aria-labelledby="quarto-sidebar-section-2-label" class="collapse list-unstyled sidebar-section depth2 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../doc/Examples/example1.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">How to write a page using Quarto Markdown</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../doc/Examples/example2.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Allowed LaTeX syntax for page writing</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../doc/Examples/example3.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">How to create dynamic tables</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../doc/Examples/example4.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">How to create dynamic plots</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../doc/Examples/example5.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Mindmaps</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="https://github.com/MKReyesH/ScientificTable" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">GitHub Project</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../about.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">About this Wiki</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     
 <!-- main -->
 <main class="content" id="quarto-document-content" tabindex="-1">
 
 
-<header id="title-block-header" class="quarto-title-block default">
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item">Topics</li><li class="breadcrumb-item"><a href="../../doc/Examples/example1.html">Examples</a></li><li class="breadcrumb-item"><a href="../../doc/Examples/example1.html">How to write a page using Quarto Markdown</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Mindmaps</h1>
+<h1 class="title">How to write a page using Quarto Markdown</h1>
 </div>
 
 
@@ -396,11 +503,195 @@ window.Quarto = {
 </header>
 
 
+<p>GitHub Pages transforms plain text files into HTML webpages. In this template, files use the <code>.qmd</code> extension and follow Quarto Markdown syntax. Below are examples of the most commonly used formatting structures.</p>
+<section id="sections-and-subsections" class="level1">
+<h1>Sections and Subsections</h1>
+<p>Section headers are created by adding one or more <code>#</code> symbols followed by a space. Typing a single <code>#</code> creates a main section header. Adding more symbols creates deeper hierarchies; for example, typing <code>## This is a subsection</code> generates a secondary heading. Similarly, using three symbols like <code>### This is a sub-subsection</code> produces a tertiary heading.</p>
+<section id="this-is-a-subsection" class="level2">
+<h2 class="anchored" data-anchor-id="this-is-a-subsection">This is a subsection</h2>
+<section id="this-is-a-sub-subsection" class="level3">
+<h3 class="anchored" data-anchor-id="this-is-a-sub-subsection">This is a sub-subsection</h3>
+<p>To make a section cross-referenceable, append an identifier starting with <code>#sec-</code> to the header. For example, typing <code>## Mathematical Equations {#sec-maths}</code> allows the section to be referenced anywhere in the document using <code>@sec-maths</code>.</p>
+</section>
+</section>
+</section>
+<section id="mathematical-equations" class="level1">
+<h1>Mathematical Equations</h1>
+<p>Inline equations, such as <span class="math inline">\(x^2+y^2=r^2\)</span>, are written by enclosing the formula in single <code>$</code> symbols directly within the text. To write a standalone equation on its own line, enclose the formula in double <code>$$</code> symbols. To make the equation cross-referenceable, append an identifier to the closing <code>$$</code>. This identifier must strictly begin with the <code>#eq-</code> prefix for Quarto to recognize it as an equation:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode latex code-with-copy"><code class="sourceCode latex"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ss">$$</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ss">  x=</span><span class="sc">\frac</span><span class="ss">{-b</span><span class="sc">\pm</span><span class="ss"> </span><span class="sc">\sqrt</span><span class="ss">{b^2-4ac}}{2a} </span><span class="sc">\,</span><span class="ss">,</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ss">$$</span> {#eq-secondorder}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Once processed, the equation is displayed and numbered automatically:</p>
+<p><span id="eq-secondorder"><span class="math display">\[
+  x=\frac{-b\pm \sqrt{b^2-4ac}}{2a} \,,
+\tag{1}\]</span></span></p>
+<p>This equation can then be referenced in the text using <code>@eq-secondorder</code>, which automatically renders a clickable link with the appropriate prefix, such as <a href="#eq-secondorder" class="quarto-xref">Equation&nbsp;1</a>.</p>
+<p>If the automatic prefix needs to be suppressed, place the reference with a minus sign inside parentheses. For instance, typing <code>(-@eq-secondorder)</code> will suppress the word “Equation” and render just the number in-between parentheses, resulting in (<a href="#eq-secondorder" class="quarto-xref">1</a>).</p>
+<p>For complex mathematical structures such as systems of equations or multi-line formulas, Quarto supports standard LaTeX inner environments like <code>aligned</code>, <code>split</code>, and <code>gathered</code> within the double <code>$$</code> blocks. These allow for precise vertical alignment and grouping while sharing a single reference number:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode latex code-with-copy"><code class="sourceCode latex"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ss">$$</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">\begin</span>{<span class="ex">aligned</span>}</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ss">  A &amp;= B + C </span><span class="sc">\\</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ss">  X &amp;= Y - Z</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">\end</span>{<span class="ex">aligned</span>}</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ss">$$</span> {#eq-systems}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><span id="eq-systems"><span class="math display">\[
+\begin{aligned}
+  A &amp;= B + C \\
+  X &amp;= Y - Z
+\end{aligned}
+\tag{2}\]</span></span></p>
+<p>Multi-labeled equations, like the standard LaTeX <code>align</code> environment, are not supported.</p>
+</section>
+<section id="text-formatting-and-lists" class="level1">
+<h1>Text Formatting and Lists</h1>
+<p>Text formatting is achieved by enclosing words in asterisks. Using single asterisks produces <em>italic</em> text (e.g.&nbsp;<code>*italic*</code>), while double asterisks produce <strong>bold</strong> text (e.g.&nbsp;<code>**bold**</code>). One can also display colored text using <code>[red text]{style="color: red;"}</code>, which produces a <span style="color: red;">text in red color</span>.</p>
+<p>Unordered lists are created using the <code>-</code> symbol, where the level of indentation determines the hierarchy of the items:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Level 1 item</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ss">  - </span>Level 2 item</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ss">    - </span>Level 3 item</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This syntax generates the following bulleted list:</p>
+<ul>
+<li>Level 1 item
+<ul>
+<li>Level 2 item
+<ul>
+<li>Level 3 item</li>
+</ul></li>
+</ul></li>
+</ul>
+<p>Ordered lists use numbers instead of dashes. Typing <code>1.</code> for every item is sufficient, as the list will automatically number itself correctly upon rendering:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>First element</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Second element</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Third element</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The compiled list appears as:</p>
+<ol type="1">
+<li>First element</li>
+<li>Second element</li>
+<li>Third element</li>
+</ol>
+</section>
+<section id="figures-and-tables" class="level1">
+<h1>Figures and Tables</h1>
+<p>To insert an image, provide a caption inside square brackets and the file path inside parentheses. A label and display attributes, such as width, can be appended inside curly braces. The label must strictly begin with the <code>#fig-</code> prefix for Quarto to recognize and number the image correctly:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="al">![Default frog picture.](/img/Examples/frog.jpg)</span>{#fig-frog width="4cm"}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This places the image in the document, allowing it to be referenced anywhere in the text using <code>@fig-frog</code> (e.g. <a href="#fig-frog" class="quarto-xref">Figure&nbsp;1</a>):</p>
+<div id="fig-frog" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-frog-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../../img/Examples/frog.jpg" class="img-fluid figure-img" style="width:4cm">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-frog-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Default frog picture.
+</figcaption>
+</figure>
+</div>
+<p>Tables are constructed using vertical pipes (<code>|</code>) to separate columns and hyphens (<code>-</code>) to divide the header from the content. Colons (<code>:</code>) are added to the divider to control text alignment. A caption and a reference label can be placed at the bottom. The label must strictly begin with the <code>#tbl-</code> prefix for Quarto to recognize and number the table correctly:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Column 1 <span class="pp">|</span> Column 2 <span class="pp">|</span> Column 3 <span class="pp">|</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="pp">|:---------|:---------|:---------|</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> a        <span class="pp">|</span> b        <span class="pp">|</span> c        <span class="pp">|</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> d        <span class="pp">|</span> e        <span class="pp">|</span> f        <span class="pp">|</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>: Table caption {#tbl-example}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The resulting formatted table can then be referenced using <code>@tbl-example</code> (e.g. <a href="#tbl-example" class="quarto-xref">Table&nbsp;1</a>):</p>
+<div id="tbl-example" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-example-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Table caption
+</figcaption>
+<div aria-describedby="tbl-example-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Column 1</th>
+<th style="text-align: left;">Column 2</th>
+<th style="text-align: left;">Column 3</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">a</td>
+<td style="text-align: left;">b</td>
+<td style="text-align: left;">c</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">d</td>
+<td style="text-align: left;">e</td>
+<td style="text-align: left;">f</td>
+</tr>
+</tbody>
+</table>
+</div>
+</figure>
+</div>
+</section>
+<section id="blockquotes-and-callouts" class="level1">
+<h1>Blockquotes and Callouts</h1>
+<p>To emphasize a quote, start the line with a <code>&gt;</code> symbol:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; "If it is on the internet... it must be true."</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; - Abraham Lincoln</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The text is then visually set apart as a blockquote:</p>
+<blockquote class="blockquote">
+<p>“If it is on the internet… it must be true.” - Abraham Lincoln</p>
+</blockquote>
+<p>Quarto Markdown also features Callout Blocks to draw attention to notes, warnings, or tips. These are created by wrapping the text in three colons (<code>:::</code>) and specifying the desired callout type:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>:::{.callout-note}</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>This is a helpful note! The options <span class="in">`.callout-warning`</span>, <span class="in">`.callout-tip`</span>, <span class="in">`.callout-caution`</span>, and <span class="in">`.callout-important`</span> change the color and icon of the box.</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The rendered callout box provides a distinct visual element:</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This is a helpful note! The options <code>.callout-warning</code>, <code>.callout-tip</code>, <code>.callout-caution</code>, and <code>.callout-important</code> change the color and icon of the box.</p>
+</div>
+</div>
+</section>
+<section id="code-snippets" class="level1">
+<h1>Code Snippets</h1>
+<p>Short, inline code within a sentence is formatted by enclosing the text in single backticks (<code>`</code>). For multi-line code blocks with syntax highlighting, enclose the block in triple backticks and specify the programming language on the first line:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="in">```cpp</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">float</span> sum <span class="op">(</span><span class="dt">float</span> a<span class="op">,</span> <span class="dt">float</span> b<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> a <span class="op">+</span> b<span class="op">;</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>This displays the code block with the appropriate language-specific coloring:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode cpp code-with-copy"><code class="sourceCode cpp"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="dt">float</span> sum <span class="op">(</span><span class="dt">float</span> a<span class="op">,</span> <span class="dt">float</span> b<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> a <span class="op">+</span> b<span class="op">;</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="links-footnotes-and-citations" class="level1">
+<h1>Links, Footnotes, and Citations</h1>
+<p>Hyperlinks to external websites are created by placing the link text in square brackets followed by the URL in parentheses. Typing <code>[GitHub Repository](https://github.com/MKReyesH/ScientificWiki)</code> renders as a clickable link (e.g.&nbsp;<a href="https://github.com/MKReyesH/ScientificWiki">GitHub Repository</a>).</p>
+<p>To link to another page within the same wiki or project, use the exact same syntax but replace the URL with the relative path to the target <code>.qmd</code> file. Typing <code>[second page](/doc/Examples/example2.qmd)</code> creates a link to the <a href="../../doc/Examples/example2.html">second page</a>.</p>
+<p>To link to a specific section, append a <code>#</code> followed by the section’s heading identifier (the heading name in lowercase, using hyphens instead of spaces). This can be used to navigate to sections on the same page or on a different page. Typing <code>[first section](#sections-and-subsections)</code> links to the <a href="#sections-and-subsections">first section</a> on this page. Typing <code>[other section](/doc/Examples/example2.qmd#target-section)</code> links to a specific section on another page.</p>
+<p>Footnotes are added using a caret and an identifier inside square brackets. The actual content of the footnote is defined anywhere else in the document by matching the identifier, followed by a colon and the text:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>This is a sentence with a footnote<span class="ot">[^1]</span>.</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ot">[^1]: </span>This is the text of the footnote.</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>When rendered, a superscript number is inserted into the text, and the note is placed at the bottom of the page<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>.</p>
+<p>To cite references from a bibliography file, place the <code>@</code> symbol and the citation key inside square brackets. Typing <code>[@ReyesHung:2023udr]</code> produces a formatted citation in the text (e.g. <span class="citation" data-cites="ReyesHung:2023udr">[<a href="#ref-ReyesHung:2023udr" role="doc-biblioref">1</a>]</span>). Multiple citations within the same brackets are separated by semicolons (e.g.&nbsp;<code>[@ReyesHung:2023udr; @AnotherCitation]</code>).</p>
 
 
 
 
-</main> <!-- /main -->
+</section>
+
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body" role="list">
+<div id="ref-ReyesHung:2023udr" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[1] </div><div class="csl-right-inline">Reyes Hung M A 2023 <em><a href="https://arxiv.org/abs/2307.03462"><span class="nocase">Exploration of possible signals beyond special relativity using high-energy astroparticle physics</span></a></em> PhD thesis (U. Zaragoza (main))</div>
+</div>
+</div></section><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>For example, this is a footnote.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     // Ensure there is a toggle, if there isn't float one in the top right
