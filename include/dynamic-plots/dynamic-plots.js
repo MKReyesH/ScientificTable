@@ -213,15 +213,6 @@
         return isFile
           ? (out, row, paramVals) => rawFn(FUNCS, CONSTS, out, row, ...paramVals)
           : (out, paramVals) => rawFn(FUNCS, CONSTS, out, ...paramVals);
-      },
-
-      compileScalarY(def) {
-        const paramNames = (def.params || []).map((p) => p.name);
-        const lines = buildVarsPrelude(def, paramNames, false);
-        lines.push(`const $y = ${toJsExpr(def.y)};`);
-        lines.push(`return Number.isFinite($y) ? $y : null;`);
-        const rawFn = new Function("$F", "$C", ...paramNames, lines.join("\n"));
-        return (paramVals) => rawFn(FUNCS, CONSTS, ...paramVals);
       }
     };
   })();
@@ -272,8 +263,7 @@
         sliderNames: new Set(sliderParams.map((p) => p.name)),
         paramIndexByName,
         isExplicitYX,
-        evalPoint: MathCompiler.compilePointEvaluator(def),
-        evalScalarY: isExplicitYX ? MathCompiler.compileScalarY(def) : null
+        evalPoint: MathCompiler.compilePointEvaluator(def)
       };
     },
 
@@ -376,7 +366,9 @@
       if (spec.isExplicitYX) {
         const paramVec = CurveEvaluator.buildParamVector(spec, sliderEnv);
         paramVec[spec.paramIndexByName.get("x")] = x;
-        return spec.evalScalarY(paramVec);
+        const out = [null, null];
+        spec.evalPoint(out, paramVec);
+        return out[1];
       }
       const pts = evalData.sortedPts;
       if (pts.length === 0) return null;

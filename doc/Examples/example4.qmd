@@ -12,7 +12,7 @@ In `.plot-function`, top-level bracketed parameters define the curve's **domain*
 
 - **Explicit functions $y(x)$:** Write `x: [min, max]` to set the horizontal domain and define `y` as an expression in `x`. Explicit 2D curves automatically resample at higher resolution when zooming or panning.
 - **Parametric curves $(x(t), y(t))$:** Declare a parameter such as `t: [0, 2 * pi]` and define both `x` and `y` in terms of `t`.
-- **Expressions and styling:** Expressions support `+`, `-`, `*`, `/`, `^`, implicit multiplication (`2x`, `x sin(x)`), constants (`pi`, `e`), and standard functions (`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `exp`, `log`, `ln`, `log10`, `log2`, `sqrt`, `abs`, `sign`, `floor`, `ceil`, `min`, `max`, `hypot`). Optional keys include `points` (sample count along the domain, integer $\ge 2$, default `100`), `label` (legend title, supporting inline LaTeX math; defaults to `id`), `color` (any CSS or Plotly color), `mode` (`lines`, `markers`, or `lines+markers`, default `lines`), and `smooth` (spline interpolation on 2D curves, `true` or `false`, default `true`).
+- **Expressions and styling:** Expressions support `+`, `-`, `*`, `/`, `^`, implicit multiplication (`2x`, `x sin(x)`), constants (`pi`, `e`), and standard mathematical functions (trigonometric, hyperbolic, exponential, logarithmic, roots, rounding, and `min`/`max`/`hypot`). Optional keys include `points` (sample count along the domain, integer $\ge 2$, default `100`), `label` (legend title, supporting inline LaTeX math; defaults to `id`), `color` (any CSS or Plotly color), `mode` (`lines`, `markers`, or `lines+markers`, default `lines`), and `smooth` (spline interpolation on 2D curves, `true` or `false`, default `true`).
 
 The `::: {.dynamic-plot}` block mounts the canvas and configures axes and layout:
 
@@ -114,11 +114,6 @@ curves: gauss-fixed, gauss-moving
 xlabel: $x$
 ylabel: Density
 shade:
-  gauss-fixed -> 0
-    xrange: [-4, 0.5]
-    color: #1f77b4
-    opacity: 0.15
-    label: Left tail of $f_1$
   gauss-moving -> gauss-fixed
     color: #2ca02c
     opacity: 0.22
@@ -156,11 +151,6 @@ curves: gauss-fixed, gauss-moving
 xlabel: $x$
 ylabel: Density
 shade:
-  gauss-fixed -> 0
-    xrange: [-4, 0.5]
-    color: #1f77b4
-    opacity: 0.15
-    label: Left tail of $f_1$
   gauss-moving -> gauss-fixed
     color: #2ca02c
     opacity: 0.22

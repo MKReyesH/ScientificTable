@@ -106,6 +106,14 @@
   cursor: pointer;
 }
 
+.dynamic-plot-slider-input::-webkit-slider-runnable-track {
+  background-color: var(--bs-border-color);
+}
+
+.dynamic-plot-slider-input::-moz-range-track {
+  background-color: var(--bs-border-color);
+}
+
 .dynamic-plot-sidebar-wrap {
   position: relative;
   flex: 0 0 auto;

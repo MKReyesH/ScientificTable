@@ -114,6 +114,14 @@ local function is_valid_ident(name)
     return type(name) == "string" and name:match("^[a-zA-Z_][a-zA-Z0-9_]*$") ~= nil and CONST_ENV[name] == nil
 end
 
+local function is_valid_id(name)
+    return type(name) == "string" and name:match("^[a-zA-Z_][%w_%-]*$") ~= nil and CONST_ENV[name] == nil
+end
+
+local function is_valid_ident(name)
+    return type(name) == "string" and name:match("^[a-zA-Z_][a-zA-Z0-9_]*$") ~= nil and CONST_ENV[name] == nil
+end
+
 local function strip_quotes(s)
     if type(s) ~= "string" then return s end
     return s:match('^"(.*)"$') or s:match("^'(.*)'$") or s
@@ -584,7 +592,7 @@ local function parse_plot_block(lines, context)
                     local rule = { from = lhs, opacity = DEFAULTS.shade_opacity }
                     if rhs == "bottom" or rhs == "top" then
                         rule.toKind, rule.to = "bound", rhs
-                    elseif is_valid_ident(rhs) then
+                    elseif is_valid_id(rhs) then
                         rule.toKind, rule.to = "curve", rhs
                     else
                         rule.toKind, rule.to = "const", eval_const_expr(rhs, context)
