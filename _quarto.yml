@@ -4,41 +4,41 @@ project:
 website:
   title: "Scientific Wiki Template"
   search: true
-  #sidebar:
-  #  style: docked
-  #  logo: 
-  #    light: img/logo/logo_black.png
-  #    dark: img/logo/logo_white.png
-  #  contents:
-  #    - text: "Home"
-  #      href: index.qmd
-  #    - section: "Examples"
-  #      contents:
-  #      - auto: "doc/Examples/*.qmd"
-  #    - text: "GitHub Project"
-  #      href: https://github.com/MKReyesH/ScientificTable
-  #    - text: "About"
-  #      href: about.qmd
-  navbar:
-    logo:
-      light: img/logo/logo_white.png
+  sidebar:
+    style: docked
+    logo: 
+      light: img/logo/logo_black.png
       dark: img/logo/logo_white.png
-    left:
+    contents:
       - text: "Home"
         href: index.qmd
-      - text: "Examples"
-        menu:
-          - href: doc/Examples/example1.qmd
-          - href: doc/Examples/example2.qmd
-          - href: doc/Examples/example3.qmd
-          - href: doc/Examples/example4.qmd
-          - href: doc/Examples/example5.qmd
-    right:
+      - section: "Examples"
+        contents:
+        - auto: "doc/Examples/*.qmd"
+      - text: "GitHub Project"
+        href: https://github.com/MKReyesH/ScientificTable
       - text: "About"
         href: about.qmd
-      - icon: github
-        aria-label: "GitHub Project"
-        href: https://github.com/MKReyesH/ScientificTable
+  #navbar:
+  #  logo:
+  #    light: img/logo/logo_white.png
+  #    dark: img/logo/logo_white.png
+  #  left:
+  #    - text: "Home"
+  #      href: index.qmd
+  #    - text: "Examples"
+  #      menu:
+  #        - href: doc/Examples/example1.qmd
+  #        - href: doc/Examples/example2.qmd
+  #        - href: doc/Examples/example3.qmd
+  #        - href: doc/Examples/example4.qmd
+  #        - href: doc/Examples/example5.qmd
+  #  right:
+  #    - text: "About"
+  #      href: about.qmd
+  #    - icon: github
+  #      aria-label: "GitHub Project"
+  #      href: https://github.com/MKReyesH/ScientificTable
 
 format:
   html:
