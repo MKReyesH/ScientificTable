@@ -73,9 +73,23 @@
     if (e.key === QUARTO_KEY) applyMode(getMode());
   });
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => applyMode(getMode()));
-  } else {
+  const mountSidebarToggle = () => {
+    const tools = document.querySelector("#quarto-sidebar .sidebar-header .sidebar-tools-main");
+    const searchWrap = document.querySelector("#quarto-sidebar .sidebar-search");
+    if (tools && searchWrap && !searchWrap.contains(tools)) {
+      searchWrap.classList.add("has-theme-toggle");
+      searchWrap.appendChild(tools);
+    }
+  };
+
+  const init = () => {
+    mountSidebarToggle();
     applyMode(getMode());
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
   }
 })();
