@@ -1872,8 +1872,8 @@ window.MathRenderer = window.MathRenderer || {
     return trace;
   }
 
-  // Recursive-descent expression compiler (supports implicit multiplication, '^', and dynamic 'c[...]')
-  const MathExpr = (() => {
+  // Transpiles validated math expressions into JIT-compiled JS functions
+  const MathCompiler = (() => {
     const CONSTS = { pi: Math.PI, e: Math.E };
     const FUNCS = {
       sin: Math.sin, cos: Math.cos, tan: Math.tan,
@@ -1886,93 +1886,165 @@ window.MathRenderer = window.MathRenderer || {
     };
     const TOKEN_RE = /\s*(?:((?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)|([a-zA-Z_]\w*)|([+\-*/^(),[\]]))/y;
 
+    function toJsExpr(src) {
+      const tokens = [];
+      TOKEN_RE.lastIndex = 0;
+      while (TOKEN_RE.lastIndex < src.length) {
+        const m = TOKEN_RE.exec(src);
+        if (!m) break;
+        if (m[1] !== undefined) tokens.push({ t: "num", v: String(Number(m[1])) });
+        else if (m[2] !== undefined) tokens.push({ t: "id", v: m[2] });
+        else if (m[3] !== undefined) tokens.push({ t: "op", v: m[3] });
+      }
+
+      let pos = 0;
+      const peek = () => tokens[pos];
+      const next = () => tokens[pos++];
+      const isOp = (tok, v) => tok && tok.t === "op" && tok.v === v;
+
+      const parseAdd = () => {
+        let lhs = parseMul();
+        while (isOp(peek(), "+") || isOp(peek(), "-")) {
+          const op = next().v;
+          lhs = `${lhs} ${op} ${parseMul()}`;
+        }
+        return lhs;
+      };
+
+      const parseMul = () => {
+        let lhs = parseUnary();
+        while (true) {
+          if (isOp(peek(), "*") || isOp(peek(), "/")) {
+            const op = next().v;
+            lhs = `${lhs} ${op} ${parseUnary()}`;
+          } else if (peek() && (peek().t === "id" || peek().t === "num" || isOp(peek(), "("))) {
+            lhs = `${lhs} * ${parseUnary()}`;
+          } else {
+            break;
+          }
+        }
+        return lhs;
+      };
+
+      const parseUnary = () => {
+        if (isOp(peek(), "+")) { next(); return parseUnary(); }
+        if (isOp(peek(), "-")) { next(); return `-(${parseUnary()})`; }
+        return parsePow();
+      };
+
+      const parsePow = () => {
+        const base = parseAtom();
+        if (isOp(peek(), "^")) {
+          next();
+          return `(${base} ** ${parseUnary()})`;
+        }
+        return base;
+      };
+
+      const parseAtom = () => {
+        const tok = next();
+        if (!tok) return "NaN";
+        if (tok.t === "num") return tok.v;
+        if (isOp(tok, "(")) {
+          const inner = parseAdd();
+          next(); // ')'
+          return `(${inner})`;
+        }
+        const name = tok.v;
+        if (name === "c" && isOp(peek(), "[")) {
+          next(); // '['
+          const idx = parseAdd();
+          next(); // ']'
+          return `($row ? $row[Math.round(${idx})] : NaN)`;
+        }
+        if (name in FUNCS) {
+          next(); // '('
+          const args = [];
+          if (!isOp(peek(), ")")) {
+            args.push(parseAdd());
+            while (isOp(peek(), ",")) {
+              next();
+              args.push(parseAdd());
+            }
+          }
+          next(); // ')'
+          return `$F.${name}(${args.join(", ")})`;
+        }
+        if (name in CONSTS) return `$C.${name}`;
+        return name;
+      };
+
+      return parseAdd();
+    }
+
     return {
-      compile(src) {
-        const tokens = [];
-        TOKEN_RE.lastIndex = 0;
-        while (TOKEN_RE.lastIndex < src.length) {
-          const m = TOKEN_RE.exec(src);
-          if (!m) break;
-          if (m[1] !== undefined) tokens.push({ t: "num", v: Number(m[1]) });
-          else if (m[2] !== undefined) tokens.push({ t: "id", v: m[2] });
-          else if (m[3] !== undefined) tokens.push({ t: "op", v: m[3] });
+      // Compiles a single native evaluator writing [x, y, (z)] into $out
+      compilePointEvaluator(def) {
+        const isFile = def.kind === "file";
+        const is3d = def.dim === "3d";
+        const paramNames = def.params.map((p) => p.name);
+        const declared = new Set(paramNames);
+        const lines = [];
+
+        if (isFile) {
+          const numCols = def.rows?.[0]?.length || 0;
+          if (numCols > 0) {
+            const colDecls = [];
+            for (let c = 0; c < numCols; c++) {
+              colDecls.push(`c${c} = $row[${c}]`);
+              declared.add(`c${c}`);
+            }
+            lines.push(`const ${colDecls.join(", ")};`);
+          }
         }
 
-        let pos = 0;
-        const peek = () => tokens[pos];
-        const next = () => tokens[pos++];
-        const isOp = (tok, v) => tok && tok.t === "op" && tok.v === v;
-
-        const parseAdd = () => {
-          let lhs = parseMul();
-          while (isOp(peek(), "+") || isOp(peek(), "-")) {
-            const op = next().v, rhs = parseMul(), prev = lhs;
-            lhs = op === "+" ? (e) => prev(e) + rhs(e) : (e) => prev(e) - rhs(e);
+        for (const v of def.vars || []) {
+          const exprJs = toJsExpr(v.expr);
+          if (declared.has(v.name)) {
+            lines.push(`${v.name} = ${exprJs};`);
+          } else {
+            declared.add(v.name);
+            lines.push(`let ${v.name} = ${exprJs};`);
           }
-          return lhs;
-        };
+        }
 
-        const parseMul = () => {
-          let lhs = parseUnary();
-          while (true) {
-            if (isOp(peek(), "*") || isOp(peek(), "/")) {
-              const op = next().v, rhs = parseUnary(), prev = lhs;
-              lhs = op === "*" ? (e) => prev(e) * rhs(e) : (e) => prev(e) / rhs(e);
-            } else if (peek() && (peek().t === "id" || isOp(peek(), "("))) {
-              const rhs = parseUnary(), prev = lhs;
-              lhs = (e) => prev(e) * rhs(e);
-            } else break;
+        lines.push(`const $x = ${toJsExpr(def.x)};`);
+        lines.push(`const $y = ${toJsExpr(def.y)};`);
+        lines.push(`$out[0] = Number.isFinite($x) ? $x : null;`);
+        lines.push(`$out[1] = Number.isFinite($y) ? $y : null;`);
+        if (is3d) {
+          lines.push(`const $z = ${toJsExpr(def.z)};`);
+          lines.push(`$out[2] = Number.isFinite($z) ? $z : null;`);
+        }
+
+        const args = isFile ? ["$F", "$C", "$out", "$row", ...paramNames] : ["$F", "$C", "$out", ...paramNames];
+        const rawFn = new Function(...args, lines.join("\n"));
+
+        return isFile
+          ? (out, row, paramVals) => rawFn(FUNCS, CONSTS, out, row, ...paramVals)
+          : (out, paramVals) => rawFn(FUNCS, CONSTS, out, ...paramVals);
+      },
+
+      // Compiles a fast scalar y(x) evaluator for explicit 2D functions
+      compileScalarY(def) {
+        const paramNames = def.params.map((p) => p.name);
+        const declared = new Set(paramNames);
+        const lines = [];
+
+        for (const v of def.vars || []) {
+          const exprJs = toJsExpr(v.expr);
+          if (declared.has(v.name)) {
+            lines.push(`${v.name} = ${exprJs};`);
+          } else {
+            declared.add(v.name);
+            lines.push(`let ${v.name} = ${exprJs};`);
           }
-          return lhs;
-        };
+        }
+        lines.push(`const $y = ${toJsExpr(def.y)};`);
+        lines.push(`return Number.isFinite($y) ? $y : null;`);
 
-        const parseUnary = () => {
-          if (isOp(peek(), "+")) { next(); return parseUnary(); }
-          if (isOp(peek(), "-")) { next(); const a = parseUnary(); return (e) => -a(e); }
-          return parsePow();
-        };
-
-        const parsePow = () => {
-          const base = parseAtom();
-          if (isOp(peek(), "^")) { next(); const exp = parseUnary(); return (e) => Math.pow(base(e), exp(e)); }
-          return base;
-        };
-
-        const parseAtom = () => {
-          const tok = next();
-          if (!tok) return () => NaN;
-          if (tok.t === "num") return () => tok.v;
-          if (isOp(tok, "(")) {
-            const inner = parseAdd();
-            next(); // ')'
-            return inner;
-          }
-          const name = tok.v;
-          if (name === "c" && isOp(peek(), "[")) {
-            next(); // '['
-            const idxExpr = parseAdd();
-            next(); // ']'
-            return (e) => {
-              const idx = Math.round(idxExpr(e));
-              return e.__row ? e.__row[idx] : NaN;
-            };
-          }
-          if (FUNCS[name]) {
-            next(); // '('
-            const args = [];
-            if (!isOp(peek(), ")")) {
-              args.push(parseAdd());
-              while (isOp(peek(), ",")) { next(); args.push(parseAdd()); }
-            }
-            next(); // ')'
-            const fn = FUNCS[name];
-            return (e) => fn(...args.map((a) => a(e)));
-          }
-          if (name in CONSTS) return () => CONSTS[name];
-          return (e) => e[name];
-        };
-
-        return parseAdd();
+        const rawFn = new Function("$F", "$C", ...paramNames, lines.join("\n"));
+        return (paramVals) => rawFn(FUNCS, CONSTS, ...paramVals);
       }
     };
   })();
@@ -1997,8 +2069,9 @@ window.MathRenderer = window.MathRenderer || {
 
     extent(values, positiveOnly = false) {
       let min = Infinity, max = -Infinity;
-      for (const v of values) {
-        if (!Number.isFinite(v) || (positiveOnly && v <= 0)) continue;
+      for (let i = 0; i < values.length; i++) {
+        const v = values[i];
+        if (v === null || !Number.isFinite(v) || (positiveOnly && v <= 0)) continue;
         if (v < min) min = v;
         if (v > max) max = v;
       }
@@ -2006,76 +2079,86 @@ window.MathRenderer = window.MathRenderer || {
     }
   };
 
-  // Compiles and evaluates unified curve/surface definitions (params -> vars -> x, y, [z])
+  // Compiles and evaluates unified curve/surface definitions
   const CurveEvaluator = {
     prepare(def) {
+      const domainParams = def.params.filter((p) => !p.isSlider);
+      const sliderParams = def.params.filter((p) => p.isSlider);
+      const paramIndexByName = new Map(def.params.map((p, idx) => [p.name, idx]));
+      const isExplicitYX = def.kind === "function" && def.dim === "2d" && domainParams[0]?.name === "x" && def.x === "x";
+
       return {
         ...def,
         rawLabel: def.label,
-        domainParams: def.params.filter((p) => !p.isSlider),
-        sliderParams: def.params.filter((p) => p.isSlider),
-        compiledVars: (def.vars || []).map((v) => ({ name: v.name, fn: MathExpr.compile(v.expr) })),
-        xFn: MathExpr.compile(def.x),
-        yFn: MathExpr.compile(def.y),
-        zFn: def.z ? MathExpr.compile(def.z) : null
+        domainParams,
+        sliderParams,
+        sliderNames: new Set(sliderParams.map((p) => p.name)),
+        paramIndexByName,
+        isExplicitYX,
+        evalPoint: MathCompiler.compilePointEvaluator(def),
+        evalScalarY: isExplicitYX ? MathCompiler.compileScalarY(def) : null
       };
     },
 
-    evalVars(spec, env) {
-      for (let i = 0; i < spec.compiledVars.length; i++) {
-        const v = spec.compiledVars[i];
-        env[v.name] = v.fn(env);
+    buildParamVector(spec, sliderEnv) {
+      const vec = new Array(spec.params.length);
+      for (const p of spec.sliderParams) {
+        vec[spec.paramIndexByName.get(p.name)] = sliderEnv[p.name];
       }
+      return vec;
     },
 
     evaluate(spec, sliderEnv, scales, zoomXRange = null) {
       const name = toSizingText(spec.rawLabel);
       const is3d = spec.dim === "3d";
-      const env = { ...sliderEnv };
+      const paramVec = this.buildParamVector(spec, sliderEnv);
+      const out = is3d ? [null, null, null] : [null, null];
 
       if (spec.kind === "file") {
-        const xs = [], ys = [], zs = is3d ? [] : null;
-        for (const r of spec.rows) {
-          env.__row = r;
-          for (let c = 0; c < r.length; c++) env[`c${c}`] = r[c];
-          this.evalVars(spec, env);
-          const x = spec.xFn(env), y = spec.yFn(env);
-          xs.push(Number.isFinite(x) ? x : null);
-          ys.push(Number.isFinite(y) ? y : null);
-          if (is3d) {
-            const z = spec.zFn(env);
-            zs.push(Number.isFinite(z) ? z : null);
-          }
+        const n = spec.rows.length;
+        const xs = new Array(n), ys = new Array(n), zs = is3d ? new Array(n) : null;
+        for (let i = 0; i < n; i++) {
+          spec.evalPoint(out, spec.rows[i], paramVec);
+          xs[i] = out[0];
+          ys[i] = out[1];
+          if (is3d) zs[i] = out[2];
         }
         const trace = is3d
           ? { type: "scatter3d", name, x: xs, y: ys, z: zs, mode: spec.mode, marker: { size: 3.5 } }
           : { type: "scatter", name, x: xs, y: ys, mode: spec.mode, connectgaps: false, line: { shape: spec.smooth ? "spline" : "linear" } };
-        return { trace, xs, ys, zs };
+        return { trace, xs, ys, zs, uniformX: false };
       }
 
       if (spec.subtype === "surface") {
         const [p0, p1] = spec.domainParams;
+        const idx0 = spec.paramIndexByName.get(p0.name);
+        const idx1 = spec.paramIndexByName.get(p1.name);
         const uVals = Domain.sampleParam(p0, spec.points, scales.xscale);
         const vVals = Domain.sampleParam(p1, spec.points, scales.yscale);
-        const X = [], Y = [], Z = [];
+        const X = new Array(vVals.length), Y = new Array(vVals.length), Z = new Array(vVals.length);
+        const flatX = [], flatY = [], flatZ = [];
+
         for (let j = 0; j < vVals.length; j++) {
-          env[p1.name] = vVals[j];
-          const rowX = [], rowY = [], rowZ = [];
+          paramVec[idx1] = vVals[j];
+          const rowX = new Array(uVals.length), rowY = new Array(uVals.length), rowZ = new Array(uVals.length);
           for (let i = 0; i < uVals.length; i++) {
-            env[p0.name] = uVals[i];
-            this.evalVars(spec, env);
-            const x = spec.xFn(env), y = spec.yFn(env), z = spec.zFn(env);
-            rowX.push(Number.isFinite(x) ? x : null);
-            rowY.push(Number.isFinite(y) ? y : null);
-            rowZ.push(Number.isFinite(z) ? z : null);
+            paramVec[idx0] = uVals[i];
+            spec.evalPoint(out, paramVec);
+            rowX[i] = out[0];
+            rowY[i] = out[1];
+            rowZ[i] = out[2];
+            flatX.push(out[0]);
+            flatY.push(out[1]);
+            flatZ.push(out[2]);
           }
-          X.push(rowX); Y.push(rowY); Z.push(rowZ);
+          X[j] = rowX; Y[j] = rowY; Z[j] = rowZ;
         }
-        return { trace: { type: "surface", name, x: X, y: Y, z: Z, showscale: false }, xs: X.flat(), ys: Y.flat(), zs: Z.flat() };
+        return { trace: { type: "surface", name, x: X, y: Y, z: Z, showscale: false }, xs: flatX, ys: flatY, zs: flatZ, uniformX: false };
       }
 
       // 2D or 3D analytical curve (1 domain parameter)
       const [p0] = spec.domainParams;
+      const idx0 = spec.paramIndexByName.get(p0.name);
       let sampleDomain = p0;
       if (!is3d && zoomXRange && p0.name === "x" && p0.kind === "range") {
         const lo = Math.max(p0.min, zoomXRange[0]);
@@ -2083,44 +2166,48 @@ window.MathRenderer = window.MathRenderer || {
         if (lo < hi) sampleDomain = { ...p0, min: lo, max: hi };
       }
       const pVals = Domain.sampleParam(sampleDomain, spec.points, p0.name === "x" ? scales.xscale : "linear");
-      const xs = [], ys = [], zs = is3d ? [] : null;
-      for (const pv of pVals) {
-        env[p0.name] = pv;
-        this.evalVars(spec, env);
-        const x = spec.xFn(env), y = spec.yFn(env);
-        xs.push(Number.isFinite(x) ? x : null);
-        ys.push(Number.isFinite(y) ? y : null);
-        if (is3d) {
-          const z = spec.zFn(env);
-          zs.push(Number.isFinite(z) ? z : null);
-        }
+      const n = pVals.length;
+      const xs = new Array(n), ys = new Array(n), zs = is3d ? new Array(n) : null;
+
+      for (let i = 0; i < n; i++) {
+        paramVec[idx0] = pVals[i];
+        spec.evalPoint(out, paramVec);
+        xs[i] = out[0];
+        ys[i] = out[1];
+        if (is3d) zs[i] = out[2];
       }
       const trace = is3d
         ? { type: "scatter3d", name, x: xs, y: ys, z: zs, mode: spec.mode, line: { width: 4 }, marker: { size: 3 } }
         : { type: "scatter", name, x: xs, y: ys, mode: spec.mode, connectgaps: false, line: { shape: spec.smooth ? "spline" : "linear" } };
-      return { trace, xs, ys, zs };
+      return { trace, xs, ys, zs, uniformX: spec.isExplicitYX };
     }
   };
 
   // Builds closed-polygon shading traces between curves, constants, bounds, or closed interiors
   const ShadeBuilder = {
-    extractPoints(evalData) {
-      const pts = [];
-      for (let i = 0; i < evalData.xs.length; i++) {
-        const x = evalData.xs[i], y = evalData.ys[i];
-        if (Number.isFinite(x) && Number.isFinite(y)) pts.push([x, y]);
+    prepareCurveData(evalRes) {
+      const rawPts = [];
+      let isSorted = true;
+      let prevX = -Infinity;
+      for (let i = 0; i < evalRes.xs.length; i++) {
+        const x = evalRes.xs[i], y = evalRes.ys[i];
+        if (x !== null && y !== null && Number.isFinite(x) && Number.isFinite(y)) {
+          rawPts.push([x, y]);
+          if (x < prevX) isSorted = false;
+          prevX = x;
+        }
       }
-      return pts;
+      const sortedPts = isSorted ? rawPts : rawPts.slice().sort((a, b) => a[0] - b[0]);
+      return { rawPts, sortedPts };
     },
 
-    // Linearly interpolates y(x) on sorted (x, y) vertices (or evaluates directly if explicit y(x))
-    sampleYAt(evalData, sliderEnv, x) {
+    // Evaluates y(x) directly for explicit functions, or linearly interpolates sorted points
+    sampleYAt(evalData, sliderEnv, x, cursor = null) {
       const spec = evalData.spec;
-      if (spec.kind === "function" && spec.domainParams[0]?.name === "x" && spec.x === "x") {
-        const env = { ...sliderEnv, x };
-        CurveEvaluator.evalVars(spec, env);
-        const y = spec.yFn(env);
-        return Number.isFinite(y) ? y : null;
+      if (spec.isExplicitYX) {
+        const paramVec = CurveEvaluator.buildParamVector(spec, sliderEnv);
+        paramVec[spec.paramIndexByName.get("x")] = x;
+        return spec.evalScalarY(paramVec);
       }
       const pts = evalData.sortedPts;
       if (pts.length === 0) return null;
@@ -2129,15 +2216,20 @@ window.MathRenderer = window.MathRenderer || {
       if (x <= pts[0][0] + eps) return pts[0][1];
       if (x >= pts[pts.length - 1][0] - eps) return pts[pts.length - 1][1];
 
-      let lo = 0, hi = pts.length - 1;
-      while (hi - lo > 1) {
-        const mid = (lo + hi) >> 1;
-        if (pts[mid][0] <= x) lo = mid;
-        else hi = mid;
+      let lo = cursor ? cursor.idx : 0;
+      if (cursor) {
+        while (lo + 1 < pts.length - 1 && pts[lo + 1][0] <= x) lo++;
+        cursor.idx = lo;
+      } else {
+        let hi = pts.length - 1;
+        while (hi - lo > 1) {
+          const mid = (lo + hi) >> 1;
+          if (pts[mid][0] <= x) lo = mid;
+          else hi = mid;
+        }
       }
-      const [x0, y0] = pts[lo], [x1, y1] = pts[hi];
-      if (x1 === x0) return y0;
-      return y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
+      const [x0, y0] = pts[lo], [x1, y1] = pts[lo + 1];
+      return x1 === x0 ? y0 : y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
     },
 
     buildTrace(rule, evaluatedMap, sliderEnv, yBounds) {
@@ -2178,6 +2270,40 @@ window.MathRenderer = window.MathRenderer || {
         return { ...baseTrace, x: [], y: [] };
       }
 
+      const yConst = rule.toKind === "const"
+        ? rule.to
+        : (rule.to === "bottom" ? yBounds[0] : yBounds[1]);
+
+      // Fast path: two explicit functions evaluated on identical x-grids
+      if (dst && src.uniformX && dst.uniformX && src.xs.length === dst.xs.length &&
+          src.xs[0] === dst.xs[0] && src.xs[src.xs.length - 1] === dst.xs[dst.xs.length - 1]) {
+        const validX = [], yTop = [], yBot = [];
+        const eps = 1e-12 * Math.max(1, Math.abs(lo), Math.abs(hi));
+        if (lo > src.xs[0] + eps) {
+          const y1 = this.sampleYAt(src, sliderEnv, lo);
+          const y2 = this.sampleYAt(dst, sliderEnv, lo);
+          if (Number.isFinite(y1) && Number.isFinite(y2)) { validX.push(lo); yTop.push(y1); yBot.push(y2); }
+        }
+        for (let i = 0; i < src.xs.length; i++) {
+          const x = src.xs[i], y1 = src.ys[i], y2 = dst.ys[i];
+          if (x >= lo - eps && x <= hi + eps && Number.isFinite(y1) && Number.isFinite(y2)) {
+            validX.push(x); yTop.push(y1); yBot.push(y2);
+          }
+        }
+        if (hi < src.xs[src.xs.length - 1] - eps) {
+          const y1 = this.sampleYAt(src, sliderEnv, hi);
+          const y2 = this.sampleYAt(dst, sliderEnv, hi);
+          if (Number.isFinite(y1) && Number.isFinite(y2)) { validX.push(hi); yTop.push(y1); yBot.push(y2); }
+        }
+        if (validX.length < 2) return { ...baseTrace, x: [], y: [] };
+        return {
+          ...baseTrace,
+          x: [...validX, ...validX.slice().reverse()],
+          y: [...yTop, ...yBot.slice().reverse()]
+        };
+      }
+
+      // General path: merge sorted x-coordinates and sample in a single forward pass
       const rawXs = [lo, hi];
       for (const [x] of src.sortedPts) if (x > lo && x < hi) rawXs.push(x);
       if (dst) {
@@ -2192,14 +2318,12 @@ window.MathRenderer = window.MathRenderer || {
       }
       if (xs.length < 2) return { ...baseTrace, x: [], y: [] };
 
-      const yConst = rule.toKind === "const"
-        ? rule.to
-        : (rule.to === "bottom" ? yBounds[0] : yBounds[1]);
-
+      const srcCursor = { idx: 0 };
+      const dstCursor = { idx: 0 };
       const validX = [], yTop = [], yBot = [];
       for (const x of xs) {
-        const y1 = this.sampleYAt(src, sliderEnv, x);
-        const y2 = dst ? this.sampleYAt(dst, sliderEnv, x) : yConst;
+        const y1 = this.sampleYAt(src, sliderEnv, x, srcCursor);
+        const y2 = dst ? this.sampleYAt(dst, sliderEnv, x, dstCursor) : yConst;
         if (Number.isFinite(y1) && Number.isFinite(y2)) {
           validX.push(x);
           yTop.push(y1);
@@ -2269,6 +2393,8 @@ window.MathRenderer = window.MathRenderer || {
       this.wrapEl = wrapEl;
       this.cfg = JSON.parse(wrapEl.dataset.plotConfig || "{}");
       this.specs = this.cfg.curves.map((id, colorIdx) => ({ ...registry.get(id), colorIdx }));
+      this.specById = new Map(this.specs.map((s) => [s.id, s]));
+      this.curveIdxById = new Map(this.specs.map((s, i) => [s.id, i]));
       this.shadeRules = this.cfg.shade || [];
       this.hasBoundShade = this.shadeRules.some((r) => r.toKind === "bound");
       this.is3d = this.specs[0].dim === "3d";
@@ -2276,8 +2402,10 @@ window.MathRenderer = window.MathRenderer || {
       this.hasPlayButton = Boolean(this.sliders.length > 0 && this.cfg.play);
       this.curveVisible = this.specs.map(() => true);
       this.shadeVisible = this.shadeRules.map(() => true);
+      this.evalCache = new Array(this.specs.length).fill(null);
+      this.evalDirty = new Array(this.specs.length).fill(true);
       this.isPlaying = false;
-      this.playTimer = null;
+      this.playRaf = null;
       this.isUpdating = false;
       this.zoomXRange = null;
       this.zoomYRange = null;
@@ -2310,38 +2438,205 @@ window.MathRenderer = window.MathRenderer || {
       return env;
     }
 
+    // Computes global Y-bounds across slider states so animated sweeps never clip
+    computeHomeYRange(initialMap) {
+      if (this.cfg.yrange) return this.cfg.yrange;
+      const positiveOnly = this.cfg.yscale === "log";
+      let min = Infinity, max = -Infinity;
+
+      const absorb = (ys) => {
+        const ext = Domain.extent(ys, positiveOnly);
+        if (ext) {
+          if (ext[0] < min) min = ext[0];
+          if (ext[1] > max) max = ext[1];
+        }
+      };
+
+      for (const entry of initialMap.values()) absorb(entry.ys);
+
+      if (this.sliders.length > 0) {
+        const scales = { xscale: this.cfg.xscale, yscale: this.cfg.yscale, zscale: this.cfg.zscale };
+        const baseEnv = this.getSliderEnv();
+        for (const s of this.sliders) {
+          for (let i = 0; i < s.values.length; i++) {
+            if (i === s.index) continue;
+            const env = { ...baseEnv, [s.name]: s.values[i] };
+            for (const spec of this.specs) {
+              if (spec.sliderNames.has(s.name)) {
+                absorb(CurveEvaluator.evaluate(spec, env, scales, null).ys);
+              }
+            }
+          }
+        }
+      }
+
+      return min <= max ? [min, max] : [-1, 1];
+    }
+
+    evaluateCurveAt(idx, sliderEnv, scales) {
+      const spec = this.specs[idx];
+      const res = CurveEvaluator.evaluate(spec, sliderEnv, scales, this.zoomXRange);
+      const color = resolveCurveColor(spec);
+      applyTraceColor(res.trace, color);
+      const pts = this.is3d ? { rawPts: [], sortedPts: [] } : ShadeBuilder.prepareCurveData(res);
+      const entry = { ...res, ...pts, spec, color };
+      this.evalCache[idx] = entry;
+      this.evalDirty[idx] = false;
+      return entry;
+    }
+
+    isCurveNeededByVisibleShade(curveId) {
+      for (let i = 0; i < this.shadeRules.length; i++) {
+        if (!this.shadeVisible[i]) continue;
+        const r = this.shadeRules[i];
+        if (r.from === curveId || (r.toKind === "curve" && r.to === curveId)) return true;
+      }
+      return false;
+    }
+
     evaluateAll() {
       const sliderEnv = this.getSliderEnv();
       const scales = { xscale: this.cfg.xscale, yscale: this.cfg.yscale, zscale: this.cfg.zscale };
       const evaluatedMap = new Map();
 
       const curveTraces = this.specs.map((spec, idx) => {
-        const res = CurveEvaluator.evaluate(spec, sliderEnv, scales, this.zoomXRange);
-        const color = resolveCurveColor(spec);
-        applyTraceColor(res.trace, color);
-        res.trace.visible = this.curveVisible[idx] ? true : "legendonly";
-
-        const rawPts = this.is3d ? [] : ShadeBuilder.extractPoints(res);
-        const sortedPts = rawPts.slice().sort((a, b) => a[0] - b[0]);
-        evaluatedMap.set(spec.id, { ...res, spec, color, rawPts, sortedPts, visible: this.curveVisible[idx] });
-        return res.trace;
+        const entry = this.evaluateCurveAt(idx, sliderEnv, scales);
+        entry.trace.visible = this.curveVisible[idx] ? true : "legendonly";
+        evaluatedMap.set(spec.id, entry);
+        return entry.trace;
       });
 
-      const allYs = Array.from(evaluatedMap.values()).flatMap((d) => d.ys);
-      const dataYExtent = Domain.extent(allYs, this.cfg.yscale === "log") || [-1, 1];
-      const yBounds = this.zoomYRange || this.cfg.yrange || this.homeYRange || dataYExtent;
-      if (!this.homeYRange) this.homeYRange = dataYExtent;
+      if (!this.homeYRange && !this.is3d) {
+        this.homeYRange = this.computeHomeYRange(evaluatedMap);
+      }
+      const yBounds = this.zoomYRange || this.cfg.yrange || this.homeYRange || [-1, 1];
 
-      const curveIdxById = new Map(this.specs.map((s, i) => [s.id, i]));
       const shadeTraces = this.shadeRules.map((rule, idx) => {
         const trace = ShadeBuilder.buildTrace(rule, evaluatedMap, sliderEnv, yBounds);
-        const srcVis = this.curveVisible[curveIdxById.get(rule.from)];
-        const dstVis = rule.toKind === "curve" ? this.curveVisible[curveIdxById.get(rule.to)] : true;
+        const srcVis = this.curveVisible[this.curveIdxById.get(rule.from)];
+        const dstVis = rule.toKind === "curve" ? this.curveVisible[this.curveIdxById.get(rule.to)] : true;
         trace.visible = (this.shadeVisible[idx] && srcVis && dstVis) ? true : "legendonly";
         return trace;
       });
 
       return [...shadeTraces, ...curveTraces];
+    }
+
+    // Incrementally updates only traces affected by a slider change or zoom
+    updateAffectedTraces(changedSliderName = null, syncMath = false) {
+      if (!this.canvas || this.isUpdating) return;
+      this.isUpdating = true;
+      try {
+        const sliderEnv = this.getSliderEnv();
+        const scales = { xscale: this.cfg.xscale, yscale: this.cfg.yscale, zscale: this.cfg.zscale };
+        const shadeCount = this.shadeRules.length;
+        const traceIndices = [];
+        const xs = [], ys = [], zs = [];
+        const evaluatedMap = new Map();
+
+        this.specs.forEach((spec, idx) => {
+          const affected = changedSliderName === null
+            ? (this.zoomXRange !== null || this.zoomYRange === null) && spec.isExplicitYX
+            : spec.sliderNames.has(changedSliderName);
+
+          if (affected) {
+            const needed = this.curveVisible[idx] || this.isCurveNeededByVisibleShade(spec.id);
+            if (needed) {
+              const entry = this.evaluateCurveAt(idx, sliderEnv, scales);
+              evaluatedMap.set(spec.id, entry);
+              traceIndices.push(shadeCount + idx);
+              xs.push(entry.trace.x);
+              ys.push(entry.trace.y);
+              if (this.is3d) zs.push(entry.trace.z);
+            } else {
+              this.evalDirty[idx] = true;
+            }
+          } else if (this.evalCache[idx]) {
+            evaluatedMap.set(spec.id, this.evalCache[idx]);
+          }
+        });
+
+        if (shadeCount > 0) {
+          const yBounds = this.zoomYRange || this.cfg.yrange || this.homeYRange || [-1, 1];
+          this.shadeRules.forEach((rule, idx) => {
+            const srcSpec = this.specById.get(rule.from);
+            const dstSpec = rule.toKind === "curve" ? this.specById.get(rule.to) : null;
+            const affected = changedSliderName === null
+              ? true
+              : (srcSpec.sliderNames.has(changedSliderName) || Boolean(dstSpec?.sliderNames.has(changedSliderName)));
+
+            if (affected && this.shadeVisible[idx]) {
+              const trace = ShadeBuilder.buildTrace(rule, evaluatedMap, sliderEnv, yBounds);
+              traceIndices.push(idx);
+              xs.push(trace.x);
+              ys.push(trace.y);
+            }
+          });
+        }
+
+        if (traceIndices.length > 0) {
+          const payload = this.is3d ? { x: xs, y: ys, z: zs } : { x: xs, y: ys };
+          Plotly.restyle(this.canvas, payload, traceIndices);
+        }
+      } finally {
+        this.isUpdating = false;
+      }
+      if (syncMath) this.syncMathOverlays();
+    }
+
+    syncVisibility() {
+      if (!this.canvas || this.isUpdating) return;
+      this.isUpdating = true;
+      try {
+        const sliderEnv = this.getSliderEnv();
+        const scales = { xscale: this.cfg.xscale, yscale: this.cfg.yscale, zscale: this.cfg.zscale };
+        const shadeCount = this.shadeRules.length;
+        const evaluatedMap = new Map();
+        const dirtyIndices = [];
+        const dirtyX = [], dirtyY = [], dirtyZ = [];
+
+        this.specs.forEach((spec, idx) => {
+          const needed = this.curveVisible[idx] || this.isCurveNeededByVisibleShade(spec.id);
+          if (needed && (this.evalDirty[idx] || !this.evalCache[idx])) {
+            const entry = this.evaluateCurveAt(idx, sliderEnv, scales);
+            dirtyIndices.push(shadeCount + idx);
+            dirtyX.push(entry.trace.x);
+            dirtyY.push(entry.trace.y);
+            if (this.is3d) dirtyZ.push(entry.trace.z);
+          }
+          if (this.evalCache[idx]) evaluatedMap.set(spec.id, this.evalCache[idx]);
+        });
+
+        if (dirtyIndices.length > 0) {
+          Plotly.restyle(this.canvas, this.is3d ? { x: dirtyX, y: dirtyY, z: dirtyZ } : { x: dirtyX, y: dirtyY }, dirtyIndices);
+        }
+
+        const yBounds = this.zoomYRange || this.cfg.yrange || this.homeYRange || [-1, 1];
+        const shadeIndices = [], shadeX = [], shadeY = [];
+        const visList = [];
+
+        this.shadeRules.forEach((rule, idx) => {
+          const srcVis = this.curveVisible[this.curveIdxById.get(rule.from)];
+          const dstVis = rule.toKind === "curve" ? this.curveVisible[this.curveIdxById.get(rule.to)] : true;
+          const visible = Boolean(this.shadeVisible[idx] && srcVis && dstVis);
+          visList.push(visible ? true : "legendonly");
+          if (visible) {
+            const trace = ShadeBuilder.buildTrace(rule, evaluatedMap, sliderEnv, yBounds);
+            shadeIndices.push(idx);
+            shadeX.push(trace.x);
+            shadeY.push(trace.y);
+          }
+        });
+
+        this.curveVisible.forEach((vis) => visList.push(vis ? true : "legendonly"));
+
+        if (shadeIndices.length > 0) {
+          Plotly.restyle(this.canvas, { x: shadeX, y: shadeY }, shadeIndices);
+        }
+        Plotly.restyle(this.canvas, { visible: visList });
+      } finally {
+        this.isUpdating = false;
+      }
     }
 
     buildLegendItems() {
@@ -2353,21 +2648,20 @@ window.MathRenderer = window.MathRenderer || {
           mode: spec.mode,
           onToggle: (checked) => {
             this.curveVisible[idx] = checked;
-            this.refreshTraces();
+            this.syncVisibility();
           }
         });
       });
-      const specById = new Map(this.specs.map((s) => [s.id, s]));
       this.shadeRules.forEach((rule, idx) => {
         if (!rule.label) return;
-        const color = rule.color || resolveCurveColor(specById.get(rule.from));
+        const color = rule.color || resolveCurveColor(this.specById.get(rule.from));
         items.push({
           label: rule.label,
           color,
           mode: "area",
           onToggle: (checked) => {
             this.shadeVisible[idx] = checked;
-            this.refreshTraces();
+            this.syncVisibility();
           }
         });
       });
@@ -2496,7 +2790,7 @@ window.MathRenderer = window.MathRenderer || {
       slider.index = idx;
       if (slider.inputEl) slider.inputEl.value = String(idx);
       if (slider.valueEl) slider.valueEl.textContent = formatNumber(slider.values[idx]);
-      this.refreshTraces();
+      this.updateAffectedTraces(slider.name, false);
     }
 
     startPlay() {
@@ -2507,19 +2801,25 @@ window.MathRenderer = window.MathRenderer || {
       if (primary.index >= primary.values.length - 1) {
         this.setSliderIndex(primary, 0);
       }
-      this.playTimer = setInterval(() => {
-        if (!this.wrapEl.isConnected) {
+      let lastTick = performance.now();
+      const step = (now) => {
+        if (!this.isPlaying || !this.wrapEl.isConnected) {
           this.stopPlay();
           return;
         }
-        this.setSliderIndex(primary, (primary.index + 1) % primary.values.length);
-      }, PLAY_INTERVAL_MS);
+        if (now - lastTick >= PLAY_INTERVAL_MS) {
+          lastTick = now;
+          this.setSliderIndex(primary, (primary.index + 1) % primary.values.length);
+        }
+        this.playRaf = requestAnimationFrame(step);
+      };
+      this.playRaf = requestAnimationFrame(step);
     }
 
     stopPlay() {
-      if (this.playTimer !== null) {
-        clearInterval(this.playTimer);
-        this.playTimer = null;
+      if (this.playRaf !== null) {
+        cancelAnimationFrame(this.playRaf);
+        this.playRaf = null;
       }
       if (this.isPlaying) {
         this.isPlaying = false;
@@ -2552,17 +2852,6 @@ window.MathRenderer = window.MathRenderer || {
         layout.yaxis = ThemeSync.buildAxisTheme(this.cfg.ylabel, this.cfg.yscale, yRange, palette);
       }
       return layout;
-    }
-
-    refreshTraces() {
-      if (!this.canvas || this.isUpdating) return;
-      this.isUpdating = true;
-      try {
-        Plotly.react(this.canvas, this.evaluateAll(), this.canvas.layout, { responsive: true });
-      } finally {
-        this.isUpdating = false;
-      }
-      this.syncMathOverlays();
     }
 
     placeMathNode(svgEl, htmlContent, rotate = 0) {
@@ -2619,7 +2908,7 @@ window.MathRenderer = window.MathRenderer || {
               needsRefresh = true;
             }
           }
-          if (needsRefresh) this.refreshTraces();
+          if (needsRefresh) this.updateAffectedTraces(null, true);
         }
         this.syncMathOverlays();
       });
