@@ -7,8 +7,8 @@ website:
   sidebar:
     style: docked
     logo: 
-      - light: img/logo/logo_black.png
-      - dark: img/logo/logo_white.png
+      light: img/logo/logo_black.png
+      dark: img/logo/logo_white.png
     contents:
       - href: index.qmd
         text: "Home"
