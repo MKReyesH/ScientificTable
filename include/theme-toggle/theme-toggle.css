@@ -12,7 +12,7 @@
 
 .sidebar-search.has-theme-toggle .sidebar-tools-main {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   flex: 0 0 auto;
   margin: 0;
   padding: 0;
@@ -22,7 +22,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
+  width: 2.25rem;
   height: auto;
   margin: 0;
   padding: 0;
