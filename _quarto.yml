@@ -22,22 +22,23 @@ website:
   #    - href: about.qmd
   navbar:
     logo:
-      light: img/logo/logo_white.png
+      light: img/logo/logo_black.png
       dark: img/logo/logo_white.png
     left:
-      - href: index.qmd
-        text: "Home"
+      - text: "Home"
+        href: index.qmd
       - text: "Topics"
         menu:
           - text: "Examples"
-          - doc/Examples/markdown.qmd
-          - doc/Examples/latex.qmd
-          - doc/Examples/tables.qmd
-          - doc/Examples/plots.qmd
-          - doc/Examples/mindmaps.qmd
+          - href: doc/Examples/example1.qmd
+          - href: doc/Examples/example2.qmd
+          - href: doc/Examples/example3.qmd
+          - href: doc/Examples/example4.qmd
+          - href: doc/Examples/example5.qmd
     right:
-      - href: https://github.com/MKReyesH/ScientificTable
-        text: "GitHub Project"
+      - icon: github
+        aria-label: "GitHub Project"
+        href: https://github.com/MKReyesH/ScientificTable
       - href: about.qmd
 
 format:
