@@ -12,7 +12,7 @@ In `.plot-function`, top-level bracketed parameters define the curve's **domain*
 
 - **Explicit functions $y(x)$:** Write `x: [min, max]` to set the horizontal domain and define `y` as an expression in `x`. Explicit 2D curves automatically resample at higher resolution when zooming or panning.
 - **Parametric curves $(x(t), y(t))$:** Declare a parameter such as `t: [0, 2 * pi]` and define both `x` and `y` in terms of `t`.
-- **Expressions and styling:** Expressions support `+`, `-`, `*`, `/`, `^`, implicit multiplication (`2x`, `x sin(x)`), constants (`pi`, `e`), and standard functions (`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `exp`, `log`, `ln`, `log10`, `log2`, `sqrt`, `abs`, `sign`, `floor`, `ceil`, `min`, `max`, `hypot`). Optional keys include `label` (legend title, supporting inline LaTeX math; defaults to `id`), `color` (any CSS or Plotly color), `mode` (`lines`, `markers`, or `lines+markers`, default `lines`), and `smooth` (spline interpolation on 2D curves, `true` or `false`, default `true`).
+- **Expressions and styling:** Expressions support `+`, `-`, `*`, `/`, `^`, implicit multiplication (`2x`, `x sin(x)`), constants (`pi`, `e`), and standard functions (`sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `exp`, `log`, `ln`, `log10`, `log2`, `sqrt`, `abs`, `sign`, `floor`, `ceil`, `min`, `max`, `hypot`). Optional keys include `points` (sample count along the domain, integer $\ge 2$, default `100`), `label` (legend title, supporting inline LaTeX math; defaults to `id`), `color` (any CSS or Plotly color), `mode` (`lines`, `markers`, or `lines+markers`, default `lines`), and `smooth` (spline interpolation on 2D curves, `true` or `false`, default `true`).
 
 The `::: {.dynamic-plot}` block mounts the canvas and configures axes and layout:
 
@@ -75,9 +75,9 @@ To make curves interactive or simplify complex formulas, `.plot-function` suppor
   - **Integer range `[a..b]`:** Discrete integers $a, a+1, \dots, b$ (`a < b`).
   - **Explicit value list `[v1, v2, v3, ...]`:** Three or more specific numeric values.
 
-  Appending `:` after a slider's `[...]` domain lets you configure indented per-slider options: `steps` (integer $\ge 2$ for `[min, max]` ranges, default `25`), `label` (display title above the slider with optional inline LaTeX math; defaults to the parameter name), and `play` (`true` or `false`, default `false`, adding an independent Play/Pause button in front of that slider's row). If multiple curves in the same plot declare sliders with the same name and domain, they automatically share a single synchronized slider.
+  Each slider entry (`name: [...]`) may be followed by indented option lines: `steps` (integer $\ge 2$ for `[min, max]` ranges, default `25`), `label` (display title above the slider with optional inline LaTeX math; defaults to the parameter name), and `play` (`true` or `false`, default `false`, adding an independent Play/Pause button in front of that slider's row). If multiple curves in the same plot declare sliders with the same name and domain, they automatically share a single synchronized slider.
 
-In 2D plots, `.dynamic-plot` also supports a **`shade:`** block to fill regions between curves, horizontal levels, plot bounds, or closed parametric curves. Each rule is written as `curve1 -> curve2` (or `curve1 -> curve2:` followed by indented styling options), where:
+In 2D plots, `.dynamic-plot` supports a **`shade:`** block using the same entry-plus-options structure to fill regions between curves, horizontal levels, plot bounds, or closed parametric curves. Each entry is written as `curve1 -> curve2`, where:
 
 - `curve1` is a curve ID listed in `curves`.
 - `curve2` is another curve ID in `curves`, a constant expression (such as `0`), `bottom` or `top` (the vertical axis bounds), or the same curve ID (`curve1 -> curve1`) to fill a closed parametric curve.
@@ -96,11 +96,11 @@ color: #1f77b4
 ::: {.plot-function id="gauss-moving"}
 x: [-4, 6]
 sliders:
-  mu: [-1.5, 3.5]:
+  mu: [-1.5, 3.5]
     steps: 35
     label: Mean $\mu$
     play: true
-  sigma: [0.6, 1.0, 1.4, 1.8]:
+  sigma: [0.6, 1.0, 1.4, 1.8]
     label: Width $\sigma$
 vars:
   z = (x - mu) / sigma
@@ -114,12 +114,12 @@ curves: gauss-fixed, gauss-moving
 xlabel: $x$
 ylabel: Density
 shade:
-  gauss-fixed -> 0:
+  gauss-fixed -> 0
     xrange: [-4, 0.5]
     color: #1f77b4
     opacity: 0.15
     label: Left tail of $f_1$
-  gauss-moving -> gauss-fixed:
+  gauss-moving -> gauss-fixed
     color: #2ca02c
     opacity: 0.22
     label: Difference $f_2 - f_1$
@@ -138,11 +138,11 @@ color: #1f77b4
 ::: {.plot-function id="gauss-moving"}
 x: [-4, 6]
 sliders:
-  mu: [-1.5, 3.5]:
+  mu: [-1.5, 3.5]
     steps: 35
     label: Mean $\mu$
     play: true
-  sigma: [0.6, 1.0, 1.4, 1.8]:
+  sigma: [0.6, 1.0, 1.4, 1.8]
     label: Width $\sigma$
 vars:
   z = (x - mu) / sigma
@@ -156,15 +156,114 @@ curves: gauss-fixed, gauss-moving
 xlabel: $x$
 ylabel: Density
 shade:
-  gauss-fixed -> 0:
+  gauss-fixed -> 0
     xrange: [-4, 0.5]
     color: #1f77b4
     opacity: 0.15
     label: Left tail of $f_1$
-  gauss-moving -> gauss-fixed:
+  gauss-moving -> gauss-fixed
     color: #2ca02c
     opacity: 0.22
     label: Difference $f_2 - f_1$
+:::
+
+# Plotting External Data Files
+
+Unlike `.plot-function`, a `::: {.plot-file id="..."}` block takes its sample points directly from the rows of a `.csv` (comma-separated) or whitespace/tab-delimited numeric file rather than domain parameters (blank lines and comment lines starting with `#`, `%`, or `//` are ignored automatically):
+
+- `src`: Path to the data file (required).
+- `skip`: Number of leading non-comment header rows to ignore, integer $\ge 0$ (default `0`).
+- `x`, `y`, `z`: Coordinate expressions (`x` and `y` required; `z` optional for 3D) referencing **0-based columns** (`c0`, `c1`, `c2`, …) or **dynamic column indexing** (`c[expr]`, where `expr` evaluates to a 0-based column index).
+- `vars:`, `sliders:`, `label`, `color`, `mode`, `smooth`: Supported just as in `.plot-function`, except `mode` defaults to `lines+markers` and `smooth` defaults to `false`.
+
+A `.plot-file` trace can be overlaid directly with analytical `.plot-function` curves on the same canvas:
+
+```markdown
+::: {.plot-file id="damped-data"}
+src: data/example-plot-damped.csv
+skip: 1
+x: c0
+y: c1
+label: Measured amplitude
+mode: markers
+color: #ff7f0e
+:::
+
+::: {.plot-function id="damped-model"}
+x: [0, 10]
+y: exp(-0.35 * x) * cos(2 * x)
+label: $e^{-0.35t}\cos(2t)$
+color: #1f77b4
+:::
+
+::: {.dynamic-plot}
+curves: damped-data, damped-model
+xlabel: Time $t$ [s]
+ylabel: Amplitude $A(t)$ [m]
+:::
+```
+
+::: {.plot-file id="damped-data"}
+src: data/example-plot-damped.csv
+skip: 1
+x: c0
+y: c1
+label: Measured amplitude
+mode: markers
+color: #ff7f0e
+:::
+
+::: {.plot-function id="damped-model"}
+x: [0, 10]
+y: exp(-0.35 * x) * cos(2 * x)
+label: $e^{-0.35t}\cos(2t)$
+color: #1f77b4
+:::
+
+::: {.dynamic-plot}
+curves: damped-data, damped-model
+xlabel: Time $t$ [s]
+ylabel: Amplitude $A(t)$ [m]
+:::
+
+Combining an integer slider in `sliders:` with dynamic column indexing (`c[k]`) sweeps interactively across columns of a multi-column dataset:
+
+```markdown
+::: {.plot-file id="wave-sweep"}
+src: data/example-plot-sweep.csv
+sliders:
+  k: [1..7]
+    label: Time index $k$
+    play: true
+x: c0
+y: c[k]
+label: Wave amplitude
+smooth: true
+:::
+
+::: {.dynamic-plot}
+curves: wave-sweep
+xlabel: $x$ [m]
+ylabel: $\psi(x, t_k)$
+:::
+```
+
+::: {.plot-file id="wave-sweep"}
+src: data/example-plot-sweep.csv
+sliders:
+  k: [1..7]
+    label: Time index $k$
+    play: true
+x: c0
+y: c[k]
+label: Wave amplitude
+smooth: true
+:::
+
+::: {.dynamic-plot}
+curves: wave-sweep
+xlabel: $x$ [m]
+ylabel: $\psi(x, t_k)$
 :::
 
 # 3D Curves and Surfaces
@@ -234,103 +333,4 @@ curves: ripple-surface, spiral-3d
 xlabel: $x$
 ylabel: $y$
 zlabel: $z(x, y)$
-:::
-
-# Plotting External Data Files
-
-Unlike `.plot-function`, a `::: {.plot-file id="..."}` block takes its sample points directly from the rows of a `.csv` (comma-separated) or whitespace/tab-delimited numeric file rather than domain parameters (blank lines and comment lines starting with `#`, `%`, or `//` are ignored automatically):
-
-- `src`: Path to the data file (required).
-- `skip`: Number of leading non-comment header rows to ignore, integer $\ge 0$ (default `0`).
-- `x`, `y`, `z`: Coordinate expressions (`x` and `y` required; `z` optional for 3D) referencing **0-based columns** (`c0`, `c1`, `c2`, …) or **dynamic column indexing** (`c[expr]`, where `expr` evaluates to a 0-based column index).
-- `vars:`, `sliders:`, `label`, `color`, `mode`, `smooth`: Supported just as in `.plot-function`, except `mode` defaults to `lines+markers` and `smooth` defaults to `false`.
-
-A `.plot-file` trace can be overlaid directly with analytical `.plot-function` curves on the same canvas:
-
-```markdown
-::: {.plot-file id="damped-data"}
-src: data/example-plot-damped.csv
-skip: 1
-x: c0
-y: c1
-label: Measured amplitude
-mode: markers
-color: #ff7f0e
-:::
-
-::: {.plot-function id="damped-model"}
-x: [0, 10]
-y: exp(-0.35 * x) * cos(2 * x)
-label: $e^{-0.35t}\cos(2t)$
-color: #1f77b4
-:::
-
-::: {.dynamic-plot}
-curves: damped-data, damped-model
-xlabel: Time $t$ [s]
-ylabel: Amplitude $A(t)$ [m]
-:::
-```
-
-::: {.plot-file id="damped-data"}
-src: data/example-plot-damped.csv
-skip: 1
-x: c0
-y: c1
-label: Measured amplitude
-mode: markers
-color: #ff7f0e
-:::
-
-::: {.plot-function id="damped-model"}
-x: [0, 10]
-y: exp(-0.35 * x) * cos(2 * x)
-label: $e^{-0.35t}\cos(2t)$
-color: #1f77b4
-:::
-
-::: {.dynamic-plot}
-curves: damped-data, damped-model
-xlabel: Time $t$ [s]
-ylabel: Amplitude $A(t)$ [m]
-:::
-
-Combining an integer slider in `sliders:` with dynamic column indexing (`c[k]`) sweeps interactively across columns of a multi-column dataset:
-
-```markdown
-::: {.plot-file id="wave-sweep"}
-src: data/example-plot-sweep.csv
-sliders:
-  k: [1..7]:
-    label: Time index $k$
-    play: true
-x: c0
-y: c[k]
-label: Wave amplitude
-smooth: true
-:::
-
-::: {.dynamic-plot}
-curves: wave-sweep
-xlabel: $x$ [m]
-ylabel: $\psi(x, t_k)$
-:::
-```
-
-::: {.plot-file id="wave-sweep"}
-src: data/example-plot-sweep.csv
-sliders:
-  k: [1..7]:
-    label: Time index $k$
-    play: true
-x: c0
-y: c[k]
-label: Wave amplitude
-smooth: true
-:::
-
-::: {.dynamic-plot}
-curves: wave-sweep
-xlabel: $x$ [m]
-ylabel: $\psi(x, t_k)$
 :::
