@@ -10,16 +10,15 @@ website:
       light: img/logo/logo_black.png
       dark: img/logo/logo_white.png
     contents:
-      - href: index.qmd
-        text: "Home"
-      - section: "Topics"
+      - text: "Home"
+        href: index.qmd
+      - section: "Examples"
         contents:
-        - section: "Examples"
-          contents:
-          - auto: "doc/Examples/*.qmd"
-      - href: https://github.com/MKReyesH/ScientificTable
-        text: "GitHub Project"
-      - href: about.qmd
+        - auto: "doc/Examples/*.qmd"
+      - text: "GitHub Project"
+        href: https://github.com/MKReyesH/ScientificTable
+      - text: "About"
+        href: about.qmd
   #navbar:
   #  logo:
   #    light: img/logo/logo_white.png
