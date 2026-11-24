@@ -4,42 +4,42 @@ project:
 website:
   title: "Scientific Wiki Template"
   search: true
-  #sidebar:
-  #  style: docked
-  #  logo: 
-  #    light: img/logo/logo_black.png
-  #    dark: img/logo/logo_white.png
-  #  contents:
-  #    - href: index.qmd
-  #      text: "Home"
-  #    - section: "Topics"
-  #      contents:
-  #      - section: "Examples"
-  #        contents:
-  #        - auto: "doc/Examples/*.qmd"
-  #    - href: https://github.com/MKReyesH/ScientificTable
-  #      text: "GitHub Project"
-  #    - href: about.qmd
-  navbar:
-    logo:
-      light: img/logo/logo_white.png
+  sidebar:
+    style: docked
+    logo: 
+      light: img/logo/logo_black.png
       dark: img/logo/logo_white.png
-    left:
-      - text: "Home"
-        href: index.qmd
-      - text: "Examples"
-        menu:
-          - href: doc/Examples/example1.qmd
-          - href: doc/Examples/example2.qmd
-          - href: doc/Examples/example3.qmd
-          - href: doc/Examples/example4.qmd
-          - href: doc/Examples/example5.qmd
-    right:
-      - text: "About"
-        href: about.qmd
-      - icon: github
-        aria-label: "GitHub Project"
-        href: https://github.com/MKReyesH/ScientificTable
+    contents:
+      - href: index.qmd
+        text: "Home"
+      - section: "Topics"
+        contents:
+        - section: "Examples"
+          contents:
+          - auto: "doc/Examples/*.qmd"
+      - href: https://github.com/MKReyesH/ScientificTable
+        text: "GitHub Project"
+      - href: about.qmd
+  #navbar:
+  #  logo:
+  #    light: img/logo/logo_white.png
+  #    dark: img/logo/logo_white.png
+  #  left:
+  #    - text: "Home"
+  #      href: index.qmd
+  #    - text: "Examples"
+  #      menu:
+  #        - href: doc/Examples/example1.qmd
+  #        - href: doc/Examples/example2.qmd
+  #        - href: doc/Examples/example3.qmd
+  #        - href: doc/Examples/example4.qmd
+  #        - href: doc/Examples/example5.qmd
+  #  right:
+  #    - text: "About"
+  #      href: about.qmd
+  #    - icon: github
+  #      aria-label: "GitHub Project"
+  #      href: https://github.com/MKReyesH/ScientificTable
 
 format:
   html:
@@ -47,8 +47,8 @@ format:
     css: include/theme-config.css
     respect-user-color-scheme: true
     theme: # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
-      light: minty
-      dark: [minty, include/theme-dark-patch.scss]
+      light: lux
+      dark: [lux, include/theme-dark-patch.scss]
 
 bibliography: bib/references.bib
 csl: bib/jcap.csl
