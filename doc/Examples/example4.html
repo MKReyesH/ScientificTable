@@ -852,7 +852,7 @@ window.Quarto = {
 <ul>
 <li><strong>Explicit functions <span class="math inline">\(y(x)\)</span>:</strong> Write <code>x: [min, max]</code> to set the horizontal domain and define <code>y</code> as an expression in <code>x</code>. Explicit 2D curves automatically resample at higher resolution when zooming or panning.</li>
 <li><strong>Parametric curves <span class="math inline">\((x(t), y(t))\)</span>:</strong> Declare a parameter such as <code>t: [0, 2 * pi]</code> and define both <code>x</code> and <code>y</code> in terms of <code>t</code>.</li>
-<li><strong>Expressions and styling:</strong> Expressions support <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>^</code>, implicit multiplication (<code>2x</code>, <code>x sin(x)</code>), constants (<code>pi</code>, <code>e</code>), and standard functions (<code>sin</code>, <code>cos</code>, <code>tan</code>, <code>asin</code>, <code>acos</code>, <code>atan</code>, <code>atan2</code>, <code>sinh</code>, <code>cosh</code>, <code>tanh</code>, <code>asinh</code>, <code>acosh</code>, <code>atanh</code>, <code>exp</code>, <code>log</code>, <code>ln</code>, <code>log10</code>, <code>log2</code>, <code>sqrt</code>, <code>abs</code>, <code>sign</code>, <code>floor</code>, <code>ceil</code>, <code>min</code>, <code>max</code>, <code>hypot</code>). Optional keys include <code>label</code> (legend title, supporting inline LaTeX math; defaults to <code>id</code>), <code>color</code> (any CSS or Plotly color), <code>mode</code> (<code>lines</code>, <code>markers</code>, or <code>lines+markers</code>, default <code>lines</code>), and <code>smooth</code> (spline interpolation on 2D curves, <code>true</code> or <code>false</code>, default <code>true</code>).</li>
+<li><strong>Expressions and styling:</strong> Expressions support <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>^</code>, implicit multiplication (<code>2x</code>, <code>x sin(x)</code>), constants (<code>pi</code>, <code>e</code>), and standard functions (<code>sin</code>, <code>cos</code>, <code>tan</code>, <code>asin</code>, <code>acos</code>, <code>atan</code>, <code>atan2</code>, <code>sinh</code>, <code>cosh</code>, <code>tanh</code>, <code>asinh</code>, <code>acosh</code>, <code>atanh</code>, <code>exp</code>, <code>log</code>, <code>ln</code>, <code>log10</code>, <code>log2</code>, <code>sqrt</code>, <code>abs</code>, <code>sign</code>, <code>floor</code>, <code>ceil</code>, <code>min</code>, <code>max</code>, <code>hypot</code>). Optional keys include <code>points</code> (sample count along the domain, integer <span class="math inline">\(\ge 2\)</span>, default <code>100</code>), <code>label</code> (legend title, supporting inline LaTeX math; defaults to <code>id</code>), <code>color</code> (any CSS or Plotly color), <code>mode</code> (<code>lines</code>, <code>markers</code>, or <code>lines+markers</code>, default <code>lines</code>), and <code>smooth</code> (spline interpolation on 2D curves, <code>true</code> or <code>false</code>, default <code>true</code>).</li>
 </ul>
 <p>The <code>::: {.dynamic-plot}</code> block mounts the canvas and configures axes and layout:</p>
 <ul>
@@ -882,7 +882,7 @@ window.Quarto = {
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>xlabel: $x$</span>
 <span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>ylabel: $y(x)$</span>
 <span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sin&quot;,&quot;circle-param&quot;],&quot;height&quot;:400,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\)&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(y(x)\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+<div class="dynamic-plot-wrap" data-plot-idx="1"></div>
 </section>
 <section id="interactive-sliders-helper-variables-and-shaded-regions" class="level1">
 <h1>Interactive Sliders, Helper Variables, and Shaded Regions</h1>
@@ -895,9 +895,9 @@ window.Quarto = {
 <li><strong>Integer range <code>[a..b]</code>:</strong> Discrete integers <span class="math inline">\(a, a+1, \dots, b\)</span> (<code>a &lt; b</code>).</li>
 <li><strong>Explicit value list <code>[v1, v2, v3, ...]</code>:</strong> Three or more specific numeric values.</li>
 </ul>
-Appending <code>:</code> after a slider’s <code>[...]</code> domain lets you configure indented per-slider options: <code>steps</code> (integer <span class="math inline">\(\ge 2\)</span> for <code>[min, max]</code> ranges, default <code>25</code>), <code>label</code> (display title above the slider with optional inline LaTeX math; defaults to the parameter name), and <code>play</code> (<code>true</code> or <code>false</code>, default <code>false</code>, adding an independent Play/Pause button in front of that slider’s row). If multiple curves in the same plot declare sliders with the same name and domain, they automatically share a single synchronized slider.</li>
+Each slider entry (<code>name: [...]</code>) may be followed by indented option lines: <code>steps</code> (integer <span class="math inline">\(\ge 2\)</span> for <code>[min, max]</code> ranges, default <code>25</code>), <code>label</code> (display title above the slider with optional inline LaTeX math; defaults to the parameter name), and <code>play</code> (<code>true</code> or <code>false</code>, default <code>false</code>, adding an independent Play/Pause button in front of that slider’s row). If multiple curves in the same plot declare sliders with the same name and domain, they automatically share a single synchronized slider.</li>
 </ul>
-<p>In 2D plots, <code>.dynamic-plot</code> also supports a <strong><code>shade:</code></strong> block to fill regions between curves, horizontal levels, plot bounds, or closed parametric curves. Each rule is written as <code>curve1 -&gt; curve2</code> (or <code>curve1 -&gt; curve2:</code> followed by indented styling options), where:</p>
+<p>In 2D plots, <code>.dynamic-plot</code> supports a <strong><code>shade:</code></strong> block using the same entry-plus-options structure to fill regions between curves, horizontal levels, plot bounds, or closed parametric curves. Each entry is written as <code>curve1 -&gt; curve2</code>, where:</p>
 <ul>
 <li><code>curve1</code> is a curve ID listed in <code>curves</code>.</li>
 <li><code>curve2</code> is another curve ID in <code>curves</code>, a constant expression (such as <code>0</code>), <code>bottom</code> or <code>top</code> (the vertical axis bounds), or the same curve ID (<code>curve1 -&gt; curve1</code>) to fill a closed parametric curve.</li>
@@ -915,11 +915,11 @@ Appending <code>:</code> after a slider’s <code>[...]</code> domain lets you c
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>::: {.plot-function id="gauss-moving"}</span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>x: <span class="co">[</span><span class="ot">-4, 6</span><span class="co">]</span></span>
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>sliders:</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  mu: <span class="co">[</span><span class="ot">-1.5, 3.5</span><span class="co">]</span>:</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  mu: <span class="co">[</span><span class="ot">-1.5, 3.5</span><span class="co">]</span></span>
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    steps: 35</span>
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    label: Mean $\mu$</span>
 <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    play: true</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  sigma: <span class="co">[</span><span class="ot">0.6, 1.0, 1.4, 1.8</span><span class="co">]</span>:</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  sigma: <span class="co">[</span><span class="ot">0.6, 1.0, 1.4, 1.8</span><span class="co">]</span></span>
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    label: Width $\sigma$</span>
 <span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>vars:</span>
 <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  z = (x - mu) / sigma</span>
@@ -933,55 +933,17 @@ Appending <code>:</code> after a slider’s <code>[...]</code> domain lets you c
 <span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>xlabel: $x$</span>
 <span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>ylabel: Density</span>
 <span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>shade:</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  gauss-fixed -&gt; 0:</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  gauss-fixed -&gt; 0</span>
 <span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>    xrange: <span class="co">[</span><span class="ot">-4, 0.5</span><span class="co">]</span></span>
 <span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>    color: #1f77b4</span>
 <span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    opacity: 0.15</span>
 <span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>    label: Left tail of $f_1$</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>  gauss-moving -&gt; gauss-fixed:</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>  gauss-moving -&gt; gauss-fixed</span>
 <span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    color: #2ca02c</span>
 <span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    opacity: 0.22</span>
 <span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>    label: Difference $f_2 - f_1$</span>
 <span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="d-curves-and-surfaces" class="level1">
-<h1>3D Curves and Surfaces</h1>
-<p>Adding a <code>z</code> expression switches a <code>.plot-function</code> to 3D (all curves in a <code>.dynamic-plot</code> must share the same dimensionality, either all 2D or all 3D):</p>
-<ul>
-<li><strong>3D parametric curve:</strong> 1 domain parameter with <code>x</code>, <code>y</code>, and <code>z</code>.</li>
-<li><strong>3D surface:</strong> 2 domain parameters with <code>x</code>, <code>y</code>, and <code>z</code>.</li>
-<li><code>points</code>: Sample resolution per domain axis, integer <span class="math inline">\(\ge 2\)</span> (defaults to <code>100</code> for curves and <code>40</code> per axis for surfaces).</li>
-<li><code>zlabel</code>, <code>zscale</code>, <code>zrange</code>: Configure the third axis in <code>.dynamic-plot</code> (<code>zlabel</code> defaults to <code>z</code> in 3D scenes).</li>
-</ul>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>::: {.plot-function id="ripple-surface"}</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>x: <span class="co">[</span><span class="ot">-4, 4</span><span class="co">]</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>y: <span class="co">[</span><span class="ot">-4, 4</span><span class="co">]</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>vars:</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  r = hypot(x, y)</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>z: sin(2 * r) / (1 + 0.4 * r)</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>points: 45</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>label: Ripple surface</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>color: #1f77b4</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>::: {.plot-function id="spiral-3d"}</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>t: <span class="co">[</span><span class="ot">0, 4 * pi</span><span class="co">]</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>vars:</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  r = 0.28 * t</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>x: r * cos(t)</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>y: r * sin(t)</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>z: 0.25 + 0.12 * t</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>label: Spiral path</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>color: #d62728</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-plot}</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>curves: ripple-surface, spiral-3d</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>xlabel: $x$</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>ylabel: $y$</span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>zlabel: $z(x, y)$</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;ripple-surface&quot;,&quot;spiral-3d&quot;],&quot;height&quot;:400,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\)&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(y\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zlabel&quot;:&quot;\\(z(x, y)\\)&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+<div class="dynamic-plot-wrap" data-plot-idx="2"></div>
 </section>
 <section id="plotting-external-data-files" class="level1">
 <h1>Plotting External Data Files</h1>
@@ -993,48 +955,87 @@ Appending <code>:</code> after a slider’s <code>[...]</code> domain lets you c
 <li><code>vars:</code>, <code>sliders:</code>, <code>label</code>, <code>color</code>, <code>mode</code>, <code>smooth</code>: Supported just as in <code>.plot-function</code>, except <code>mode</code> defaults to <code>lines+markers</code> and <code>smooth</code> defaults to <code>false</code>.</li>
 </ul>
 <p>A <code>.plot-file</code> trace can be overlaid directly with analytical <code>.plot-function</code> curves on the same canvas:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>::: {.plot-file id="damped-data"}</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>src: data/example-plot-damped.csv</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>skip: 1</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>x: c0</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>y: c1</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>label: Measured amplitude</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>mode: markers</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>color: #ff7f0e</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>::: {.plot-function id="damped-model"}</span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>x: <span class="co">[</span><span class="ot">0, 10</span><span class="co">]</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>y: exp(-0.35 * x) * cos(2 * x)</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>label: $e^{-0.35t}\cos(2t)$</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>color: #1f77b4</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-plot}</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>curves: damped-data, damped-model</span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>xlabel: Time $t$ <span class="co">[</span><span class="ot">s</span><span class="co">]</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>ylabel: Amplitude $A(t)$ <span class="co">[</span><span class="ot">m</span><span class="co">]</span></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;damped-data&quot;,&quot;damped-model&quot;],&quot;height&quot;:400,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;Time \\(t\\) [s]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;Amplitude \\(A(t)\\) [m]&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>::: {.plot-file id="damped-data"}</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>src: data/example-plot-damped.csv</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>skip: 1</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>x: c0</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>y: c1</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>label: Measured amplitude</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>mode: markers</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>color: #ff7f0e</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>::: {.plot-function id="damped-model"}</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>x: <span class="co">[</span><span class="ot">0, 10</span><span class="co">]</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>y: exp(-0.35 * x) * cos(2 * x)</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>label: $e^{-0.35t}\cos(2t)$</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>color: #1f77b4</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-plot}</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>curves: damped-data, damped-model</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>xlabel: Time $t$ <span class="co">[</span><span class="ot">s</span><span class="co">]</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>ylabel: Amplitude $A(t)$ <span class="co">[</span><span class="ot">m</span><span class="co">]</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="dynamic-plot-wrap" data-plot-idx="3"></div>
 <p>Combining an integer slider in <code>sliders:</code> with dynamic column indexing (<code>c[k]</code>) sweeps interactively across columns of a multi-column dataset:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>::: {.plot-file id="wave-sweep"}</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>src: data/example-plot-sweep.csv</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>sliders:</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  k: <span class="co">[</span><span class="ot">1..7</span><span class="co">]</span>:</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    label: Time index $k$</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    play: true</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>x: c0</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>y: c<span class="co">[</span><span class="ot">k</span><span class="co">]</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>label: Wave amplitude</span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>smooth: true</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-plot}</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>curves: wave-sweep</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>xlabel: $x$ <span class="co">[</span><span class="ot">m</span><span class="co">]</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>ylabel: $\psi(x, t_k)$</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="dynamic-plot-wrap" data-plot-config="{&quot;curves&quot;:[&quot;wave-sweep&quot;],&quot;height&quot;:400,&quot;legend&quot;:true,&quot;xlabel&quot;:&quot;\\(x\\) [m]&quot;,&quot;xscale&quot;:&quot;linear&quot;,&quot;ylabel&quot;:&quot;\\(\\psi(x, t_k)\\)&quot;,&quot;yscale&quot;:&quot;linear&quot;,&quot;zscale&quot;:&quot;linear&quot;}"></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>::: {.plot-file id="wave-sweep"}</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>src: data/example-plot-sweep.csv</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>sliders:</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  k: <span class="co">[</span><span class="ot">1..7</span><span class="co">]</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    label: Time index $k$</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    play: true</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>x: c0</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>y: c<span class="co">[</span><span class="ot">k</span><span class="co">]</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>label: Wave amplitude</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>smooth: true</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-plot}</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>curves: wave-sweep</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>xlabel: $x$ <span class="co">[</span><span class="ot">m</span><span class="co">]</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>ylabel: $\psi(x, t_k)$</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="dynamic-plot-wrap" data-plot-idx="4"></div>
+</section>
+<section id="d-curves-and-surfaces" class="level1">
+<h1>3D Curves and Surfaces</h1>
+<p>Adding a <code>z</code> expression switches a <code>.plot-function</code> to 3D (all curves in a <code>.dynamic-plot</code> must share the same dimensionality, either all 2D or all 3D):</p>
+<ul>
+<li><strong>3D parametric curve:</strong> 1 domain parameter with <code>x</code>, <code>y</code>, and <code>z</code>.</li>
+<li><strong>3D surface:</strong> 2 domain parameters with <code>x</code>, <code>y</code>, and <code>z</code>.</li>
+<li><code>points</code>: Sample resolution per domain axis, integer <span class="math inline">\(\ge 2\)</span> (defaults to <code>100</code> for curves and <code>40</code> per axis for surfaces).</li>
+<li><code>zlabel</code>, <code>zscale</code>, <code>zrange</code>: Configure the third axis in <code>.dynamic-plot</code> (<code>zlabel</code> defaults to <code>z</code> in 3D scenes).</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>::: {.plot-function id="ripple-surface"}</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>x: <span class="co">[</span><span class="ot">-4, 4</span><span class="co">]</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>y: <span class="co">[</span><span class="ot">-4, 4</span><span class="co">]</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>vars:</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  r = hypot(x, y)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>z: sin(2 * r) / (1 + 0.4 * r)</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>points: 45</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>label: Ripple surface</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>color: #1f77b4</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>::: {.plot-function id="spiral-3d"}</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>t: <span class="co">[</span><span class="ot">0, 4 * pi</span><span class="co">]</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>vars:</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  r = 0.28 * t</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>x: r * cos(t)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>y: r * sin(t)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>z: 0.25 + 0.12 * t</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>label: Spiral path</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>color: #d62728</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-plot}</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>curves: ripple-surface, spiral-3d</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>xlabel: $x$</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>ylabel: $y$</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>zlabel: $z(x, y)$</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="dynamic-plot-wrap" data-plot-idx="5"></div>
 
 
 
@@ -1768,11 +1769,16 @@ window.MathRenderer = window.MathRenderer || {
 <script type="application/json" class="dynamic-plot-def" data-id="circle-param">{"color":"crimson","dim":"2d","id":"circle-param","kind":"function","label":"\\((x - 4)^2 + y^2 = 0.8^2\\)","mode":"lines","params":[{"isSlider":false,"kind":"range","max":6.283185307179586,"min":0,"name":"t"}],"points":100,"smooth":true,"subtype":"curve","x":"4 + 0.8 * cos(t)","y":"0.8 * sin(t)"}</script>
 <script type="application/json" class="dynamic-plot-def" data-id="gauss-fixed">{"color":"#1f77b4","dim":"2d","id":"gauss-fixed","kind":"function","label":"\\(f_1(x)\\)","mode":"lines","params":[{"isSlider":false,"kind":"range","max":6,"min":-4,"name":"x"}],"points":100,"smooth":true,"subtype":"curve","vars":[{"expr":"(x - 0.5) / 1.1","name":"z"}],"x":"x","y":"exp(-0.5 * z^2)"}</script>
 <script type="application/json" class="dynamic-plot-def" data-id="gauss-moving">{"color":"#ff7f0e","dim":"2d","id":"gauss-moving","kind":"function","label":"\\(f_2(x)\\)","mode":"lines","params":[{"isSlider":false,"kind":"range","max":6,"min":-4,"name":"x"},{"isSlider":true,"kind":"range","label":"Mean \\(\\mu\\)","max":3.5,"min":-1.5,"name":"mu","play":true,"steps":35},{"isSlider":true,"kind":"list","label":"Width \\(\\sigma\\)","name":"sigma","play":false,"values":[0.6,1,1.4,1.8]}],"points":100,"smooth":true,"subtype":"curve","vars":[{"expr":"(x - mu) / sigma","name":"z"}],"x":"x","y":"0.85 * exp(-0.5 * z^2)"}</script>
-<script type="application/json" class="dynamic-plot-def" data-id="ripple-surface">{"color":"#1f77b4","dim":"3d","id":"ripple-surface","kind":"function","label":"Ripple surface","mode":"lines","params":[{"isSlider":false,"kind":"range","max":4,"min":-4,"name":"x"},{"isSlider":false,"kind":"range","max":4,"min":-4,"name":"y"}],"points":45,"smooth":true,"subtype":"surface","vars":[{"expr":"hypot(x, y)","name":"r"}],"x":"x","y":"y","z":"sin(2 * r) / (1 + 0.4 * r)"}</script>
-<script type="application/json" class="dynamic-plot-def" data-id="spiral-3d">{"color":"#d62728","dim":"3d","id":"spiral-3d","kind":"function","label":"Spiral path","mode":"lines","params":[{"isSlider":false,"kind":"range","max":12.566370614359172,"min":0,"name":"t"}],"points":100,"smooth":true,"subtype":"curve","vars":[{"expr":"0.28 * t","name":"r"}],"x":"r * cos(t)","y":"r * sin(t)","z":"0.25 + 0.12 * t"}</script>
 <script type="application/json" class="dynamic-plot-def" data-id="damped-data">{"color":"#ff7f0e","dim":"2d","id":"damped-data","kind":"file","label":"Measured amplitude","mode":"markers","rows":[[0,1,1],[0.3333,0.6993,0.79189],[0.6667,0.1863,0.62709],[1,-0.2933,0.49659],[1.3333,-0.5577,0.39324],[1.6667,-0.5478,0.3114],[2,-0.3246,0.2466],[2.3333,-2.02e-2,0.19528],[2.6667,0.2288,0.15464],[3,0.336,0.12246],[3.3333,0.2888,9.6972e-2],[3.6667,0.1378,7.6791e-2],[4,-3.59e-2,6.081e-2],[4.3333,-0.1593,4.8155e-2],[4.6667,-0.1945,3.8133e-2],[5,-0.1458,3.0197e-2],[5.3333,-4.99e-2,2.3913e-2],[5.6667,4.56e-2,1.8936e-2],[6,0.1033,1.4996e-2]],"smooth":false,"subtype":"curve","x":"c0","y":"c1"}</script>
 <script type="application/json" class="dynamic-plot-def" data-id="damped-model">{"color":"#1f77b4","dim":"2d","id":"damped-model","kind":"function","label":"\\(e^{-0.35t}\\cos(2t)\\)","mode":"lines","params":[{"isSlider":false,"kind":"range","max":10,"min":0,"name":"x"}],"points":100,"smooth":true,"subtype":"curve","x":"x","y":"exp(-0.35 * x) * cos(2 * x)"}</script>
 <script type="application/json" class="dynamic-plot-def" data-id="wave-sweep">{"dim":"2d","id":"wave-sweep","kind":"file","label":"Wave amplitude","mode":"lines+markers","params":[{"isSlider":true,"kind":"list","label":"Time index \\(k\\)","name":"k","play":true,"values":[1,2,3,4,5,6,7]}],"rows":[[0,0,0.2474,0.4794,0.6816,0.8415,0.949,0.9975],[0.25,0.2588,0.4897,0.6902,0.8478,0.9526,0.9983,0.9818],[0.5,0.5,0.6987,0.854,0.9562,0.9989,0.9795,0.8992],[0.75,0.7071,0.8601,0.9595,0.9994,0.9771,0.894,0.7554],[1,0.866,0.9628,0.9997,0.9745,0.8887,0.7476,0.56],[1.25,0.9659,0.9999,0.9718,0.8832,0.7397,0.5502,0.3265],[1.5,1,0.9689,0.8776,0.7317,0.5403,0.3153,7.07e-2],[1.75,0.9659,0.8719,0.7236,0.5303,0.3041,5.9e-2,-0.1898],[2,0.866,0.7154,0.5203,0.2928,4.72e-2,-0.2014,-0.4375],[2.25,0.7071,0.5102,0.2815,3.54e-2,-0.213,-0.4481,-0.6553],[2.5,0.5,0.2702,2.36e-2,-0.2245,-0.4586,-0.6642,-0.8285],[2.75,0.2588,1.18e-2,-0.236,-0.469,-0.673,-0.835,-0.9452],[3,0,-0.2474,-0.4794,-0.6816,-0.8415,-0.949,-0.9975]],"smooth":true,"subtype":"curve","x":"c0","y":"c[k]"}</script>
+<script type="application/json" class="dynamic-plot-def" data-id="ripple-surface">{"color":"#1f77b4","dim":"3d","id":"ripple-surface","kind":"function","label":"Ripple surface","mode":"lines","params":[{"isSlider":false,"kind":"range","max":4,"min":-4,"name":"x"},{"isSlider":false,"kind":"range","max":4,"min":-4,"name":"y"}],"points":45,"smooth":true,"subtype":"surface","vars":[{"expr":"hypot(x, y)","name":"r"}],"x":"x","y":"y","z":"sin(2 * r) / (1 + 0.4 * r)"}</script>
+<script type="application/json" class="dynamic-plot-def" data-id="spiral-3d">{"color":"#d62728","dim":"3d","id":"spiral-3d","kind":"function","label":"Spiral path","mode":"lines","params":[{"isSlider":false,"kind":"range","max":12.566370614359172,"min":0,"name":"t"}],"points":100,"smooth":true,"subtype":"curve","vars":[{"expr":"0.28 * t","name":"r"}],"x":"r * cos(t)","y":"r * sin(t)","z":"0.25 + 0.12 * t"}</script>
+<script type="application/json" class="dynamic-plot-cfg" data-idx="1">{"curves":["wave-sin","circle-param"],"height":400,"legend":true,"xlabel":"\\(x\\)","xscale":"linear","ylabel":"\\(y(x)\\)","yscale":"linear","zscale":"linear"}</script>
+<script type="application/json" class="dynamic-plot-cfg" data-idx="2">{"curves":["gauss-fixed","gauss-moving"],"height":400,"legend":true,"shade":[{"color":"#1f77b4","from":"gauss-fixed","label":"Left tail of \\(f_1\\)","opacity":0.15,"to":0,"toKind":"const","xrange":[-4,0.5]},{"color":"#2ca02c","from":"gauss-moving","label":"Difference \\(f_2 - f_1\\)","opacity":0.22,"to":"[string \"const\"]:1: attempt to perform arithmetic on a nil value (global 'gauss')","toKind":"const"}],"xlabel":"\\(x\\)","xscale":"linear","ylabel":"Density","yscale":"linear","zscale":"linear"}</script>
+<script type="application/json" class="dynamic-plot-cfg" data-idx="3">{"curves":["damped-data","damped-model"],"height":400,"legend":true,"xlabel":"Time \\(t\\) [s]","xscale":"linear","ylabel":"Amplitude \\(A(t)\\) [m]","yscale":"linear","zscale":"linear"}</script>
+<script type="application/json" class="dynamic-plot-cfg" data-idx="4">{"curves":["wave-sweep"],"height":400,"legend":true,"xlabel":"\\(x\\) [m]","xscale":"linear","ylabel":"\\(\\psi(x, t_k)\\)","yscale":"linear","zscale":"linear"}</script>
+<script type="application/json" class="dynamic-plot-cfg" data-idx="5">{"curves":["ripple-surface","spiral-3d"],"height":400,"legend":true,"xlabel":"\\(x\\)","xscale":"linear","ylabel":"\\(y\\)","yscale":"linear","zlabel":"\\(z(x, y)\\)","zscale":"linear"}</script>
 <script>
 (() => {
   if (window.__quartoDynamicPlotsInit) return;
@@ -1785,7 +1791,6 @@ window.MathRenderer = window.MathRenderer || {
     "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
   ];
 
-  // Loads Plotly asynchronously so it downloads in parallel with MathJax
   function loadPlotly() {
     if (window.Plotly) return Promise.resolve();
     const store = (window.__quartoWidgetLibs = window.__quartoWidgetLibs || {});
@@ -1802,7 +1807,6 @@ window.MathRenderer = window.MathRenderer || {
   const hasMathDelimiters = (str) =>
     typeof str === "string" && /(\$\$?[\s\S]+?\$\$?|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/.test(str);
 
-  // Strips TeX commands to a compact sizing string so Plotly reserves accurate margin space
   const toSizingText = (str) => !str ? "" : String(str)
     .replace(/\\\(|\\\)|\\\[|\\\]|\$\$/g, "")
     .replace(/\$([^$]+)\$/g, "$1")
@@ -1820,14 +1824,12 @@ window.MathRenderer = window.MathRenderer || {
     return s === "-0" ? "0" : s;
   };
 
-  // Converts any CSS color string into rgba(r, g, b, opacity) for SVG polygon fills
   const colorToRgba = (() => {
     const cache = new Map();
-    let ctx = null;
+    const ctx = document.createElement("canvas").getContext("2d");
     return (color, opacity) => {
       const key = `${color}|${opacity}`;
       if (cache.has(key)) return cache.get(key);
-      if (!ctx) ctx = document.createElement("canvas").getContext("2d");
       ctx.fillStyle = "#000000";
       ctx.fillStyle = color;
       const norm = ctx.fillStyle;
@@ -1844,9 +1846,7 @@ window.MathRenderer = window.MathRenderer || {
     };
   })();
 
-  function resolveCurveColor(spec) {
-    return spec.color || TRACE_COLORWAY[spec.colorIdx % TRACE_COLORWAY.length];
-  }
+  const resolveCurveColor = (spec) => spec.color || TRACE_COLORWAY[spec.colorIdx % TRACE_COLORWAY.length];
 
   function applyTraceColor(trace, color) {
     if (trace.type === "scatter" || trace.type === "scatter3d") {
@@ -1858,7 +1858,7 @@ window.MathRenderer = window.MathRenderer || {
     return trace;
   }
 
-  // Transpiles validated math expressions into JIT-compiled JS functions
+  // Compiles validated math expressions into JIT-compiled JS evaluators
   const MathCompiler = (() => {
     const CONSTS = { pi: Math.PI, e: Math.E };
     const FUNCS = {
@@ -1890,24 +1890,16 @@ window.MathRenderer = window.MathRenderer || {
 
       const parseAdd = () => {
         let lhs = parseMul();
-        while (isOp(peek(), "+") || isOp(peek(), "-")) {
-          const op = next().v;
-          lhs = `${lhs} ${op} ${parseMul()}`;
-        }
+        while (isOp(peek(), "+") || isOp(peek(), "-")) lhs = `${lhs} ${next().v} ${parseMul()}`;
         return lhs;
       };
 
       const parseMul = () => {
         let lhs = parseUnary();
         while (true) {
-          if (isOp(peek(), "*") || isOp(peek(), "/")) {
-            const op = next().v;
-            lhs = `${lhs} ${op} ${parseUnary()}`;
-          } else if (peek() && (peek().t === "id" || peek().t === "num" || isOp(peek(), "("))) {
-            lhs = `${lhs} * ${parseUnary()}`;
-          } else {
-            break;
-          }
+          if (isOp(peek(), "*") || isOp(peek(), "/")) lhs = `${lhs} ${next().v} ${parseUnary()}`;
+          else if (peek() && (peek().t === "id" || peek().t === "num" || isOp(peek(), "("))) lhs = `${lhs} * ${parseUnary()}`;
+          else break;
         }
         return lhs;
       };
@@ -1920,10 +1912,7 @@ window.MathRenderer = window.MathRenderer || {
 
       const parsePow = () => {
         const base = parseAtom();
-        if (isOp(peek(), "^")) {
-          next();
-          return `(${base} ** ${parseUnary()})`;
-        }
+        if (isOp(peek(), "^")) { next(); return `(${base} ** ${parseUnary()})`; }
         return base;
       };
 
@@ -1933,66 +1922,64 @@ window.MathRenderer = window.MathRenderer || {
         if (tok.t === "num") return tok.v;
         if (isOp(tok, "(")) {
           const inner = parseAdd();
-          next(); // ')'
+          next();
           return `(${inner})`;
         }
         const name = tok.v;
         if (name === "c" && isOp(peek(), "[")) {
-          next(); // '['
+          next();
           const idx = parseAdd();
-          next(); // ']'
+          next();
           return `($row ? $row[Math.round(${idx})] : NaN)`;
         }
         if (name in FUNCS) {
-          next(); // '('
+          next();
           const args = [];
           if (!isOp(peek(), ")")) {
             args.push(parseAdd());
-            while (isOp(peek(), ",")) {
-              next();
-              args.push(parseAdd());
-            }
+            while (isOp(peek(), ",")) { next(); args.push(parseAdd()); }
           }
-          next(); // ')'
+          next();
           return `$F.${name}(${args.join(", ")})`;
         }
-        if (name in CONSTS) return `$C.${name}`;
-        return name;
+        return name in CONSTS ? `$C.${name}` : name;
       };
 
       return parseAdd();
     }
 
+    function buildVarsPrelude(def, paramNames, includeCols) {
+      const declared = new Set(paramNames);
+      const lines = [];
+      if (includeCols) {
+        const numCols = def.rows?.[0]?.length || 0;
+        if (numCols > 0) {
+          const colDecls = [];
+          for (let c = 0; c < numCols; c++) {
+            colDecls.push(`c${c} = $row[${c}]`);
+            declared.add(`c${c}`);
+          }
+          lines.push(`const ${colDecls.join(", ")};`);
+        }
+      }
+      for (const v of def.vars || []) {
+        const exprJs = toJsExpr(v.expr);
+        if (declared.has(v.name)) {
+          lines.push(`${v.name} = ${exprJs};`);
+        } else {
+          declared.add(v.name);
+          lines.push(`let ${v.name} = ${exprJs};`);
+        }
+      }
+      return lines;
+    }
+
     return {
-      // Compiles a single native evaluator writing [x, y, (z)] into $out
       compilePointEvaluator(def) {
         const isFile = def.kind === "file";
         const is3d = def.dim === "3d";
         const paramNames = (def.params || []).map((p) => p.name);
-        const declared = new Set(paramNames);
-        const lines = [];
-
-        if (isFile) {
-          const numCols = def.rows?.[0]?.length || 0;
-          if (numCols > 0) {
-            const colDecls = [];
-            for (let c = 0; c < numCols; c++) {
-              colDecls.push(`c${c} = $row[${c}]`);
-              declared.add(`c${c}`);
-            }
-            lines.push(`const ${colDecls.join(", ")};`);
-          }
-        }
-
-        for (const v of def.vars || []) {
-          const exprJs = toJsExpr(v.expr);
-          if (declared.has(v.name)) {
-            lines.push(`${v.name} = ${exprJs};`);
-          } else {
-            declared.add(v.name);
-            lines.push(`let ${v.name} = ${exprJs};`);
-          }
-        }
+        const lines = buildVarsPrelude(def, paramNames, isFile);
 
         lines.push(`const $x = ${toJsExpr(def.x)};`);
         lines.push(`const $y = ${toJsExpr(def.y)};`);
@@ -2005,37 +1992,22 @@ window.MathRenderer = window.MathRenderer || {
 
         const args = isFile ? ["$F", "$C", "$out", "$row", ...paramNames] : ["$F", "$C", "$out", ...paramNames];
         const rawFn = new Function(...args, lines.join("\n"));
-
         return isFile
           ? (out, row, paramVals) => rawFn(FUNCS, CONSTS, out, row, ...paramVals)
           : (out, paramVals) => rawFn(FUNCS, CONSTS, out, ...paramVals);
       },
 
-      // Compiles a fast scalar y(x) evaluator for explicit 2D functions
       compileScalarY(def) {
         const paramNames = (def.params || []).map((p) => p.name);
-        const declared = new Set(paramNames);
-        const lines = [];
-
-        for (const v of def.vars || []) {
-          const exprJs = toJsExpr(v.expr);
-          if (declared.has(v.name)) {
-            lines.push(`${v.name} = ${exprJs};`);
-          } else {
-            declared.add(v.name);
-            lines.push(`let ${v.name} = ${exprJs};`);
-          }
-        }
+        const lines = buildVarsPrelude(def, paramNames, false);
         lines.push(`const $y = ${toJsExpr(def.y)};`);
         lines.push(`return Number.isFinite($y) ? $y : null;`);
-
         const rawFn = new Function("$F", "$C", ...paramNames, lines.join("\n"));
         return (paramVals) => rawFn(FUNCS, CONSTS, ...paramVals);
       }
     };
   })();
 
-  // Domain sampling and numeric extent utilities
   const Domain = {
     sampleAxis([min, max], count, scale = "linear") {
       const pts = new Array(count);
@@ -2065,7 +2037,6 @@ window.MathRenderer = window.MathRenderer || {
     }
   };
 
-  // Compiles and evaluates unified curve/surface definitions
   const CurveEvaluator = {
     prepare(def) {
       const params = def.params || [];
@@ -2090,9 +2061,7 @@ window.MathRenderer = window.MathRenderer || {
 
     buildParamVector(spec, sliderEnv) {
       const vec = new Array(spec.params.length);
-      for (const p of spec.sliderParams) {
-        vec[spec.paramIndexByName.get(p.name)] = sliderEnv[p.name];
-      }
+      for (const p of spec.sliderParams) vec[spec.paramIndexByName.get(p.name)] = sliderEnv[p.name];
       return vec;
     },
 
@@ -2114,7 +2083,7 @@ window.MathRenderer = window.MathRenderer || {
         const trace = is3d
           ? { type: "scatter3d", name, x: xs, y: ys, z: zs, mode: spec.mode, marker: { size: 3.5 } }
           : { type: "scatter", name, x: xs, y: ys, mode: spec.mode, connectgaps: false, line: { shape: spec.smooth ? "spline" : "linear" } };
-        return { trace, xs, ys, zs, uniformX: false };
+        return { trace, xs, ys, zs };
       }
 
       if (spec.subtype === "surface") {
@@ -2132,19 +2101,14 @@ window.MathRenderer = window.MathRenderer || {
           for (let i = 0; i < uVals.length; i++) {
             paramVec[idx0] = uVals[i];
             spec.evalPoint(out, paramVec);
-            rowX[i] = out[0];
-            rowY[i] = out[1];
-            rowZ[i] = out[2];
-            flatX.push(out[0]);
-            flatY.push(out[1]);
-            flatZ.push(out[2]);
+            rowX[i] = out[0]; rowY[i] = out[1]; rowZ[i] = out[2];
+            flatX.push(out[0]); flatY.push(out[1]); flatZ.push(out[2]);
           }
           X[j] = rowX; Y[j] = rowY; Z[j] = rowZ;
         }
-        return { trace: { type: "surface", name, x: X, y: Y, z: Z, showscale: false }, xs: flatX, ys: flatY, zs: flatZ, uniformX: false };
+        return { trace: { type: "surface", name, x: X, y: Y, z: Z, showscale: false }, xs: flatX, ys: flatY, zs: flatZ };
       }
 
-      // 2D or 3D analytical curve (1 domain parameter)
       const [p0] = spec.domainParams;
       const idx0 = spec.paramIndexByName.get(p0.name);
       let sampleDomain = p0;
@@ -2167,11 +2131,11 @@ window.MathRenderer = window.MathRenderer || {
       const trace = is3d
         ? { type: "scatter3d", name, x: xs, y: ys, z: zs, mode: spec.mode, line: { width: 4 }, marker: { size: 3 } }
         : { type: "scatter", name, x: xs, y: ys, mode: spec.mode, connectgaps: false, line: { shape: spec.smooth ? "spline" : "linear" } };
-      return { trace, xs, ys, zs, uniformX: spec.isExplicitYX };
+      return { trace, xs, ys, zs };
     }
   };
 
-  // Builds closed-polygon shading traces between curves, constants, bounds, or closed interiors
+  // Builds closed-polygon shading traces via a single linear sorted-grid merge
   const ShadeBuilder = {
     prepareCurveData(evalRes) {
       const rawPts = [];
@@ -2189,8 +2153,7 @@ window.MathRenderer = window.MathRenderer || {
       return { rawPts, sortedPts };
     },
 
-    // Evaluates y(x) directly for explicit functions, or linearly interpolates sorted points
-    sampleYAt(evalData, sliderEnv, x, cursor = null) {
+    sampleYAt(evalData, sliderEnv, x, cursor) {
       const spec = evalData.spec;
       if (spec.isExplicitYX) {
         const paramVec = CurveEvaluator.buildParamVector(spec, sliderEnv);
@@ -2204,18 +2167,9 @@ window.MathRenderer = window.MathRenderer || {
       if (x <= pts[0][0] + eps) return pts[0][1];
       if (x >= pts[pts.length - 1][0] - eps) return pts[pts.length - 1][1];
 
-      let lo = cursor ? cursor.idx : 0;
-      if (cursor) {
-        while (lo + 1 < pts.length - 1 && pts[lo + 1][0] <= x) lo++;
-        cursor.idx = lo;
-      } else {
-        let hi = pts.length - 1;
-        while (hi - lo > 1) {
-          const mid = (lo + hi) >> 1;
-          if (pts[mid][0] <= x) lo = mid;
-          else hi = mid;
-        }
-      }
+      let lo = cursor.idx;
+      while (lo + 1 < pts.length - 1 && pts[lo + 1][0] <= x) lo++;
+      cursor.idx = lo;
       const [x0, y0] = pts[lo], [x1, y1] = pts[lo + 1];
       return x1 === x0 ? y0 : y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
     },
@@ -2223,18 +2177,18 @@ window.MathRenderer = window.MathRenderer || {
     buildTrace(rule, evaluatedMap, sliderEnv, yBounds) {
       const src = evaluatedMap.get(rule.from);
       const color = rule.color || src.color;
-      const fillcolor = colorToRgba(color, rule.opacity);
       const baseTrace = {
         type: "scatter",
         name: toSizingText(rule.label || ""),
-        mode: "none",
+        mode: "lines",
+        line: { width: 0 },
         fill: "toself",
-        fillcolor,
+        fillcolor: colorToRgba(color, rule.opacity),
+        hoveron: "fills",
         hoverinfo: rule.label ? "name+x+y" : "skip",
         showlegend: false
       };
 
-      // Closed curve: f1 -> f1
       if (rule.toKind === "curve" && rule.from === rule.to) {
         return { ...baseTrace, x: src.rawPts.map((p) => p[0]), y: src.rawPts.map((p) => p[1]) };
       }
@@ -2258,57 +2212,32 @@ window.MathRenderer = window.MathRenderer || {
         return { ...baseTrace, x: [], y: [] };
       }
 
-      const yConst = rule.toKind === "const"
-        ? rule.to
-        : (rule.to === "bottom" ? yBounds[0] : yBounds[1]);
-
-      // Fast path: two explicit functions evaluated on identical x-grids
-      if (dst && src.uniformX && dst.uniformX && src.xs.length === dst.xs.length &&
-          src.xs[0] === dst.xs[0] && src.xs[src.xs.length - 1] === dst.xs[dst.xs.length - 1]) {
-        const validX = [], yTop = [], yBot = [];
-        const eps = 1e-12 * Math.max(1, Math.abs(lo), Math.abs(hi));
-        if (lo > src.xs[0] + eps) {
-          const y1 = this.sampleYAt(src, sliderEnv, lo);
-          const y2 = this.sampleYAt(dst, sliderEnv, lo);
-          if (Number.isFinite(y1) && Number.isFinite(y2)) { validX.push(lo); yTop.push(y1); yBot.push(y2); }
-        }
-        for (let i = 0; i < src.xs.length; i++) {
-          const x = src.xs[i], y1 = src.ys[i], y2 = dst.ys[i];
-          if (x >= lo - eps && x <= hi + eps && Number.isFinite(y1) && Number.isFinite(y2)) {
-            validX.push(x); yTop.push(y1); yBot.push(y2);
-          }
-        }
-        if (hi < src.xs[src.xs.length - 1] - eps) {
-          const y1 = this.sampleYAt(src, sliderEnv, hi);
-          const y2 = this.sampleYAt(dst, sliderEnv, hi);
-          if (Number.isFinite(y1) && Number.isFinite(y2)) { validX.push(hi); yTop.push(y1); yBot.push(y2); }
-        }
-        if (validX.length < 2) return { ...baseTrace, x: [], y: [] };
-        return {
-          ...baseTrace,
-          x: [...validX, ...validX.slice().reverse()],
-          y: [...yTop, ...yBot.slice().reverse()]
-        };
-      }
-
-      // General path: merge sorted x-coordinates and sample in a single forward pass
-      const rawXs = [lo, hi];
-      for (const [x] of src.sortedPts) if (x > lo && x < hi) rawXs.push(x);
-      if (dst) {
-        for (const [x] of dst.sortedPts) if (x > lo && x < hi) rawXs.push(x);
-      }
-      rawXs.sort((a, b) => a - b);
-
+      // Linear two-pointer merge of sorted x-coordinates in [lo, hi]
       const eps = 1e-12 * Math.max(1, Math.abs(lo), Math.abs(hi));
-      const xs = [];
-      for (const x of rawXs) {
-        if (xs.length === 0 || x - xs[xs.length - 1] > eps) xs.push(x);
+      const xs = [lo];
+      const aPts = src.sortedPts;
+      const bPts = dst ? dst.sortedPts : [];
+      let ia = 0, ib = 0;
+      while (ia < aPts.length && aPts[ia][0] <= lo + eps) ia++;
+      while (ib < bPts.length && bPts[ib][0] <= lo + eps) ib++;
+
+      while (ia < aPts.length || ib < bPts.length) {
+        const xa = (ia < aPts.length && aPts[ia][0] < hi - eps) ? aPts[ia][0] : Infinity;
+        const xb = (ib < bPts.length && bPts[ib][0] < hi - eps) ? bPts[ib][0] : Infinity;
+        const xNext = Math.min(xa, xb);
+        if (!Number.isFinite(xNext)) break;
+        if (xa === xNext) ia++;
+        if (xb === xNext) ib++;
+        if (xNext - xs[xs.length - 1] > eps) xs.push(xNext);
       }
+      if (hi - xs[xs.length - 1] > eps) xs.push(hi);
       if (xs.length < 2) return { ...baseTrace, x: [], y: [] };
 
+      const yConst = rule.toKind === "const" ? rule.to : (rule.to === "bottom" ? yBounds[0] : yBounds[1]);
       const srcCursor = { idx: 0 };
       const dstCursor = { idx: 0 };
       const validX = [], yTop = [], yBot = [];
+
       for (const x of xs) {
         const y1 = this.sampleYAt(src, sliderEnv, x, srcCursor);
         const y2 = dst ? this.sampleYAt(dst, sliderEnv, x, dstCursor) : yConst;
@@ -2328,7 +2257,6 @@ window.MathRenderer = window.MathRenderer || {
     }
   };
 
-  // Synchronizes Plotly axis and font colors with active Bootstrap CSS variables
   const ThemeSync = {
     getPalette() {
       const s = getComputedStyle(document.body);
@@ -2377,13 +2305,13 @@ window.MathRenderer = window.MathRenderer || {
   };
 
   class DynamicPlotController {
-    constructor(wrapEl, registry) {
+    constructor(wrapEl, cfg, registry) {
       this.wrapEl = wrapEl;
-      this.cfg = JSON.parse(wrapEl.dataset.plotConfig || "{}");
-      this.specs = this.cfg.curves.map((id, colorIdx) => ({ ...registry.get(id), colorIdx }));
+      this.cfg = cfg;
+      this.specs = cfg.curves.map((id, colorIdx) => ({ ...registry.get(id), colorIdx }));
       this.specById = new Map(this.specs.map((s) => [s.id, s]));
       this.curveIdxById = new Map(this.specs.map((s, i) => [s.id, i]));
-      this.shadeRules = this.cfg.shade || [];
+      this.shadeRules = cfg.shade || [];
       this.hasBoundShade = this.shadeRules.some((r) => r.toKind === "bound");
       this.is3d = this.specs[0].dim === "3d";
       this.sliders = this.collectSliders();
@@ -2398,22 +2326,31 @@ window.MathRenderer = window.MathRenderer || {
       this.mount();
     }
 
+    getScales() {
+      return { xscale: this.cfg.xscale, yscale: this.cfg.yscale, zscale: this.cfg.zscale };
+    }
+
+    getYBounds() {
+      return this.zoomYRange || this.cfg.yrange || this.homeYRange || [-1, 1];
+    }
+
+    isShadeActive(idx) {
+      const rule = this.shadeRules[idx];
+      const srcVis = this.curveVisible[this.curveIdxById.get(rule.from)];
+      const dstVis = rule.toKind === "curve" ? this.curveVisible[this.curveIdxById.get(rule.to)] : true;
+      return Boolean(this.shadeVisible[idx] && srcVis && dstVis);
+    }
+
     collectSliders() {
       const seen = new Map();
       for (const spec of this.specs) {
         for (const p of spec.sliderParams) {
           if (!seen.has(p.name)) {
             seen.set(p.name, {
-              name: p.name,
-              label: p.label,
+              name: p.name, label: p.label,
               values: Domain.sampleParam(p, p.steps, "linear"),
-              play: Boolean(p.play),
-              isPlaying: false,
-              playRaf: null,
-              playBtn: null,
-              index: 0,
-              inputEl: null,
-              valueEl: null
+              play: Boolean(p.play), isPlaying: false, playRaf: null, playBtn: null,
+              index: 0, inputEl: null, valueEl: null
             });
           } else if (p.play) {
             seen.get(p.name).play = true;
@@ -2429,12 +2366,10 @@ window.MathRenderer = window.MathRenderer || {
       return env;
     }
 
-    // Computes global Y-bounds across slider states so animated sweeps never clip
     computeHomeYRange(initialMap) {
       if (this.cfg.yrange) return this.cfg.yrange;
       const positiveOnly = this.cfg.yscale === "log";
       let min = Infinity, max = -Infinity;
-
       const absorb = (ys) => {
         const ext = Domain.extent(ys, positiveOnly);
         if (ext) {
@@ -2446,21 +2381,18 @@ window.MathRenderer = window.MathRenderer || {
       for (const entry of initialMap.values()) absorb(entry.ys);
 
       if (this.sliders.length > 0) {
-        const scales = { xscale: this.cfg.xscale, yscale: this.cfg.yscale, zscale: this.cfg.zscale };
+        const scales = this.getScales();
         const baseEnv = this.getSliderEnv();
         for (const s of this.sliders) {
           for (let i = 0; i < s.values.length; i++) {
             if (i === s.index) continue;
             const env = { ...baseEnv, [s.name]: s.values[i] };
             for (const spec of this.specs) {
-              if (spec.sliderNames.has(s.name)) {
-                absorb(CurveEvaluator.evaluate(spec, env, scales, null).ys);
-              }
+              if (spec.sliderNames.has(s.name)) absorb(CurveEvaluator.evaluate(spec, env, scales, null).ys);
             }
           }
         }
       }
-
       return min <= max ? [min, max] : [-1, 1];
     }
 
@@ -2478,7 +2410,7 @@ window.MathRenderer = window.MathRenderer || {
 
     isCurveNeededByVisibleShade(curveId) {
       for (let i = 0; i < this.shadeRules.length; i++) {
-        if (!this.shadeVisible[i]) continue;
+        if (!this.isShadeActive(i)) continue;
         const r = this.shadeRules[i];
         if (r.from === curveId || (r.toKind === "curve" && r.to === curveId)) return true;
       }
@@ -2487,7 +2419,7 @@ window.MathRenderer = window.MathRenderer || {
 
     evaluateAll() {
       const sliderEnv = this.getSliderEnv();
-      const scales = { xscale: this.cfg.xscale, yscale: this.cfg.yscale, zscale: this.cfg.zscale };
+      const scales = this.getScales();
       const evaluatedMap = new Map();
 
       const curveTraces = this.specs.map((spec, idx) => {
@@ -2497,32 +2429,26 @@ window.MathRenderer = window.MathRenderer || {
         return entry.trace;
       });
 
-      if (!this.homeYRange && !this.is3d) {
-        this.homeYRange = this.computeHomeYRange(evaluatedMap);
-      }
-      const yBounds = this.zoomYRange || this.cfg.yrange || this.homeYRange || [-1, 1];
+      if (!this.homeYRange && !this.is3d) this.homeYRange = this.computeHomeYRange(evaluatedMap);
+      const yBounds = this.getYBounds();
 
       const shadeTraces = this.shadeRules.map((rule, idx) => {
         const trace = ShadeBuilder.buildTrace(rule, evaluatedMap, sliderEnv, yBounds);
-        const srcVis = this.curveVisible[this.curveIdxById.get(rule.from)];
-        const dstVis = rule.toKind === "curve" ? this.curveVisible[this.curveIdxById.get(rule.to)] : true;
-        trace.visible = (this.shadeVisible[idx] && srcVis && dstVis) ? true : "legendonly";
+        trace.visible = this.isShadeActive(idx) ? true : "legendonly";
         return trace;
       });
 
       return [...shadeTraces, ...curveTraces];
     }
 
-    // Incrementally updates only traces affected by a slider change or zoom
     updateAffectedTraces(changedSliderName = null, syncMath = false) {
       if (!this.canvas || this.isUpdating) return;
       this.isUpdating = true;
       try {
         const sliderEnv = this.getSliderEnv();
-        const scales = { xscale: this.cfg.xscale, yscale: this.cfg.yscale, zscale: this.cfg.zscale };
+        const scales = this.getScales();
         const shadeCount = this.shadeRules.length;
-        const traceIndices = [];
-        const xs = [], ys = [], zs = [];
+        const traceIndices = [], xs = [], ys = [], zs = [];
         const evaluatedMap = new Map();
 
         this.specs.forEach((spec, idx) => {
@@ -2531,8 +2457,7 @@ window.MathRenderer = window.MathRenderer || {
             : spec.sliderNames.has(changedSliderName);
 
           if (affected) {
-            const needed = this.curveVisible[idx] || this.isCurveNeededByVisibleShade(spec.id);
-            if (needed) {
+            if (this.curveVisible[idx] || this.isCurveNeededByVisibleShade(spec.id)) {
               const entry = this.evaluateCurveAt(idx, sliderEnv, scales);
               evaluatedMap.set(spec.id, entry);
               traceIndices.push(shadeCount + idx);
@@ -2548,7 +2473,7 @@ window.MathRenderer = window.MathRenderer || {
         });
 
         if (shadeCount > 0) {
-          const yBounds = this.zoomYRange || this.cfg.yrange || this.homeYRange || [-1, 1];
+          const yBounds = this.getYBounds();
           this.shadeRules.forEach((rule, idx) => {
             const srcSpec = this.specById.get(rule.from);
             const dstSpec = rule.toKind === "curve" ? this.specById.get(rule.to) : null;
@@ -2556,7 +2481,7 @@ window.MathRenderer = window.MathRenderer || {
               ? true
               : (srcSpec.sliderNames.has(changedSliderName) || Boolean(dstSpec?.sliderNames.has(changedSliderName)));
 
-            if (affected && this.shadeVisible[idx]) {
+            if (affected && this.isShadeActive(idx)) {
               const trace = ShadeBuilder.buildTrace(rule, evaluatedMap, sliderEnv, yBounds);
               traceIndices.push(idx);
               xs.push(trace.x);
@@ -2566,8 +2491,7 @@ window.MathRenderer = window.MathRenderer || {
         }
 
         if (traceIndices.length > 0) {
-          const payload = this.is3d ? { x: xs, y: ys, z: zs } : { x: xs, y: ys };
-          Plotly.restyle(this.canvas, payload, traceIndices);
+          Plotly.restyle(this.canvas, this.is3d ? { x: xs, y: ys, z: zs } : { x: xs, y: ys }, traceIndices);
         }
       } finally {
         this.isUpdating = false;
@@ -2580,49 +2504,41 @@ window.MathRenderer = window.MathRenderer || {
       this.isUpdating = true;
       try {
         const sliderEnv = this.getSliderEnv();
-        const scales = { xscale: this.cfg.xscale, yscale: this.cfg.yscale, zscale: this.cfg.zscale };
+        const scales = this.getScales();
         const shadeCount = this.shadeRules.length;
         const evaluatedMap = new Map();
-        const dirtyIndices = [];
-        const dirtyX = [], dirtyY = [], dirtyZ = [];
+        const updateIndices = [], updateX = [], updateY = [], updateZ = [];
 
         this.specs.forEach((spec, idx) => {
           const needed = this.curveVisible[idx] || this.isCurveNeededByVisibleShade(spec.id);
           if (needed && (this.evalDirty[idx] || !this.evalCache[idx])) {
             const entry = this.evaluateCurveAt(idx, sliderEnv, scales);
-            dirtyIndices.push(shadeCount + idx);
-            dirtyX.push(entry.trace.x);
-            dirtyY.push(entry.trace.y);
-            if (this.is3d) dirtyZ.push(entry.trace.z);
+            updateIndices.push(shadeCount + idx);
+            updateX.push(entry.trace.x);
+            updateY.push(entry.trace.y);
+            if (this.is3d) updateZ.push(entry.trace.z);
           }
           if (this.evalCache[idx]) evaluatedMap.set(spec.id, this.evalCache[idx]);
         });
 
-        if (dirtyIndices.length > 0) {
-          Plotly.restyle(this.canvas, this.is3d ? { x: dirtyX, y: dirtyY, z: dirtyZ } : { x: dirtyX, y: dirtyY }, dirtyIndices);
-        }
-
-        const yBounds = this.zoomYRange || this.cfg.yrange || this.homeYRange || [-1, 1];
-        const shadeIndices = [], shadeX = [], shadeY = [];
+        const yBounds = this.getYBounds();
         const visList = [];
 
         this.shadeRules.forEach((rule, idx) => {
-          const srcVis = this.curveVisible[this.curveIdxById.get(rule.from)];
-          const dstVis = rule.toKind === "curve" ? this.curveVisible[this.curveIdxById.get(rule.to)] : true;
-          const visible = Boolean(this.shadeVisible[idx] && srcVis && dstVis);
-          visList.push(visible ? true : "legendonly");
-          if (visible) {
+          const active = this.isShadeActive(idx);
+          visList.push(active ? true : "legendonly");
+          if (active) {
             const trace = ShadeBuilder.buildTrace(rule, evaluatedMap, sliderEnv, yBounds);
-            shadeIndices.push(idx);
-            shadeX.push(trace.x);
-            shadeY.push(trace.y);
+            updateIndices.push(idx);
+            updateX.push(trace.x);
+            updateY.push(trace.y);
           }
         });
 
         this.curveVisible.forEach((vis) => visList.push(vis ? true : "legendonly"));
 
-        if (shadeIndices.length > 0) {
-          Plotly.restyle(this.canvas, { x: shadeX, y: shadeY }, shadeIndices);
+        if (updateIndices.length > 0) {
+          Plotly.restyle(this.canvas, this.is3d ? { x: updateX, y: updateY, z: updateZ } : { x: updateX, y: updateY }, updateIndices);
         }
         Plotly.restyle(this.canvas, { visible: visList });
       } finally {
@@ -2631,29 +2547,19 @@ window.MathRenderer = window.MathRenderer || {
     }
 
     buildLegendItems() {
-      const items = [];
-      this.specs.forEach((spec, idx) => {
-        items.push({
-          label: spec.rawLabel,
-          color: resolveCurveColor(spec),
-          mode: spec.mode,
-          onToggle: (checked) => {
-            this.curveVisible[idx] = checked;
-            this.syncVisibility();
-          }
-        });
-      });
+      const items = this.specs.map((spec, idx) => ({
+        label: spec.rawLabel,
+        color: resolveCurveColor(spec),
+        mode: spec.mode,
+        onToggle: (checked) => { this.curveVisible[idx] = checked; this.syncVisibility(); }
+      }));
       this.shadeRules.forEach((rule, idx) => {
         if (!rule.label) return;
-        const color = rule.color || resolveCurveColor(this.specById.get(rule.from));
         items.push({
           label: rule.label,
-          color,
+          color: rule.color || resolveCurveColor(this.specById.get(rule.from)),
           mode: "area",
-          onToggle: (checked) => {
-            this.shadeVisible[idx] = checked;
-            this.syncVisibility();
-          }
+          onToggle: (checked) => { this.shadeVisible[idx] = checked; this.syncVisibility(); }
         });
       });
       return items;
@@ -2731,10 +2637,7 @@ window.MathRenderer = window.MathRenderer || {
           playBtn.className = "dynamic-plot-play-btn";
           playBtn.title = "Play / Pause";
           playBtn.textContent = "\u25B6";
-          playBtn.addEventListener("click", () => {
-            if (s.isPlaying) this.stopPlay(s);
-            else this.startPlay(s);
-          });
+          playBtn.addEventListener("click", () => (s.isPlaying ? this.stopPlay(s) : this.startPlay(s)));
           s.playBtn = playBtn;
           row.appendChild(playBtn);
         }
@@ -2793,9 +2696,7 @@ window.MathRenderer = window.MathRenderer || {
       if (slider.isPlaying || slider.values.length < 2) return;
       slider.isPlaying = true;
       if (slider.playBtn) slider.playBtn.textContent = "\u275A\u275A";
-      if (slider.index >= slider.values.length - 1) {
-        this.setSliderIndex(slider, 0);
-      }
+      if (slider.index >= slider.values.length - 1) this.setSliderIndex(slider, 0);
       let lastTick = performance.now();
       const step = (now) => {
         if (!slider.isPlaying || !this.wrapEl.isConnected) {
@@ -2870,7 +2771,6 @@ window.MathRenderer = window.MathRenderer || {
     syncMathOverlays() {
       if (!this.mathLayer || !this.canvas) return;
       this.mathLayer.innerHTML = "";
-
       if (hasMathDelimiters(this.cfg.xlabel)) {
         this.placeMathNode(this.canvas.querySelector("text.xtitle"), MathRenderer.get(this.cfg.xlabel));
       }
@@ -2911,16 +2811,14 @@ window.MathRenderer = window.MathRenderer || {
 
       this.canvas.on("plotly_restyle", () => this.syncMathOverlays());
 
-      if (typeof ResizeObserver !== "undefined") {
-        let raf = null;
-        new ResizeObserver(() => {
-          cancelAnimationFrame(raf);
-          raf = requestAnimationFrame(() => {
-            Plotly.Plots.resize(this.canvas);
-            this.syncMathOverlays();
-          });
-        }).observe(this.stageEl);
-      }
+      let raf = null;
+      new ResizeObserver(() => {
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => {
+          Plotly.Plots.resize(this.canvas);
+          this.syncMathOverlays();
+        });
+      }).observe(this.stageEl);
     }
 
     mount() {
@@ -2947,8 +2845,7 @@ window.MathRenderer = window.MathRenderer || {
       this.buildSidebar(bodyEl);
       this.wrapEl.appendChild(bodyEl);
 
-      const initialTraces = this.evaluateAll();
-      Plotly.newPlot(this.canvas, initialTraces, this.buildLayout(ThemeSync.getPalette()), {
+      Plotly.newPlot(this.canvas, this.evaluateAll(), this.buildLayout(ThemeSync.getPalette()), {
         responsive: true,
         displaylogo: false
       });
@@ -2969,6 +2866,7 @@ window.MathRenderer = window.MathRenderer || {
     if (wraps.length === 0) return;
 
     const registry = new Map();
+    const configsByIdx = new Map();
     const mathStrings = [];
 
     document.querySelectorAll("script.dynamic-plot-def").forEach((el) => {
@@ -2980,8 +2878,9 @@ window.MathRenderer = window.MathRenderer || {
       }
     });
 
-    wraps.forEach((wrap) => {
-      const cfg = JSON.parse(wrap.dataset.plotConfig || "{}");
+    document.querySelectorAll("script.dynamic-plot-cfg").forEach((el) => {
+      const cfg = JSON.parse(el.textContent);
+      configsByIdx.set(el.dataset.idx, cfg);
       if (hasMathDelimiters(cfg.xlabel)) mathStrings.push(cfg.xlabel);
       if (hasMathDelimiters(cfg.ylabel)) mathStrings.push(cfg.ylabel);
       for (const rule of cfg.shade || []) {
@@ -2998,7 +2897,7 @@ window.MathRenderer = window.MathRenderer || {
       .filter((w) => !w.dataset.initialized)
       .map((w) => {
         w.dataset.initialized = "true";
-        return new DynamicPlotController(w, registry);
+        return new DynamicPlotController(w, configsByIdx.get(w.dataset.plotIdx), registry);
       });
 
     if (controllers.length === 0) return;
