@@ -1,16 +1,17 @@
-/* Sidebar layout*/
-.sidebar-search.has-theme-toggle {
+/* Sidebar layout: inline beside search input when present, top-right fallback otherwise */
+#quarto-sidebar .sidebar-search.has-theme-toggle {
   display: flex;
   align-items: stretch;
   gap: 0.4rem;
 }
 
-.sidebar-search.has-theme-toggle #quarto-search {
+#quarto-sidebar .sidebar-search.has-theme-toggle #quarto-search {
   flex: 1 1 auto;
   min-width: 0;
+  margin: 0;
 }
 
-.sidebar-search.has-theme-toggle .sidebar-tools-main {
+#quarto-sidebar .sidebar-search.has-theme-toggle .sidebar-tools-main {
   display: flex;
   align-items: stretch;
   flex: 0 0 auto;
@@ -18,18 +19,19 @@
   padding: 0;
 }
 
-.sidebar-header {
+#quarto-sidebar .sidebar-header {
   position: relative;
 }
 
-.sidebar-header > .sidebar-tools-main {
+#quarto-sidebar .sidebar-header > .sidebar-tools-main {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
   margin: 0;
+  padding: 0;
 }
 
-#quarto-sidebar .quarto-color-scheme-toggle {
+#quarto-sidebar .sidebar-tools-main .quarto-color-scheme-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -45,7 +47,7 @@
   transition: opacity 0.15s ease, background-color 0.15s ease;
 }
 
-#quarto-sidebar .quarto-color-scheme-toggle:hover {
+#quarto-sidebar .sidebar-tools-main .quarto-color-scheme-toggle:hover {
   opacity: 1;
   background-color: var(--bs-tertiary-bg);
 }
