@@ -2,25 +2,24 @@ project:
   type: website
 
 website:
+  title: "Scientific Wiki Template"
   search: true
-  navbar:
-    background: primary
-    logo:
-      light: img/logo/logo_white.png
-      dark: img/logo/logo_white.png
-    left:
-      - text: "Home"
-        href: index.qmd
-      - text: "Tables"
-        href: "doc/tables.qmd"
-      - text: "Plots"
-        href: "doc/plots.qmd"
-      - text: "Mindmaps"
-        href: "doc/mindmaps.qmd"
-      - text: "GitHub Project"
-        href: https://github.com/MKReyesH/ScientificTable
-      - text: "About"
-        href: about.qmd
+  sidebar:
+    style: docked
+    logo: 
+      - light: img/logo/logo_black.png
+      - dark: img/logo/logo_white.png
+    contents:
+      - href: index.qmd
+        text: "Home"
+      - section: "Topics"
+        contents:
+        - section: "Examples"
+          contents:
+          - auto: "doc/Examples/*.qmd"
+      - href: https://github.com/MKReyesH/ScientificTable
+        text: "GitHub Project"
+      - href: about.qmd
 
 format:
   html:
@@ -28,8 +27,8 @@ format:
     css: include/theme-config.css
     respect-user-color-scheme: true
     theme: # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
-      light: minty
-      dark: [minty, include/theme-dark-patch.scss]
+      light: flatly
+      dark: [flatly, include/theme-dark-patch.scss]
 
 bibliography: bib/references.bib
 csl: bib/jcap.csl
