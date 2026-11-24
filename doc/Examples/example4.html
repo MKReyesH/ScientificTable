@@ -897,11 +897,11 @@ window.Quarto = {
 </ul>
 Appending <code>:</code> after a slider’s <code>[...]</code> domain lets you configure indented per-slider options: <code>steps</code> (integer <span class="math inline">\(\ge 2\)</span> for <code>[min, max]</code> ranges, default <code>25</code>), <code>label</code> (display title above the slider with optional inline LaTeX math; defaults to the parameter name), and <code>play</code> (<code>true</code> or <code>false</code>, default <code>false</code>, adding an independent Play/Pause button in front of that slider’s row). If multiple curves in the same plot declare sliders with the same name and domain, they automatically share a single synchronized slider.</li>
 </ul>
-<p>In 2D plots, <code>.dynamic-plot</code> also supports a <strong><code>shade:</code></strong> block to fill regions between curves, horizontal levels, plot bounds, or closed parametric curves. Each rule is written as <code>source -&gt; target</code> (or <code>source -&gt; target:</code> followed by indented options):</p>
+<p>In 2D plots, <code>.dynamic-plot</code> also supports a <strong><code>shade:</code></strong> block to fill regions between curves, horizontal levels, plot bounds, or closed parametric curves. Each rule is written as <code>curve1 -&gt; curve2</code> (or <code>curve1 -&gt; curve2:</code> followed by indented styling options), where:</p>
 <ul>
-<li><code>source</code>: A curve ID listed in <code>curves</code>.</li>
-<li><code>target</code>: Another curve ID in <code>curves</code>, a constant expression (such as <code>0</code>), <code>bottom</code> or <code>top</code> (the vertical axis bounds), or the same curve ID (<code>f1 -&gt; f1</code>) to fill a closed parametric curve.</li>
-<li>Indented options: <code>xrange: [min, max]</code> (not valid for closed-curve <code>f1 -&gt; f1</code> rules), <code>color</code>, <code>opacity</code> in <code>[0, 1]</code> (default <code>0.2</code>), and <code>label</code> (adds a toggleable area entry to the legend).</li>
+<li><code>curve1</code> is a curve ID listed in <code>curves</code>.</li>
+<li><code>curve2</code> is another curve ID in <code>curves</code>, a constant expression (such as <code>0</code>), <code>bottom</code> or <code>top</code> (the vertical axis bounds), or the same curve ID (<code>curve1 -&gt; curve1</code>) to fill a closed parametric curve.</li>
+<li><strong>Indented options:</strong> <code>xrange: [min, max]</code> (not valid for closed-curve <code>curve1 -&gt; curve1</code> rules), <code>color</code>, <code>opacity</code> in <code>[0, 1]</code> (default <code>0.2</code>), and <code>label</code> (adds a toggleable area entry to the legend).</li>
 </ul>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>::: {.plot-function id="gauss-fixed"}</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>x: <span class="co">[</span><span class="ot">-4, 6</span><span class="co">]</span></span>
