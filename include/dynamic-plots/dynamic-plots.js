@@ -741,7 +741,10 @@
       if (hasMathDelimiters(cfg.ylabel)) mathStrings.push(cfg.ylabel);
     });
 
-    await Promise.all([loadPlotly(), MathRenderer.prepare(mathStrings)]);
+    await Promise.all([
+      loadPlotly(),
+      mathStrings.length > 0 ? MathRenderer.prepare(mathStrings) : Promise.resolve()
+    ]);
 
     const controllers = wraps
       .filter((w) => !w.dataset.initialized)

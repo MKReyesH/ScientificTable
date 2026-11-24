@@ -6,7 +6,7 @@ website:
   navbar:
     background: primary
     logo:
-      light: img/logo/logo_black.png
+      light: img/logo/logo_white.png
       dark: img/logo/logo_white.png
     left:
       - text: "Home"
@@ -25,18 +25,17 @@ website:
 format:
   html:
     math: mathjax
-    css: include/css-config.css
+    css: include/theme-config.css
     respect-user-color-scheme: true
     theme: # Options: cosmo, minty, flatly, darkly, slate, lux, etc.
       light: flatly
-      dark: [flatly, include/dark-theme/dark-theme.scss]
-    include-after-body:
-      - include/dark-theme/dark-theme-toggle.html
+      dark: [flatly, include/theme-dark-patch.scss]
 
 bibliography: bib/references.bib
 csl: bib/jcap.csl
 
-filters: # The order matters
+filters: # To remove the feature comment its line
+  - include/theme-toggle/theme-toggle.lua
   - include/latex-to-quarto/latex-to-quarto.lua
   - include/dynamic-tables/dynamic-tables.lua
   - include/dynamic-plots/dynamic-plots.lua

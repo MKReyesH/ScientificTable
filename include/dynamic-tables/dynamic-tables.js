@@ -327,7 +327,10 @@
 
     // Initializes math cache, bibliography bindings, Tabulator instance, and search filter
     async init() {
-      await MathRenderer.prepare(this.collectInitialLatexStrings());
+      const latexStrings = this.collectInitialLatexStrings();
+      if (latexStrings.length > 0) {
+        await MathRenderer.prepare(latexStrings);
+      }
       this.container.innerHTML = "";
       this.initBibliography();
 

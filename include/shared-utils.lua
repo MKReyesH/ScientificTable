@@ -222,13 +222,6 @@ function U.extract_lines_from_div(el)
     return lines
 end
 
--- Emits a hidden native Math node so Quarto loads its configured MathJax/KaTeX engine
-function U.ensure_quarto_math(doc)
-    table.insert(doc.blocks, pandoc.Plain({
-        pandoc.Span({ pandoc.Math("InlineMath", "") }, pandoc.Attr("", {}, { style = "display:none;" }))
-    }))
-end
-
 -- Injects HTML into a Quarto document location ('in-header' or 'after-body')
 function U.inject_html(doc, location, html)
     if quarto and quarto.doc and quarto.doc.include_text then
@@ -238,14 +231,20 @@ function U.inject_html(doc, location, html)
     end
 end
 
--- Injects shared MathRenderer once and appends HTML/JS at the end of the document body
+-- Appends HTML/JS at the end of the document body
 function U.inject_after_body(doc, html)
-    local payload = html
-    if not U._math_injected[doc] then
-        U._math_injected[doc] = true
-        payload = MATH_RENDERER_SCRIPT .. "\n" .. html
-    end
-    U.inject_html(doc, "after-body", payload)
+    U.inject_html(doc, "after-body", html)
+end
+
+-- Enables Quarto math rendering and injects shared MathRenderer once per document
+function U.ensure_quarto_math(doc)
+    if U._math_injected[doc] then return end
+    U._math_injected[doc] = true
+
+    table.insert(doc.blocks, pandoc.Plain({
+        pandoc.Span({ pandoc.Math("InlineMath", "") }, pandoc.Attr("", {}, { style = "display:none;" }))
+    }))
+    U.inject_after_body(doc, MATH_RENDERER_SCRIPT)
 end
 
 -- Injects a widget's co-located <name>.css (in-header) and/or <name>.js (after-body)

@@ -1,0 +1,39 @@
+/*-- scss:defaults --*/
+
+// Dark canvas background; all neutral surfaces and borders derive from this
+$body-bg: #16181d;
+$body-color: if(variable-exists(body-color), mix(#ffffff, $body-color, 88%), #dee2e6);
+
+$body-secondary-color: rgba($body-color, 0.72);
+$body-secondary-bg: mix($body-color, $body-bg, 6%);
+$body-tertiary-color: rgba($body-color, 0.5);
+$body-tertiary-bg: mix($body-color, $body-bg, 11%);
+
+$headings-color: mix(#ffffff, $body-color, 35%);
+$border-color: mix($body-color, $body-bg, 15%);
+$border-color-translucent: rgba($body-color, 0.14);
+$btn-close-color: $body-color;
+
+
+/*-- scss:rules --*/
+
+// Keep theme accent colors at their defaults, only brightening dark link colors for contrast
+@if lightness($link-color) < 55% {
+  $dark-link: mix(#ffffff, $link-color, 45%);
+  $dark-link-hover: mix(#ffffff, $link-color, 60%);
+
+  :root {
+    --bs-link-color: #{$dark-link};
+    --bs-link-color-rgb: #{red($dark-link)}, #{green($dark-link)}, #{blue($dark-link)};
+    --bs-link-hover-color: #{$dark-link-hover};
+    --bs-link-hover-color-rgb: #{red($dark-link-hover)}, #{green($dark-link-hover)}, #{blue($dark-link-hover)};
+  }
+
+  a:not(.btn):not(.nav-link):not(.navbar-brand):not(.dropdown-item):not(.page-link) {
+    color: var(--bs-link-color);
+
+    &:hover {
+      color: var(--bs-link-hover-color);
+    }
+  }
+}
