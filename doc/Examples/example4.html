@@ -319,6 +319,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   cursor: pointer;
 }
 
+.dynamic-plot-slider-input::-webkit-slider-runnable-track {
+  background-color: var(--bs-border-color);
+}
+
+.dynamic-plot-slider-input::-moz-range-track {
+  background-color: var(--bs-border-color);
+}
+
 .dynamic-plot-sidebar-wrap {
   position: relative;
   flex: 0 0 auto;
@@ -852,7 +860,7 @@ window.Quarto = {
 <ul>
 <li><strong>Explicit functions <span class="math inline">\(y(x)\)</span>:</strong> Write <code>x: [min, max]</code> to set the horizontal domain and define <code>y</code> as an expression in <code>x</code>. Explicit 2D curves automatically resample at higher resolution when zooming or panning.</li>
 <li><strong>Parametric curves <span class="math inline">\((x(t), y(t))\)</span>:</strong> Declare a parameter such as <code>t: [0, 2 * pi]</code> and define both <code>x</code> and <code>y</code> in terms of <code>t</code>.</li>
-<li><strong>Expressions and styling:</strong> Expressions support <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>^</code>, implicit multiplication (<code>2x</code>, <code>x sin(x)</code>), constants (<code>pi</code>, <code>e</code>), and standard functions (<code>sin</code>, <code>cos</code>, <code>tan</code>, <code>asin</code>, <code>acos</code>, <code>atan</code>, <code>atan2</code>, <code>sinh</code>, <code>cosh</code>, <code>tanh</code>, <code>asinh</code>, <code>acosh</code>, <code>atanh</code>, <code>exp</code>, <code>log</code>, <code>ln</code>, <code>log10</code>, <code>log2</code>, <code>sqrt</code>, <code>abs</code>, <code>sign</code>, <code>floor</code>, <code>ceil</code>, <code>min</code>, <code>max</code>, <code>hypot</code>). Optional keys include <code>points</code> (sample count along the domain, integer <span class="math inline">\(\ge 2\)</span>, default <code>100</code>), <code>label</code> (legend title, supporting inline LaTeX math; defaults to <code>id</code>), <code>color</code> (any CSS or Plotly color), <code>mode</code> (<code>lines</code>, <code>markers</code>, or <code>lines+markers</code>, default <code>lines</code>), and <code>smooth</code> (spline interpolation on 2D curves, <code>true</code> or <code>false</code>, default <code>true</code>).</li>
+<li><strong>Expressions and styling:</strong> Expressions support <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>^</code>, implicit multiplication (<code>2x</code>, <code>x sin(x)</code>), constants (<code>pi</code>, <code>e</code>), and standard mathematical functions (trigonometric, hyperbolic, exponential, logarithmic, roots, rounding, and <code>min</code>/<code>max</code>/<code>hypot</code>). Optional keys include <code>points</code> (sample count along the domain, integer <span class="math inline">\(\ge 2\)</span>, default <code>100</code>), <code>label</code> (legend title, supporting inline LaTeX math; defaults to <code>id</code>), <code>color</code> (any CSS or Plotly color), <code>mode</code> (<code>lines</code>, <code>markers</code>, or <code>lines+markers</code>, default <code>lines</code>), and <code>smooth</code> (spline interpolation on 2D curves, <code>true</code> or <code>false</code>, default <code>true</code>).</li>
 </ul>
 <p>The <code>::: {.dynamic-plot}</code> block mounts the canvas and configures axes and layout:</p>
 <ul>
@@ -933,16 +941,11 @@ Each slider entry (<code>name: [...]</code>) may be followed by indented option 
 <span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>xlabel: $x$</span>
 <span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>ylabel: Density</span>
 <span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>shade:</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  gauss-fixed -&gt; 0</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>    xrange: <span class="co">[</span><span class="ot">-4, 0.5</span><span class="co">]</span></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>    color: #1f77b4</span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    opacity: 0.15</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>    label: Left tail of $f_1$</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>  gauss-moving -&gt; gauss-fixed</span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    color: #2ca02c</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    opacity: 0.22</span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>    label: Difference $f_2 - f_1$</span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  gauss-moving -&gt; gauss-fixed</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>    color: #2ca02c</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>    opacity: 0.22</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    label: Difference $f_2 - f_1$</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="dynamic-plot-wrap" data-plot-idx="2"></div>
 </section>
 <section id="plotting-external-data-files" class="level1">
@@ -1775,7 +1778,7 @@ window.MathRenderer = window.MathRenderer || {
 <script type="application/json" class="dynamic-plot-def" data-id="ripple-surface">{"color":"#1f77b4","dim":"3d","id":"ripple-surface","kind":"function","label":"Ripple surface","mode":"lines","params":[{"isSlider":false,"kind":"range","max":4,"min":-4,"name":"x"},{"isSlider":false,"kind":"range","max":4,"min":-4,"name":"y"}],"points":45,"smooth":true,"subtype":"surface","vars":[{"expr":"hypot(x, y)","name":"r"}],"x":"x","y":"y","z":"sin(2 * r) / (1 + 0.4 * r)"}</script>
 <script type="application/json" class="dynamic-plot-def" data-id="spiral-3d">{"color":"#d62728","dim":"3d","id":"spiral-3d","kind":"function","label":"Spiral path","mode":"lines","params":[{"isSlider":false,"kind":"range","max":12.566370614359172,"min":0,"name":"t"}],"points":100,"smooth":true,"subtype":"curve","vars":[{"expr":"0.28 * t","name":"r"}],"x":"r * cos(t)","y":"r * sin(t)","z":"0.25 + 0.12 * t"}</script>
 <script type="application/json" class="dynamic-plot-cfg" data-idx="1">{"curves":["wave-sin","circle-param"],"height":400,"legend":true,"xlabel":"\\(x\\)","xscale":"linear","ylabel":"\\(y(x)\\)","yscale":"linear","zscale":"linear"}</script>
-<script type="application/json" class="dynamic-plot-cfg" data-idx="2">{"curves":["gauss-fixed","gauss-moving"],"height":400,"legend":true,"shade":[{"color":"#1f77b4","from":"gauss-fixed","label":"Left tail of \\(f_1\\)","opacity":0.15,"to":0,"toKind":"const","xrange":[-4,0.5]},{"color":"#2ca02c","from":"gauss-moving","label":"Difference \\(f_2 - f_1\\)","opacity":0.22,"to":"[string \"const\"]:1: attempt to perform arithmetic on a nil value (global 'gauss')","toKind":"const"}],"xlabel":"\\(x\\)","xscale":"linear","ylabel":"Density","yscale":"linear","zscale":"linear"}</script>
+<script type="application/json" class="dynamic-plot-cfg" data-idx="2">{"curves":["gauss-fixed","gauss-moving"],"height":400,"legend":true,"shade":[{"color":"#2ca02c","from":"gauss-moving","label":"Difference \\(f_2 - f_1\\)","opacity":0.22,"to":"gauss-fixed","toKind":"curve"}],"xlabel":"\\(x\\)","xscale":"linear","ylabel":"Density","yscale":"linear","zscale":"linear"}</script>
 <script type="application/json" class="dynamic-plot-cfg" data-idx="3">{"curves":["damped-data","damped-model"],"height":400,"legend":true,"xlabel":"Time \\(t\\) [s]","xscale":"linear","ylabel":"Amplitude \\(A(t)\\) [m]","yscale":"linear","zscale":"linear"}</script>
 <script type="application/json" class="dynamic-plot-cfg" data-idx="4">{"curves":["wave-sweep"],"height":400,"legend":true,"xlabel":"\\(x\\) [m]","xscale":"linear","ylabel":"\\(\\psi(x, t_k)\\)","yscale":"linear","zscale":"linear"}</script>
 <script type="application/json" class="dynamic-plot-cfg" data-idx="5">{"curves":["ripple-surface","spiral-3d"],"height":400,"legend":true,"xlabel":"\\(x\\)","xscale":"linear","ylabel":"\\(y\\)","yscale":"linear","zlabel":"\\(z(x, y)\\)","zscale":"linear"}</script>
@@ -1995,15 +1998,6 @@ window.MathRenderer = window.MathRenderer || {
         return isFile
           ? (out, row, paramVals) => rawFn(FUNCS, CONSTS, out, row, ...paramVals)
           : (out, paramVals) => rawFn(FUNCS, CONSTS, out, ...paramVals);
-      },
-
-      compileScalarY(def) {
-        const paramNames = (def.params || []).map((p) => p.name);
-        const lines = buildVarsPrelude(def, paramNames, false);
-        lines.push(`const $y = ${toJsExpr(def.y)};`);
-        lines.push(`return Number.isFinite($y) ? $y : null;`);
-        const rawFn = new Function("$F", "$C", ...paramNames, lines.join("\n"));
-        return (paramVals) => rawFn(FUNCS, CONSTS, ...paramVals);
       }
     };
   })();
@@ -2054,8 +2048,7 @@ window.MathRenderer = window.MathRenderer || {
         sliderNames: new Set(sliderParams.map((p) => p.name)),
         paramIndexByName,
         isExplicitYX,
-        evalPoint: MathCompiler.compilePointEvaluator(def),
-        evalScalarY: isExplicitYX ? MathCompiler.compileScalarY(def) : null
+        evalPoint: MathCompiler.compilePointEvaluator(def)
       };
     },
 
@@ -2158,7 +2151,9 @@ window.MathRenderer = window.MathRenderer || {
       if (spec.isExplicitYX) {
         const paramVec = CurveEvaluator.buildParamVector(spec, sliderEnv);
         paramVec[spec.paramIndexByName.get("x")] = x;
-        return spec.evalScalarY(paramVec);
+        const out = [null, null];
+        spec.evalPoint(out, paramVec);
+        return out[1];
       }
       const pts = evalData.sortedPts;
       if (pts.length === 0) return null;
