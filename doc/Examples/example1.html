@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>How to write a page using Quarto Markdown – Scientific Wiki Template</title>
+<title>How to write a page – Scientific Wiki Template</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -102,9 +102,9 @@ div.csl-indent {
 <link href="../../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../site_libs/bootstrap/bootstrap-972ff4b653dda3823e4ca8e4eb795c65.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../../site_libs/bootstrap/bootstrap-dark-d40cd6b467a96c0c701d39b13ce3fcd9.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../../site_libs/bootstrap/bootstrap-972ff4b653dda3823e4ca8e4eb795c65.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-386b9b908cdd36f9bf196c507e80019e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-b3aafc63d1b0dd2c9248a2ecfbadc558.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-386b9b908cdd36f9bf196c507e80019e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -133,20 +133,20 @@ div.csl-indent {
   }
 }</script>
 <style>
-/* Sidebar layout: inline beside search input when present, top-right fallback otherwise */
-#quarto-sidebar .sidebar-search.has-theme-toggle {
+/* Sidebar layout: inline beside search input when present */
+.sidebar-search.has-theme-toggle {
   display: flex;
   align-items: stretch;
   gap: 0.4rem;
 }
 
-#quarto-sidebar .sidebar-search.has-theme-toggle #quarto-search {
+.sidebar-search.has-theme-toggle #quarto-search {
   flex: 1 1 auto;
   min-width: 0;
   margin: 0;
 }
 
-#quarto-sidebar .sidebar-search.has-theme-toggle .sidebar-tools-main {
+.sidebar-search.has-theme-toggle .sidebar-tools-main {
   display: flex;
   align-items: stretch;
   flex: 0 0 auto;
@@ -154,24 +154,11 @@ div.csl-indent {
   padding: 0;
 }
 
-#quarto-sidebar .sidebar-header {
-  position: relative;
-}
-
-#quarto-sidebar .sidebar-header > .sidebar-tools-main {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  margin: 0;
-  padding: 0;
-}
-
-#quarto-sidebar .sidebar-tools-main .quarto-color-scheme-toggle {
+.sidebar-search.has-theme-toggle .sidebar-tools-main .quarto-color-scheme-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 2.25rem;
-  min-height: 2.1rem;
   margin: 0;
   padding: 0;
   border: 1px solid var(--bs-border-color);
@@ -182,9 +169,33 @@ div.csl-indent {
   transition: opacity 0.15s ease, background-color 0.15s ease;
 }
 
-#quarto-sidebar .sidebar-tools-main .quarto-color-scheme-toggle:hover {
+.sidebar-search.has-theme-toggle .sidebar-tools-main .quarto-color-scheme-toggle:hover {
   opacity: 1;
   background-color: var(--bs-tertiary-bg);
+}
+
+/* Fallback if sidebar search is disabled */
+.sidebar-header {
+  position: relative;
+}
+
+.sidebar-header > .sidebar-tools-main {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-header > .sidebar-tools-main .quarto-color-scheme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: var(--bs-border-radius, 0.375rem);
+  color: var(--bs-body-color) !important;
+  opacity: 0.85;
 }
 
 /* Navbar color adaptation */
@@ -441,7 +452,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item">Topics</li><li class="breadcrumb-item"><a href="../../doc/Examples/example1.html">Examples</a></li><li class="breadcrumb-item"><a href="../../doc/Examples/example1.html">How to write a page using Quarto Markdown</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item">Topics</li><li class="breadcrumb-item"><a href="../../doc/Examples/example1.html">Examples</a></li><li class="breadcrumb-item"><a href="../../doc/Examples/example1.html">How to write a page</a></li></ol></nav>
         <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
       <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
@@ -491,13 +502,13 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../doc/Examples/example1.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">How to write a page using Quarto Markdown</span></a>
+ <span class="menu-text">How to write a page</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../../doc/Examples/example2.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Allowed LaTeX syntax for page writing</span></a>
+ <span class="menu-text">How to use LaTeX syntax</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -544,9 +555,9 @@ window.Quarto = {
 <main class="content" id="quarto-document-content" tabindex="-1">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item">Topics</li><li class="breadcrumb-item"><a href="../../doc/Examples/example1.html">Examples</a></li><li class="breadcrumb-item"><a href="../../doc/Examples/example1.html">How to write a page using Quarto Markdown</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item">Topics</li><li class="breadcrumb-item"><a href="../../doc/Examples/example1.html">Examples</a></li><li class="breadcrumb-item"><a href="../../doc/Examples/example1.html">How to write a page</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">How to write a page using Quarto Markdown</h1>
+<h1 class="title">How to write a page</h1>
 </div>
 
 
