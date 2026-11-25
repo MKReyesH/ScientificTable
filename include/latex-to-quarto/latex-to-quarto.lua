@@ -43,10 +43,10 @@ local inline_rules = {
 
 -- Math environment rules
 local environment_rules = {
-    { env = "equation", inner = nil },
-    { env = "split",    inner = "split" },
-    { env = "align",    inner = "aligned" },
-    { env = "gather",   inner = "gathered" }
+    equation = false, -- No inner environment needed.
+    split = "split",
+    align = "aligned",
+    gather = "gathered"
 }
 
 -- Header hierarchy
@@ -56,38 +56,31 @@ local section_rules = {
     { cmd = "section",       level = 1 }
 }
 
--- Main transformation pipeline 
-local function transform_tex(text)
-    
-    -- 1. Process LaTeX math environments into Quarto display math blocks
-    for _, rule in ipairs(environment_rules) do
-        local pattern = "\\begin{" .. rule.env .. "%*?}([%s%S]-)\\end{" .. rule.env .. "%*?}"
-        text = string.gsub(text, pattern, function(content)
-            local q_label = nil
-            content = string.gsub(content, "\\label{([^}]+)}", function(lbl)
-                if not q_label then
-                    local formatted = string.gsub(lbl, ":", "-")
-                    if not string.match(formatted, "^eq%-") then formatted = "eq-" .. formatted end
-                    q_label = formatted
-                end
-                return ""
-            end)
-            
-            content = content:match("^%s*(.-)%s*$")
-            
-            if rule.inner then
-                content = "\\begin{" .. rule.inner .. "}\n" .. content .. "\n\\end{" .. rule.inner .. "}"
+local function transform_math(content, inner)
+    local q_label
+    content = content:gsub("\\label{([^}]+)}", function(label)
+        if not q_label then
+            q_label = label:gsub(":", "-")
+            if not q_label:match("^eq%-") then
+                q_label = "eq-" .. q_label
             end
-            
-            local md = "\n$$\n" .. content .. "\n$$"
-            if q_label then
-                md = md .. " {#" .. q_label .. "}"
-            end
-            return md .. "\n"
-        end)
+        end
+        return ""
+    end)
+
+    content = content:match("^%s*(.-)%s*$")
+    if inner then
+        content = "\\begin{" .. inner .. "}\n" .. content .. "\n\\end{" .. inner .. "}"
     end
 
-    -- 2. Process LaTeX section headers
+    local md = "\n$$\n" .. content .. "\n$$"
+    if q_label then
+        md = md .. " {#" .. q_label .. "}"
+    end
+    return md .. "\n"
+end
+
+local function transform_prose(text)
     for _, sec in ipairs(section_rules) do
         local pattern = "\\" .. sec.cmd .. "{([^}]+)}"
         text = string.gsub(text, pattern, function(title)
@@ -95,12 +88,40 @@ local function transform_tex(text)
         end)
     end
 
-    -- 3. Process inline formatting commands
     for _, rule in ipairs(inline_rules) do
         text = string.gsub(text, rule.pattern, rule.replace)
     end
 
     return text
+end
+
+local function transform_tex(text)
+    local parts = {}
+    local prose_start = 1
+    local search_start = 1
+
+    -- Consume each complete math environment before looking for the next one.
+    while true do
+        local math_start, opening_end, env = text:find("\\begin{(%a+)%*?}", search_start)
+        if not math_start then
+            break
+        end
+
+        search_start = opening_end + 1
+        local inner = environment_rules[env]
+        if inner ~= nil then
+            local closing_start, math_end = text:find("\\end{" .. env .. "%*?}", search_start)
+            if closing_start then
+                parts[#parts + 1] = transform_prose(text:sub(prose_start, math_start - 1))
+                parts[#parts + 1] = transform_math(text:sub(search_start, closing_start - 1), inner)
+                prose_start = math_end + 1
+                search_start = prose_start
+            end
+        end
+    end
+
+    parts[#parts + 1] = transform_prose(text:sub(prose_start))
+    return table.concat(parts)
 end
 
 -- Native Pandoc AST element entry points
