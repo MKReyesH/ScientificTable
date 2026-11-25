@@ -77,10 +77,9 @@ To make curves interactive or simplify complex formulas, `.plot-function` suppor
 
   Each slider entry (`name: [...]`) may be followed by indented option lines: `steps` (integer $\ge 2$ for `[min, max]` ranges, default `25`), `label` (display title above the slider with optional inline LaTeX math; defaults to the parameter name), and `play` (`true` or `false`, default `false`, adding an independent Play/Pause button in front of that slider's row). If multiple curves in the same plot declare sliders with the same name and domain, they automatically share a single synchronized slider.
 
-In 2D plots, `.dynamic-plot` supports a **`shade:`** block using the same entry-plus-options structure to fill regions between curves, horizontal levels, plot bounds, or closed parametric curves. Each entry is written as `curve1 -> curve2`, where:
+In 2D plots, `.dynamic-plot` supports a **`shade:`** block using the same entry-plus-options structure. Each entry is written as `lower -> upper`, shading from the lower boundary up to the upper boundary (where $y_{\text{lower}}(x) \le y_{\text{upper}}(x)$):
 
-- `curve1` is a curve ID listed in `curves`.
-- `curve2` is another curve ID in `curves`, a constant expression (such as `0`), `bottom` or `top` (the vertical axis bounds), or the same curve ID (`curve1 -> curve1`) to fill a closed parametric curve.
+- `lower` and `upper` may each be a curve ID listed in `curves`, a constant expression (such as `0`), or a vertical axis bound (`bottom` on the left to shade everything below a curve, or `top` on the right to shade everything above a curve; at least one side must be a curve ID). Writing `curve1 -> curve1` fills the interior of a closed parametric curve.
 - **Indented options:** `xrange: [min, max]` (not valid for closed-curve `curve1 -> curve1` rules), `color`, `opacity` in `[0, 1]` (default `0.2`), and `label` (adds a toggleable area entry to the legend).
 
 ```markdown
@@ -114,10 +113,10 @@ curves: gauss-fixed, gauss-moving
 xlabel: $x$
 ylabel: Density
 shade:
-  gauss-moving -> gauss-fixed
+  gauss-fixed -> gauss-moving
     color: #2ca02c
     opacity: 0.22
-    label: Difference $f_2 - f_1$
+    label: Excess $f_2(x) \ge f_1(x)$
 :::
 ```
 
@@ -151,10 +150,10 @@ curves: gauss-fixed, gauss-moving
 xlabel: $x$
 ylabel: Density
 shade:
-  gauss-moving -> gauss-fixed
+  gauss-fixed -> gauss-moving
     color: #2ca02c
     opacity: 0.22
-    label: Difference $f_2 - f_1$
+    label: Excess $f_2(x) \ge f_1(x)$
 :::
 
 # Plotting External Data Files
@@ -187,7 +186,7 @@ color: #1f77b4
 :::
 
 ::: {.dynamic-plot}
-curves: damped-data, damped-model
+curves: damped-model, damped-data
 xlabel: Time $t$ [s]
 ylabel: Amplitude $A(t)$ [m]
 :::
@@ -211,7 +210,7 @@ color: #1f77b4
 :::
 
 ::: {.dynamic-plot}
-curves: damped-data, damped-model
+curves: damped-model, damped-data
 xlabel: Time $t$ [s]
 ylabel: Amplitude $A(t)$ [m]
 :::

@@ -76,7 +76,9 @@
     return trace;
   }
 
-  // Compiles validated math expressions into JIT-compiled JS evaluators
+  const shadeCurveIds = (rule) =>
+    [rule.fromKind === "curve" ? rule.from : null, rule.toKind === "curve" ? rule.to : null].filter(Boolean);
+
   const MathCompiler = (() => {
     const CONSTS = { pi: Math.PI, e: Math.E };
     const FUNCS = {
@@ -343,7 +345,6 @@
     }
   };
 
-  // Builds closed-polygon shading traces via a single linear sorted-grid merge
   const ShadeBuilder = {
     prepareCurveData(evalRes) {
       const rawPts = [];
@@ -384,49 +385,9 @@
       return x1 === x0 ? y0 : y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
     },
 
-    buildTrace(rule, evaluatedMap, sliderEnv, yBounds) {
-      const src = evaluatedMap.get(rule.from);
-      const color = rule.color || src.color;
-      const baseTrace = {
-        type: "scatter",
-        name: toSizingText(rule.label || ""),
-        mode: "lines",
-        line: { width: 0 },
-        fill: "toself",
-        fillcolor: colorToRgba(color, rule.opacity),
-        hoveron: "fills",
-        hoverinfo: rule.label ? "name+x+y" : "skip",
-        showlegend: false
-      };
-
-      if (rule.toKind === "curve" && rule.from === rule.to) {
-        return { ...baseTrace, x: src.rawPts.map((p) => p[0]), y: src.rawPts.map((p) => p[1]) };
-      }
-
-      if (src.sortedPts.length < 2) return { ...baseTrace, x: [], y: [] };
-
-      let lo = src.sortedPts[0][0];
-      let hi = src.sortedPts[src.sortedPts.length - 1][0];
-      const dst = rule.toKind === "curve" ? evaluatedMap.get(rule.to) : null;
-
-      if (dst) {
-        if (dst.sortedPts.length < 2) return { ...baseTrace, x: [], y: [] };
-        lo = Math.max(lo, dst.sortedPts[0][0]);
-        hi = Math.min(hi, dst.sortedPts[dst.sortedPts.length - 1][0]);
-      }
-      if (rule.xrange) {
-        lo = Math.max(lo, rule.xrange[0]);
-        hi = Math.min(hi, rule.xrange[1]);
-      }
-      if (!Number.isFinite(lo) || !Number.isFinite(hi) || lo >= hi) {
-        return { ...baseTrace, x: [], y: [] };
-      }
-
-      // Linear two-pointer merge of sorted x-coordinates in [lo, hi]
+    mergeSortedGrid(aPts, bPts, lo, hi) {
       const eps = 1e-12 * Math.max(1, Math.abs(lo), Math.abs(hi));
       const xs = [lo];
-      const aPts = src.sortedPts;
-      const bPts = dst ? dst.sortedPts : [];
       let ia = 0, ib = 0;
       while (ia < aPts.length && aPts[ia][0] <= lo + eps) ia++;
       while (ib < bPts.length && bPts[ib][0] <= lo + eps) ib++;
@@ -441,33 +402,108 @@
         if (xNext - xs[xs.length - 1] > eps) xs.push(xNext);
       }
       if (hi - xs[xs.length - 1] > eps) xs.push(hi);
-      if (xs.length < 2) return { ...baseTrace, x: [], y: [] };
+      return xs;
+    },
 
-      const yConst = rule.toKind === "const" ? rule.to : (rule.to === "bottom" ? yBounds[0] : yBounds[1]);
-      const srcCursor = { idx: 0 };
-      const dstCursor = { idx: 0 };
-      const validX = [], yTop = [], yBot = [];
+    clipDirectionalPolygons(xs, getYLower, getYUpper) {
+      const outX = [], outY = [];
+      let segX = [], segBot = [], segTop = [];
+      let prev = null;
+
+      const flush = () => {
+        if (segX.length >= 2) {
+          if (outX.length > 0) { outX.push(null); outY.push(null); }
+          outX.push(...segX, ...segX.slice().reverse());
+          outY.push(...segTop, ...segBot.slice().reverse());
+        }
+        segX = []; segBot = []; segTop = [];
+      };
 
       for (const x of xs) {
-        const y1 = this.sampleYAt(src, sliderEnv, x, srcCursor);
-        const y2 = dst ? this.sampleYAt(dst, sliderEnv, x, dstCursor) : yConst;
-        if (Number.isFinite(y1) && Number.isFinite(y2)) {
-          validX.push(x);
-          yTop.push(y1);
-          yBot.push(y2);
+        const yA = getYLower(x);
+        const yB = getYUpper(x);
+        if (!Number.isFinite(yA) || !Number.isFinite(yB)) {
+          flush();
+          prev = null;
+          continue;
         }
+        const d = yB - yA;
+        if (prev !== null && ((prev.d < 0 && d > 0) || (prev.d > 0 && d < 0))) {
+          const t = prev.d / (prev.d - d);
+          const xc = prev.x + t * (x - prev.x);
+          const yc = prev.yA + t * (yA - prev.yA);
+          segX.push(xc); segBot.push(yc); segTop.push(yc);
+          if (d < 0) flush();
+        }
+        if (d >= 0) {
+          segX.push(x); segBot.push(yA); segTop.push(yB);
+        } else {
+          flush();
+        }
+        prev = { x, yA, d };
       }
-      if (validX.length < 2) return { ...baseTrace, x: [], y: [] };
+      flush();
+      return { x: outX, y: outY };
+    },
 
-      return {
-        ...baseTrace,
-        x: [...validX, ...validX.slice().reverse()],
-        y: [...yTop, ...yBot.slice().reverse()]
+    buildTrace(rule, evaluatedMap, sliderEnv, yBounds) {
+      const src = rule.fromKind === "curve" ? evaluatedMap.get(rule.from) : null;
+      const dst = rule.toKind === "curve" ? evaluatedMap.get(rule.to) : null;
+      const color = rule.color || (src || dst).color;
+      const baseTrace = {
+        type: "scatter",
+        name: toSizingText(rule.label || ""),
+        mode: "lines",
+        line: { width: 0 },
+        fill: "toself",
+        fillcolor: colorToRgba(color, rule.opacity),
+        hoveron: "fills",
+        hoverinfo: rule.label ? "name+x+y" : "skip",
+        showlegend: false
       };
+
+      if (src && dst && rule.from === rule.to) {
+        return { ...baseTrace, x: src.rawPts.map((p) => p[0]), y: src.rawPts.map((p) => p[1]) };
+      }
+
+      const curves = [src, dst].filter(Boolean);
+      if (curves.some((c) => c.sortedPts.length < 2)) return { ...baseTrace, x: [], y: [] };
+
+      let lo = Math.max(...curves.map((c) => c.sortedPts[0][0]));
+      let hi = Math.min(...curves.map((c) => c.sortedPts[c.sortedPts.length - 1][0]));
+      if (rule.xrange) {
+        lo = Math.max(lo, rule.xrange[0]);
+        hi = Math.min(hi, rule.xrange[1]);
+      }
+      if (!Number.isFinite(lo) || !Number.isFinite(hi) || lo >= hi) return { ...baseTrace, x: [], y: [] };
+
+      const xs = this.mergeSortedGrid(src ? src.sortedPts : [], dst ? dst.sortedPts : [], lo, hi);
+      if (xs.length < 2) return { ...baseTrace, x: [], y: [] };
+
+      const constY = (kind, val) => (kind === "const" ? val : (val === "bottom" ? yBounds[0] : yBounds[1]));
+      const yFromConst = src ? null : constY(rule.fromKind, rule.from);
+      const yToConst = dst ? null : constY(rule.toKind, rule.to);
+      const srcCursor = { idx: 0 };
+      const dstCursor = { idx: 0 };
+
+      const poly = this.clipDirectionalPolygons(
+        xs,
+        (x) => (src ? this.sampleYAt(src, sliderEnv, x, srcCursor) : yFromConst),
+        (x) => (dst ? this.sampleYAt(dst, sliderEnv, x, dstCursor) : yToConst)
+      );
+      return { ...baseTrace, ...poly };
     }
   };
 
   const ThemeSync = {
+    encodeRange(range, scale) {
+      return scale === "log" ? [Math.log10(range[0]), Math.log10(range[1])] : range;
+    },
+
+    decodeRange(r0, r1, scale) {
+      return scale === "log" ? [Math.pow(10, r0), Math.pow(10, r1)] : [r0, r1];
+    },
+
     getPalette() {
       const s = getComputedStyle(document.body);
       const textColor = s.getPropertyValue("--bs-body-color").trim() || "#212529";
@@ -483,7 +519,7 @@
       };
       if (titleText) axis.title = { text: toSizingText(titleText), font: { color: p.textColor }, standoff: 12 };
       if (range) {
-        axis.range = scale === "log" ? [Math.log10(range[0]), Math.log10(range[1])] : range;
+        axis.range = this.encodeRange(range, scale);
         axis.autorange = false;
       }
       return axis;
@@ -522,7 +558,7 @@
       this.specById = new Map(this.specs.map((s) => [s.id, s]));
       this.curveIdxById = new Map(this.specs.map((s, i) => [s.id, i]));
       this.shadeRules = cfg.shade || [];
-      this.hasBoundShade = this.shadeRules.some((r) => r.toKind === "bound");
+      this.hasBoundShade = this.shadeRules.some((r) => r.fromKind === "bound" || r.toKind === "bound");
       this.is3d = this.specs[0].dim === "3d";
       this.sliders = this.collectSliders();
       this.curveVisible = this.specs.map(() => true);
@@ -545,10 +581,14 @@
     }
 
     isShadeActive(idx) {
-      const rule = this.shadeRules[idx];
-      const srcVis = this.curveVisible[this.curveIdxById.get(rule.from)];
-      const dstVis = rule.toKind === "curve" ? this.curveVisible[this.curveIdxById.get(rule.to)] : true;
-      return Boolean(this.shadeVisible[idx] && srcVis && dstVis);
+      return Boolean(
+        this.shadeVisible[idx] &&
+        shadeCurveIds(this.shadeRules[idx]).every((id) => this.curveVisible[this.curveIdxById.get(id)])
+      );
+    }
+
+    isCurveNeededByVisibleShade(curveId) {
+      return this.shadeRules.some((r, i) => this.isShadeActive(i) && shadeCurveIds(r).includes(curveId));
     }
 
     collectSliders() {
@@ -618,15 +658,6 @@
       return entry;
     }
 
-    isCurveNeededByVisibleShade(curveId) {
-      for (let i = 0; i < this.shadeRules.length; i++) {
-        if (!this.isShadeActive(i)) continue;
-        const r = this.shadeRules[i];
-        if (r.from === curveId || (r.toKind === "curve" && r.to === curveId)) return true;
-      }
-      return false;
-    }
-
     evaluateAll() {
       const sliderEnv = this.getSliderEnv();
       const scales = this.getScales();
@@ -651,133 +682,111 @@
       return [...shadeTraces, ...curveTraces];
     }
 
-    updateAffectedTraces(changedSliderName = null, syncMath = false) {
+    restyleTraces({ sliderName = null, resampleZoom = false, syncVis = false } = {}) {
       if (!this.canvas || this.isUpdating) return;
       this.isUpdating = true;
       try {
         const sliderEnv = this.getSliderEnv();
         const scales = this.getScales();
         const shadeCount = this.shadeRules.length;
-        const traceIndices = [], xs = [], ys = [], zs = [];
         const evaluatedMap = new Map();
+        const indices = [], xs = [], ys = [], zs = [];
 
         this.specs.forEach((spec, idx) => {
-          const affected = changedSliderName === null
-            ? (this.zoomXRange !== null || this.zoomYRange === null) && spec.isExplicitYX
-            : spec.sliderNames.has(changedSliderName);
+          const needed = this.curveVisible[idx] || this.isCurveNeededByVisibleShade(spec.id);
+          const stale = sliderName !== null
+            ? spec.sliderNames.has(sliderName)
+            : (resampleZoom ? spec.isExplicitYX : (this.evalDirty[idx] || !this.evalCache[idx]));
 
-          if (affected) {
-            if (this.curveVisible[idx] || this.isCurveNeededByVisibleShade(spec.id)) {
+          if (stale) {
+            if (needed) {
               const entry = this.evaluateCurveAt(idx, sliderEnv, scales);
-              evaluatedMap.set(spec.id, entry);
-              traceIndices.push(shadeCount + idx);
+              indices.push(shadeCount + idx);
               xs.push(entry.trace.x);
               ys.push(entry.trace.y);
               if (this.is3d) zs.push(entry.trace.z);
             } else {
               this.evalDirty[idx] = true;
             }
-          } else if (this.evalCache[idx]) {
-            evaluatedMap.set(spec.id, this.evalCache[idx]);
           }
+          if (this.evalCache[idx]) evaluatedMap.set(spec.id, this.evalCache[idx]);
         });
 
         if (shadeCount > 0) {
           const yBounds = this.getYBounds();
           this.shadeRules.forEach((rule, idx) => {
-            const srcSpec = this.specById.get(rule.from);
-            const dstSpec = rule.toKind === "curve" ? this.specById.get(rule.to) : null;
-            const affected = changedSliderName === null
-              ? true
-              : (srcSpec.sliderNames.has(changedSliderName) || Boolean(dstSpec?.sliderNames.has(changedSliderName)));
-
-            if (affected && this.isShadeActive(idx)) {
+            if (!this.isShadeActive(idx)) return;
+            const stale = sliderName !== null
+              ? shadeCurveIds(rule).some((id) => this.specById.get(id).sliderNames.has(sliderName))
+              : true;
+            if (stale) {
               const trace = ShadeBuilder.buildTrace(rule, evaluatedMap, sliderEnv, yBounds);
-              traceIndices.push(idx);
+              indices.push(idx);
               xs.push(trace.x);
               ys.push(trace.y);
             }
           });
         }
 
-        if (traceIndices.length > 0) {
-          Plotly.restyle(this.canvas, this.is3d ? { x: xs, y: ys, z: zs } : { x: xs, y: ys }, traceIndices);
+        if (indices.length > 0) {
+          Plotly.restyle(this.canvas, this.is3d ? { x: xs, y: ys, z: zs } : { x: xs, y: ys }, indices);
         }
-      } finally {
-        this.isUpdating = false;
-      }
-      if (syncMath) this.syncMathOverlays();
-    }
-
-    syncVisibility() {
-      if (!this.canvas || this.isUpdating) return;
-      this.isUpdating = true;
-      try {
-        const sliderEnv = this.getSliderEnv();
-        const scales = this.getScales();
-        const shadeCount = this.shadeRules.length;
-        const evaluatedMap = new Map();
-        const updateIndices = [], updateX = [], updateY = [], updateZ = [];
-
-        this.specs.forEach((spec, idx) => {
-          const needed = this.curveVisible[idx] || this.isCurveNeededByVisibleShade(spec.id);
-          if (needed && (this.evalDirty[idx] || !this.evalCache[idx])) {
-            const entry = this.evaluateCurveAt(idx, sliderEnv, scales);
-            updateIndices.push(shadeCount + idx);
-            updateX.push(entry.trace.x);
-            updateY.push(entry.trace.y);
-            if (this.is3d) updateZ.push(entry.trace.z);
-          }
-          if (this.evalCache[idx]) evaluatedMap.set(spec.id, this.evalCache[idx]);
-        });
-
-        const yBounds = this.getYBounds();
-        const visList = [];
-
-        this.shadeRules.forEach((rule, idx) => {
-          const active = this.isShadeActive(idx);
-          visList.push(active ? true : "legendonly");
-          if (active) {
-            const trace = ShadeBuilder.buildTrace(rule, evaluatedMap, sliderEnv, yBounds);
-            updateIndices.push(idx);
-            updateX.push(trace.x);
-            updateY.push(trace.y);
-          }
-        });
-
-        this.curveVisible.forEach((vis) => visList.push(vis ? true : "legendonly"));
-
-        if (updateIndices.length > 0) {
-          Plotly.restyle(this.canvas, this.is3d ? { x: updateX, y: updateY, z: updateZ } : { x: updateX, y: updateY }, updateIndices);
+        if (syncVis) {
+          const vis = [
+            ...this.shadeRules.map((_, i) => (this.isShadeActive(i) ? true : "legendonly")),
+            ...this.curveVisible.map((v) => (v ? true : "legendonly"))
+          ];
+          Plotly.restyle(this.canvas, { visible: vis });
         }
-        Plotly.restyle(this.canvas, { visible: visList });
       } finally {
         this.isUpdating = false;
       }
     }
 
-    buildLegendItems() {
-      const items = this.specs.map((spec, idx) => ({
-        label: spec.rawLabel,
-        color: resolveCurveColor(spec),
-        mode: spec.mode,
-        onToggle: (checked) => { this.curveVisible[idx] = checked; this.syncVisibility(); }
-      }));
-      this.shadeRules.forEach((rule, idx) => {
-        if (!rule.label) return;
-        items.push({
-          label: rule.label,
-          color: rule.color || resolveCurveColor(this.specById.get(rule.from)),
-          mode: "area",
-          onToggle: (checked) => { this.shadeVisible[idx] = checked; this.syncVisibility(); }
-        });
+    buildLegendItem(entry) {
+      const item = document.createElement("label");
+      item.className = "dynamic-plot-curve-toggle";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "form-check-input dynamic-plot-curve-checkbox";
+      checkbox.checked = true;
+      checkbox.style.accentColor = entry.color;
+      checkbox.addEventListener("change", () => {
+        item.classList.toggle("is-hidden", !checkbox.checked);
+        entry.onToggle(checkbox.checked);
       });
-      return items;
+
+      const swatch = document.createElement("span");
+      swatch.className = "dynamic-plot-swatch";
+      swatch.dataset.mode = entry.mode;
+      swatch.style.setProperty("--swatch-color", entry.color);
+
+      const labelSpan = document.createElement("span");
+      labelSpan.className = "dynamic-plot-curve-label";
+      if (hasMathDelimiters(entry.label)) labelSpan.innerHTML = MathRenderer.get(entry.label);
+      else labelSpan.textContent = entry.label;
+
+      item.append(checkbox, swatch, labelSpan);
+      return item;
     }
 
     buildSidebar(bodyEl) {
       if (this.cfg.legend === false) return;
-      const items = this.buildLegendItems();
+      const items = [
+        ...this.specs.map((spec, idx) => ({
+          label: spec.rawLabel,
+          color: resolveCurveColor(spec),
+          mode: spec.mode,
+          onToggle: (checked) => { this.curveVisible[idx] = checked; this.restyleTraces({ syncVis: true }); }
+        })),
+        ...this.shadeRules.flatMap((rule, idx) => !rule.label ? [] : [{
+          label: rule.label,
+          color: rule.color || resolveCurveColor(this.specById.get(shadeCurveIds(rule)[0])),
+          mode: "area",
+          onToggle: (checked) => { this.shadeVisible[idx] = checked; this.restyleTraces({ syncVis: true }); }
+        }])
+      ];
       if (items.length === 0) return;
 
       const wrap = document.createElement("div");
@@ -795,102 +804,73 @@
 
       const sidebar = document.createElement("div");
       sidebar.className = "dynamic-plot-sidebar";
-
-      for (const entry of items) {
-        const item = document.createElement("label");
-        item.className = "dynamic-plot-curve-toggle";
-
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.className = "form-check-input dynamic-plot-curve-checkbox";
-        checkbox.checked = true;
-        checkbox.style.accentColor = entry.color;
-        checkbox.addEventListener("change", () => {
-          item.classList.toggle("is-hidden", !checkbox.checked);
-          entry.onToggle(checkbox.checked);
-        });
-
-        const swatch = document.createElement("span");
-        swatch.className = "dynamic-plot-swatch";
-        swatch.dataset.mode = entry.mode;
-        swatch.style.setProperty("--swatch-color", entry.color);
-
-        const labelSpan = document.createElement("span");
-        labelSpan.className = "dynamic-plot-curve-label";
-        if (hasMathDelimiters(entry.label)) labelSpan.innerHTML = MathRenderer.get(entry.label);
-        else labelSpan.textContent = entry.label;
-
-        item.append(checkbox, swatch, labelSpan);
-        sidebar.appendChild(item);
-      }
+      for (const entry of items) sidebar.appendChild(this.buildLegendItem(entry));
 
       wrap.append(toggleBtn, sidebar);
       bodyEl.appendChild(wrap);
     }
 
-    buildControls() {
-      if (this.sliders.length === 0) return;
+    buildSliderRow(s) {
+      const row = document.createElement("div");
+      row.className = "dynamic-plot-slider-row";
 
-      const controls = document.createElement("div");
-      controls.className = "dynamic-plot-controls";
-
-      const list = document.createElement("div");
-      list.className = "dynamic-plot-sliders";
-
-      for (const s of this.sliders) {
-        const row = document.createElement("div");
-        row.className = "dynamic-plot-slider-row";
-
-        if (s.play) {
-          const playBtn = document.createElement("button");
-          playBtn.type = "button";
-          playBtn.className = "dynamic-plot-play-btn";
-          playBtn.title = "Play / Pause";
-          playBtn.textContent = "\u25B6";
-          playBtn.addEventListener("click", () => (s.isPlaying ? this.stopPlay(s) : this.startPlay(s)));
-          s.playBtn = playBtn;
-          row.appendChild(playBtn);
-        }
-
-        const main = document.createElement("div");
-        main.className = "dynamic-plot-slider-main";
-
-        const header = document.createElement("div");
-        header.className = "dynamic-plot-slider-header";
-
-        const nameSpan = document.createElement("span");
-        nameSpan.className = "dynamic-plot-slider-label";
-        if (hasMathDelimiters(s.label)) nameSpan.innerHTML = MathRenderer.get(s.label);
-        else nameSpan.textContent = s.label;
-
-        const sepSpan = document.createElement("span");
-        sepSpan.textContent = ": ";
-
-        const valSpan = document.createElement("span");
-        valSpan.className = "dynamic-plot-slider-value";
-        valSpan.textContent = formatNumber(s.values[0]);
-
-        header.append(nameSpan, sepSpan, valSpan);
-
-        const input = document.createElement("input");
-        input.type = "range";
-        input.className = "form-range dynamic-plot-slider-input";
-        input.min = "0";
-        input.max = String(s.values.length - 1);
-        input.step = "1";
-        input.value = "0";
-        input.addEventListener("input", () => {
-          this.stopPlay(s);
-          this.setSliderIndex(s, Number(input.value));
-        });
-
-        s.inputEl = input;
-        s.valueEl = valSpan;
-        main.append(header, input);
-        row.appendChild(main);
-        list.appendChild(row);
+      if (s.play) {
+        const playBtn = document.createElement("button");
+        playBtn.type = "button";
+        playBtn.className = "dynamic-plot-play-btn";
+        playBtn.title = "Play / Pause";
+        playBtn.textContent = "\u25B6";
+        playBtn.addEventListener("click", () => (s.isPlaying ? this.stopPlay(s) : this.startPlay(s)));
+        s.playBtn = playBtn;
+        row.appendChild(playBtn);
       }
 
+      const main = document.createElement("div");
+      main.className = "dynamic-plot-slider-main";
+
+      const header = document.createElement("div");
+      header.className = "dynamic-plot-slider-header";
+
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "dynamic-plot-slider-label";
+      if (hasMathDelimiters(s.label)) nameSpan.innerHTML = MathRenderer.get(s.label);
+      else nameSpan.textContent = s.label;
+
+      const sepSpan = document.createElement("span");
+      sepSpan.textContent = ": ";
+
+      const valSpan = document.createElement("span");
+      valSpan.className = "dynamic-plot-slider-value";
+      valSpan.textContent = formatNumber(s.values[0]);
+
+      header.append(nameSpan, sepSpan, valSpan);
+
+      const input = document.createElement("input");
+      input.type = "range";
+      input.className = "form-range dynamic-plot-slider-input";
+      input.min = "0";
+      input.max = String(s.values.length - 1);
+      input.step = "1";
+      input.value = "0";
+      input.addEventListener("input", () => {
+        this.stopPlay(s);
+        this.setSliderIndex(s, Number(input.value));
+      });
+
+      s.inputEl = input;
+      s.valueEl = valSpan;
+      main.append(header, input);
+      row.appendChild(main);
+      return row;
+    }
+
+    buildControls() {
+      if (this.sliders.length === 0) return;
+      const controls = document.createElement("div");
+      controls.className = "dynamic-plot-controls";
+      const list = document.createElement("div");
+      list.className = "dynamic-plot-sliders";
+      for (const s of this.sliders) list.appendChild(this.buildSliderRow(s));
       controls.appendChild(list);
       this.stageEl.appendChild(controls);
     }
@@ -899,7 +879,7 @@
       slider.index = idx;
       if (slider.inputEl) slider.inputEl.value = String(idx);
       if (slider.valueEl) slider.valueEl.textContent = formatNumber(slider.values[idx]);
-      this.updateAffectedTraces(slider.name, false);
+      this.restyleTraces({ sliderName: slider.name });
     }
 
     startPlay(slider) {
@@ -992,29 +972,26 @@
     attachEvents() {
       this.canvas.on("plotly_relayout", (ev) => {
         if (!this.is3d && !this.isUpdating && ev) {
-          let needsRefresh = false;
+          let changed = false;
           if (ev["xaxis.autorange"] || ev["yaxis.autorange"]) {
             this.zoomXRange = null;
             this.zoomYRange = null;
             if ((this.sliders.length > 0 || this.hasBoundShade) && this.canvas.layout?.yaxis) {
-              const r = this.cfg.yrange || this.homeYRange;
-              this.canvas.layout.yaxis.range = this.cfg.yscale === "log" ? [Math.log10(r[0]), Math.log10(r[1])] : r;
+              this.canvas.layout.yaxis.range = ThemeSync.encodeRange(this.cfg.yrange || this.homeYRange, this.cfg.yscale);
               this.canvas.layout.yaxis.autorange = false;
             }
-            needsRefresh = true;
+            changed = true;
           } else {
             if (ev["xaxis.range[0]"] !== undefined && ev["xaxis.range[1]"] !== undefined) {
-              const r0 = Number(ev["xaxis.range[0]"]), r1 = Number(ev["xaxis.range[1]"]);
-              this.zoomXRange = this.cfg.xscale === "log" ? [Math.pow(10, r0), Math.pow(10, r1)] : [r0, r1];
-              needsRefresh = true;
+              this.zoomXRange = ThemeSync.decodeRange(Number(ev["xaxis.range[0]"]), Number(ev["xaxis.range[1]"]), this.cfg.xscale);
+              changed = true;
             }
             if (ev["yaxis.range[0]"] !== undefined && ev["yaxis.range[1]"] !== undefined) {
-              const r0 = Number(ev["yaxis.range[0]"]), r1 = Number(ev["yaxis.range[1]"]);
-              this.zoomYRange = this.cfg.yscale === "log" ? [Math.pow(10, r0), Math.pow(10, r1)] : [r0, r1];
-              needsRefresh = true;
+              this.zoomYRange = ThemeSync.decodeRange(Number(ev["yaxis.range[0]"]), Number(ev["yaxis.range[1]"]), this.cfg.yscale);
+              changed = true;
             }
           }
-          if (needsRefresh) this.updateAffectedTraces(null, true);
+          if (changed) this.restyleTraces({ resampleZoom: true });
         }
         this.syncMathOverlays();
       });

@@ -118,16 +118,11 @@ local function is_valid_id(name)
     return type(name) == "string" and name:match("^[a-zA-Z_][%w_%-]*$") ~= nil and CONST_ENV[name] == nil
 end
 
-local function is_valid_ident(name)
-    return type(name) == "string" and name:match("^[a-zA-Z_][a-zA-Z0-9_]*$") ~= nil and CONST_ENV[name] == nil
-end
-
 local function strip_quotes(s)
     if type(s) ~= "string" then return s end
     return s:match('^"(.*)"$') or s:match("^'(.*)'$") or s
 end
 
--- Visits every non-scientific-notation identifier in an expression
 local function each_identifier(expr, fn)
     local scrubbed = expr:gsub("%d+%.?%d*[eE][+-]?%d+", "0"):gsub("%.%d+[eE][+-]?%d+", "0")
     for ident in scrubbed:gmatch("[a-zA-Z_][a-zA-Z0-9_]*") do
@@ -135,7 +130,6 @@ local function each_identifier(expr, fn)
     end
 end
 
--- Evaluates a constant numeric expression in a sandboxed math environment
 local function eval_const_expr(src, context)
     local trimmed = U.trim(src)
     if trimmed == "" or trimmed:find("[^0-9a-zA-Z_%.%+%-%*/%^%(%),%s]") then
@@ -149,9 +143,13 @@ local function eval_const_expr(src, context)
     end)
 
     local sci_literals = {}
+    local stash_sci = function(m)
+        sci_literals[#sci_literals + 1] = "(" .. m .. ")"
+        return "\1" .. #sci_literals .. "\2"
+    end
     local protected = trimmed
-        :gsub("(%d+%.?%d*[eE][+-]?%d+)", function(m) sci_literals[#sci_literals + 1] = "(" .. m .. ")"; return "\1" .. #sci_literals .. "\2" end)
-        :gsub("(%.%d+[eE][+-]?%d+)", function(m) sci_literals[#sci_literals + 1] = "(" .. m .. ")"; return "\1" .. #sci_literals .. "\2" end)
+        :gsub("(%d+%.?%d*[eE][+-]?%d+)", stash_sci)
+        :gsub("(%.%d+[eE][+-]?%d+)", stash_sci)
 
     local lua_expr = protected
         :gsub("%f[%w_](%d+%.?%d*)([a-zA-Z_(\1])", "%1*%2")
@@ -308,7 +306,6 @@ local function validate_expr(expr, allowed_vars, allow_cols, context)
     end)
 end
 
--- Generic sub-block parser for 'sliders:' and 'shade:' (entries with optional indented 'key: value' options)
 local function parse_entry_block(lines, start_idx, block_name, option_keys, parse_header, apply_option, context)
     local entries, current, seen_opts = {}, nil, nil
     local i = start_idx
@@ -341,7 +338,6 @@ local function parse_entry_block(lines, start_idx, block_name, option_keys, pars
     return entries, i
 end
 
--- Parses a '.plot-function' or '.plot-file' block
 local function parse_curve_block(lines, reserved_keys, required_keys, allow_domain_params, context)
     local kv, vars, domain_params, slider_params, seen_params = {}, {}, {}, {}, {}
     local i = 1
@@ -376,8 +372,7 @@ local function parse_curve_block(lines, reserved_keys, required_keys, allow_doma
                         if not hk or reserved_keys[hk:lower()] or SLIDER_OPTIONS[hk:lower()] then return nil end
                         if not is_valid_ident(hk) then fail("Invalid slider name '%s' in %s", hk, context) end
                         if seen_params[hk] then fail("Duplicate parameter '%s' in %s", hk, context) end
-                        local spec_str = U.trim(hv):gsub(":%s*$", "")
-                        local p = parse_param_spec(hk, spec_str, context)
+                        local p = parse_param_spec(hk, U.trim(hv):gsub(":%s*$", ""), context)
                         p.isSlider = true
                         p.play = DEFAULTS.play
                         seen_params[hk] = true
@@ -421,6 +416,67 @@ local function parse_curve_block(lines, reserved_keys, required_keys, allow_doma
         if not kv[req] or kv[req] == "" then fail("Missing required key '%s' in %s", req, context) end
     end
     return kv, vars, domain_params, slider_params, seen_params
+end
+
+local function parse_shade_endpoint(tok, context)
+    if tok == "bottom" or tok == "top" then return "bound", tok end
+    if is_valid_id(tok) then return "curve", tok end
+    return "const", eval_const_expr(tok, context)
+end
+
+local function parse_plot_block(lines, context)
+    local kv, shade, i = {}, {}, 1
+
+    while i <= #lines do
+        local opt_k, opt_v = lines[i]:match("^([%w_%-]+)%s*:%s*(.*)$")
+        local opt_lower = opt_k and opt_k:lower() or nil
+        if not opt_lower or not PLOT_KEYS[opt_lower] then
+            fail("Invalid or unknown key in %s: %s", context, lines[i])
+        end
+        if kv[opt_lower] ~= nil then fail("Duplicate key '%s' in %s", opt_lower, context) end
+        local val = U.trim(opt_v)
+
+        if opt_lower == "shade" then
+            if val ~= "" then fail("Key 'shade' in %s must start a multi-line block", context) end
+            kv.shade = true
+            shade, i = parse_entry_block(
+                lines, i + 1, "shade", SHADE_OPTIONS,
+                function(line)
+                    local lhs, rhs = line:match("^(.-)%s*%->%s*(.-)$")
+                    if not lhs then return nil end
+                    lhs = U.trim(lhs)
+                    rhs = U.trim(rhs):gsub(":%s*$", "")
+                    if lhs == "" or rhs == "" then
+                        fail("Invalid shading rule '%s' in %s (expected 'lower -> upper')", line, context)
+                    end
+                    local from_kind, from_val = parse_shade_endpoint(lhs, context)
+                    local to_kind, to_val = parse_shade_endpoint(rhs, context)
+                    return {
+                        fromKind = from_kind, from = from_val,
+                        toKind = to_kind, to = to_val,
+                        opacity = DEFAULTS.shade_opacity
+                    }
+                end,
+                function(rule, opt, opt_val, ctx)
+                    if opt == "xrange" then rule.xrange = parse_range(opt_val, "xrange", ctx)
+                    elseif opt == "color" then rule.color = strip_quotes(opt_val)
+                    elseif opt == "opacity" then rule.opacity = parse_float(opt_val, "opacity", 0, 1, ctx)
+                    elseif opt == "label" then
+                        rule.label = strip_quotes(opt_val)
+                        track_math(rule.label)
+                    end
+                end,
+                context
+            )
+        else
+            if val == "" then fail("Key '%s' in %s requires a value", opt_lower, context) end
+            kv[opt_lower] = val
+            i = i + 1
+        end
+    end
+
+    if not kv.curves or kv.curves == "" then fail("Missing required key 'curves' in %s", context) end
+    return kv, shade
 end
 
 local function read_numeric_matrix(src, skip, context)
@@ -467,7 +523,9 @@ local function register_curve_def(el, kind)
     local is_fn = (kind == "function")
     local tag_name = is_fn and ".plot-function" or ".plot-file"
     local id = U.trim(el.identifier)
-    if id == "" then fail("'%s' block requires an 'id' attribute (e.g. ::: {%s id=\"c1\"})", tag_name, tag_name) end
+    if not is_valid_id(id) then
+        fail("'%s' block requires a valid 'id' attribute (e.g. ::: {%s id=\"c1\"})", tag_name, tag_name)
+    end
     local context = tag_name .. "#" .. id
 
     local kv, vars, domain_params, slider_params, seen_params = parse_curve_block(
@@ -564,63 +622,6 @@ local function register_curve_def(el, kind)
     return {}
 end
 
-local function parse_plot_block(lines, context)
-    local kv, shade, i = {}, {}, 1
-
-    while i <= #lines do
-        local opt_k, opt_v = lines[i]:match("^([%w_%-]+)%s*:%s*(.*)$")
-        local opt_lower = opt_k and opt_k:lower() or nil
-        if not opt_lower or not PLOT_KEYS[opt_lower] then
-            fail("Invalid or unknown key in %s: %s", context, lines[i])
-        end
-        if kv[opt_lower] ~= nil then fail("Duplicate key '%s' in %s", opt_lower, context) end
-        local val = U.trim(opt_v)
-
-        if opt_lower == "shade" then
-            if val ~= "" then fail("Key 'shade' in %s must start a multi-line block", context) end
-            kv.shade = true
-            shade, i = parse_entry_block(
-                lines, i + 1, "shade", SHADE_OPTIONS,
-                function(line)
-                    local lhs, rhs = line:match("^(.-)%s*%->%s*(.-)$")
-                    if not lhs then return nil end
-                    lhs = U.trim(lhs)
-                    rhs = U.trim(rhs):gsub(":%s*$", "")
-                    if lhs == "" or rhs == "" then
-                        fail("Invalid shading rule '%s' in %s (expected 'curve -> target')", line, context)
-                    end
-                    local rule = { from = lhs, opacity = DEFAULTS.shade_opacity }
-                    if rhs == "bottom" or rhs == "top" then
-                        rule.toKind, rule.to = "bound", rhs
-                    elseif is_valid_id(rhs) then
-                        rule.toKind, rule.to = "curve", rhs
-                    else
-                        rule.toKind, rule.to = "const", eval_const_expr(rhs, context)
-                    end
-                    return rule
-                end,
-                function(rule, opt, opt_val, ctx)
-                    if opt == "xrange" then rule.xrange = parse_range(opt_val, "xrange", ctx)
-                    elseif opt == "color" then rule.color = strip_quotes(opt_val)
-                    elseif opt == "opacity" then rule.opacity = parse_float(opt_val, "opacity", 0, 1, ctx)
-                    elseif opt == "label" then
-                        rule.label = strip_quotes(opt_val)
-                        track_math(rule.label)
-                    end
-                end,
-                context
-            )
-        else
-            if val == "" then fail("Key '%s' in %s requires a value", opt_lower, context) end
-            kv[opt_lower] = val
-            i = i + 1
-        end
-    end
-
-    if not kv.curves or kv.curves == "" then fail("Missing required key 'curves' in %s", context) end
-    return kv, shade
-end
-
 local function render_plot_canvas(el)
     local id = U.trim(el.identifier)
     local context = (id ~= "") and (".dynamic-plot#" .. id) or ".dynamic-plot"
@@ -711,12 +712,23 @@ local function validate_plots()
         end
 
         for _, rule in ipairs(cfg.shade or {}) do
-            if not curve_set[rule.from] then fail("Shading source '%s' must be listed in 'curves' of %s", rule.from, ctx) end
-            if rule.toKind == "curve" then
-                if not curve_set[rule.to] then fail("Shading target '%s' must be listed in 'curves' of %s", rule.to, ctx) end
-                if rule.from == rule.to and rule.xrange ~= nil then
-                    fail("Closed-curve shading '%s -> %s' cannot specify 'xrange' in %s", rule.from, rule.to, ctx)
-                end
+            if rule.fromKind ~= "curve" and rule.toKind ~= "curve" then
+                fail("Shading rule '%s -> %s' in %s must reference at least one curve ID", tostring(rule.from), tostring(rule.to), ctx)
+            end
+            if rule.fromKind == "bound" and rule.from == "top" then
+                fail("Invalid shading direction 'top -> %s' in %s (use '%s -> top' to shade above)", tostring(rule.to), ctx, tostring(rule.to))
+            end
+            if rule.toKind == "bound" and rule.to == "bottom" then
+                fail("Invalid shading direction '%s -> bottom' in %s (use 'bottom -> %s' to shade below)", tostring(rule.from), ctx, tostring(rule.from))
+            end
+            if rule.fromKind == "curve" and not curve_set[rule.from] then
+                fail("Shading lower boundary '%s' must be listed in 'curves' of %s", rule.from, ctx)
+            end
+            if rule.toKind == "curve" and not curve_set[rule.to] then
+                fail("Shading upper boundary '%s' must be listed in 'curves' of %s", rule.to, ctx)
+            end
+            if rule.fromKind == "curve" and rule.toKind == "curve" and rule.from == rule.to and rule.xrange ~= nil then
+                fail("Closed-curve shading '%s -> %s' cannot specify 'xrange' in %s", rule.from, rule.to, ctx)
             end
             if rule.xrange and cfg.xscale == "log" and rule.xrange[1] <= 0 then
                 fail("Logarithmic xaxis requires positive shading 'xrange' bounds in %s", ctx)
