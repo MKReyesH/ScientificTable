@@ -95,10 +95,12 @@ local has_plot_math = false
 local plot_defs = {}
 local plot_configs = {}
 
+-- Terminates filter execution with a formatted error message
 local function fail(fmt, ...)
     error(string.format("[%s] Error: " .. fmt, TAG, ...), 0)
 end
 
+-- Resets per-document filter state
 local function reset_state()
     has_dynamic_plot = false
     has_plot_math = false
@@ -106,23 +108,28 @@ local function reset_state()
     plot_configs = {}
 end
 
+-- Marks document math flag when LaTeX delimiters are detected
 local function track_math(str)
     if U.has_math(str) then has_plot_math = true end
 end
 
+-- Validates math variable and parameter identifier names
 local function is_valid_ident(name)
     return type(name) == "string" and name:match("^[a-zA-Z_][a-zA-Z0-9_]*$") ~= nil and CONST_ENV[name] == nil
 end
 
+-- Validates curve and plot identifier names (allowing hyphens)
 local function is_valid_id(name)
     return type(name) == "string" and name:match("^[a-zA-Z_][%w_%-]*$") ~= nil and CONST_ENV[name] == nil
 end
 
+-- Removes matching leading and trailing single or double quotes
 local function strip_quotes(s)
     if type(s) ~= "string" then return s end
     return s:match('^"(.*)"$') or s:match("^'(.*)'$") or s
 end
 
+-- Visits every non-scientific-notation identifier in an expression
 local function each_identifier(expr, fn)
     local scrubbed = expr:gsub("%d+%.?%d*[eE][+-]?%d+", "0"):gsub("%.%d+[eE][+-]?%d+", "0")
     for ident in scrubbed:gmatch("[a-zA-Z_][a-zA-Z0-9_]*") do
@@ -130,6 +137,7 @@ local function each_identifier(expr, fn)
     end
 end
 
+-- Evaluates a constant numeric expression in a sandboxed math environment
 local function eval_const_expr(src, context)
     local trimmed = U.trim(src)
     if trimmed == "" or trimmed:find("[^0-9a-zA-Z_%.%+%-%*/%^%(%),%s]") then
@@ -142,6 +150,7 @@ local function eval_const_expr(src, context)
         end
     end)
 
+    -- Protect scientific-notation literals before inserting implicit multiplication
     local sci_literals = {}
     local stash_sci = function(m)
         sci_literals[#sci_literals + 1] = "(" .. m .. ")"
@@ -166,6 +175,7 @@ local function eval_const_expr(src, context)
     return val
 end
 
+-- Parses a boolean option string
 local function parse_bool(val, key, context)
     if val == nil then return nil end
     local lower = val:lower()
@@ -174,6 +184,7 @@ local function parse_bool(val, key, context)
     fail("Key '%s' in %s must be 'true' or 'false' (got '%s')", key, context, val)
 end
 
+-- Parses an integer option string with a lower bound
 local function parse_int(val, key, min_val, context)
     if val == nil then return nil end
     local n = tonumber(val)
@@ -183,6 +194,7 @@ local function parse_int(val, key, min_val, context)
     return n
 end
 
+-- Parses a floating-point option string within [min_val, max_val]
 local function parse_float(val, key, min_val, max_val, context)
     if val == nil then return nil end
     local n = tonumber(val)
@@ -192,6 +204,7 @@ local function parse_float(val, key, min_val, max_val, context)
     return n
 end
 
+-- Parses an option string against an allowed lookup table
 local function parse_enum(val, key, valid_map, context)
     if val == nil then return nil end
     if not valid_map[val] then
@@ -200,6 +213,7 @@ local function parse_enum(val, key, valid_map, context)
     return val
 end
 
+-- Splits comma-separated items while respecting parenthesized subexpressions
 local function split_top_commas(str)
     local items, depth, start = {}, 0, 1
     for i = 1, #str do
@@ -215,6 +229,7 @@ local function split_top_commas(str)
     return items
 end
 
+-- Parses a '[min, max]' numeric interval expression
 local function parse_range(val, key, context)
     if val == nil then return nil end
     local inner = val:match("^%[%s*(.-)%s*%]$")
@@ -229,6 +244,7 @@ local function parse_range(val, key, context)
     return { lo, hi }
 end
 
+-- Parses a domain or slider parameter specification ('[min, max]', '[a..b]', or list)
 local function parse_param_spec(name, val, context)
     local inner = val:match("^%[%s*(.-)%s*%]$")
     if not inner or inner == "" then
@@ -263,6 +279,7 @@ local function parse_param_spec(name, val, context)
     fail("Parameter '%s' in %s must be '[min, max]', '[a..b]', or '[v1, v2, v3, ...]' (got '%s')", name, context, val)
 end
 
+-- Validates expression syntax, column indexing, and allowed identifiers
 local function validate_expr(expr, allowed_vars, allow_cols, context)
     local trimmed = U.trim(expr)
     if trimmed == "" then fail("Empty expression in %s", context) end
@@ -271,6 +288,7 @@ local function validate_expr(expr, allowed_vars, allow_cols, context)
         fail("Invalid character in expression '%s' in %s", expr, context)
     end
 
+    -- Strip and recursively validate 'c[...]' column index expressions
     local stripped, pos, len = {}, 1, #trimmed
     while pos <= len do
         local s_idx, e_idx = trimmed:find("%f[%w_]c%[", pos)
@@ -306,6 +324,7 @@ local function validate_expr(expr, allowed_vars, allow_cols, context)
     end)
 end
 
+-- Parses an indented entry block ('sliders:' or 'shade:') with per-entry options
 local function parse_entry_block(lines, start_idx, block_name, option_keys, parse_header, apply_option, context)
     local entries, current, seen_opts = {}, nil, nil
     local i = start_idx
@@ -338,6 +357,7 @@ local function parse_entry_block(lines, start_idx, block_name, option_keys, pars
     return entries, i
 end
 
+-- Parses key-value settings, variables, domain ranges, and sliders for a curve block
 local function parse_curve_block(lines, reserved_keys, required_keys, allow_domain_params, context)
     local kv, vars, domain_params, slider_params, seen_params = {}, {}, {}, {}, {}
     local i = 1
@@ -353,6 +373,7 @@ local function parse_curve_block(lines, reserved_keys, required_keys, allow_doma
         if reserved_keys[k_lower] then
             if kv[k_lower] ~= nil then fail("Duplicate key '%s' in %s", k_lower, context) end
             if k_lower == "vars" then
+                -- Parse multi-line 'vars:' assignments
                 if val ~= "" then fail("Key 'vars' in %s must start a multi-line block", context) end
                 kv.vars = true
                 i = i + 1
@@ -364,6 +385,7 @@ local function parse_curve_block(lines, reserved_keys, required_keys, allow_doma
                     i = i + 1
                 end
             elseif k_lower == "sliders" then
+                -- Parse multi-line 'sliders:' entries and options
                 if val ~= "" then fail("Key 'sliders' in %s must start a multi-line block", context) end
                 kv.sliders = true
                 slider_params, i = parse_entry_block(
@@ -418,12 +440,14 @@ local function parse_curve_block(lines, reserved_keys, required_keys, allow_doma
     return kv, vars, domain_params, slider_params, seen_params
 end
 
+-- Classifies a shading rule endpoint as an axis bound, curve ID, or constant
 local function parse_shade_endpoint(tok, context)
     if tok == "bottom" or tok == "top" then return "bound", tok end
     if is_valid_id(tok) then return "curve", tok end
     return "const", eval_const_expr(tok, context)
 end
 
+-- Parses key-value settings and shading rules for a '.dynamic-plot' block
 local function parse_plot_block(lines, context)
     local kv, shade, i = {}, {}, 1
 
@@ -437,6 +461,7 @@ local function parse_plot_block(lines, context)
         local val = U.trim(opt_v)
 
         if opt_lower == "shade" then
+            -- Parse multi-line 'shade:' rules ('lower -> upper') and options
             if val ~= "" then fail("Key 'shade' in %s must start a multi-line block", context) end
             kv.shade = true
             shade, i = parse_entry_block(
@@ -479,6 +504,7 @@ local function parse_plot_block(lines, context)
     return kv, shade
 end
 
+-- Loads a numeric matrix from a whitespace- or comma-separated data file
 local function read_numeric_matrix(src, skip, context)
     local file = U.open_data_file(src, SCRIPT_DIR)
     if not file then fail("Cannot open data file at '%s' in %s. Check file path.", src, context) end
@@ -519,6 +545,7 @@ local function read_numeric_matrix(src, skip, context)
     return rows
 end
 
+-- Registers a '.plot-function' or '.plot-file' curve definition
 local function register_curve_def(el, kind)
     local is_fn = (kind == "function")
     local tag_name = is_fn and ".plot-function" or ".plot-file"
@@ -536,6 +563,7 @@ local function register_curve_def(el, kind)
         context
     )
 
+    -- Promote bracketed coordinate ranges (e.g. 'x: [0, 10]') into domain parameters
     local rows, base_vars = nil, {}
     if is_fn then
         for _, coord in ipairs({ "x", "y", "z" }) do
@@ -567,6 +595,7 @@ local function register_curve_def(el, kind)
         table.insert(params, p)
     end
 
+    -- Validate local variables and coordinate expressions against allowed identifiers
     local allowed_vars = {}
     for k, v in pairs(base_vars) do allowed_vars[k] = v end
     for pname in pairs(seen_params) do allowed_vars[pname] = true end
@@ -622,6 +651,7 @@ local function register_curve_def(el, kind)
     return {}
 end
 
+-- Builds the HTML mount container for a '.dynamic-plot' block
 local function render_plot_canvas(el)
     local id = U.trim(el.identifier)
     local context = (id ~= "") and (".dynamic-plot#" .. id) or ".dynamic-plot"
@@ -669,6 +699,7 @@ local function render_plot_canvas(el)
     return pandoc.RawBlock("html", string.format('<div%s class="dynamic-plot-wrap" data-plot-idx="%d"></div>', id_attr, idx))
 end
 
+-- Checks whether two shared slider definitions have identical domains and steps
 local function sliders_compatible(a, b)
     if a.kind ~= b.kind then return false end
     if a.kind == "range" then return a.min == b.min and a.max == b.max and a.steps == b.steps end
@@ -679,6 +710,7 @@ local function sliders_compatible(a, b)
     return true
 end
 
+-- Validates curve references, dimensions, shared sliders, and axis bounds across all plots
 local function validate_plots()
     local defs_by_id = {}
     for _, def in ipairs(plot_defs) do
@@ -690,6 +722,7 @@ local function validate_plots()
         local ctx, cfg = item.context, item.cfg
         local dim, curve_set, shared_sliders = nil, {}, {}
 
+        -- Verify curve references, dimensionality consistency, and shared slider compatibility
         for _, cid in ipairs(cfg.curves) do
             local def = defs_by_id[cid]
             if not def then fail("Unknown curve ID '%s' referenced in %s", cid, ctx) end
@@ -711,6 +744,7 @@ local function validate_plots()
             fail("Key 'shade' is only supported in 2D plots (%s)", ctx)
         end
 
+        -- Validate directional shading rules and axis scale bounds
         for _, rule in ipairs(cfg.shade or {}) do
             if rule.fromKind ~= "curve" and rule.toKind ~= "curve" then
                 fail("Shading rule '%s -> %s' in %s must reference at least one curve ID", tostring(rule.from), tostring(rule.to), ctx)
@@ -744,6 +778,7 @@ local function validate_plots()
     end
 end
 
+-- Pandoc filter hook for '.plot-function', '.plot-file', and '.dynamic-plot' divs
 function Div(el)
     if el.classes:includes("plot-function") then return register_curve_def(el, "function")
     elseif el.classes:includes("plot-file") then return register_curve_def(el, "file")
@@ -752,6 +787,7 @@ function Div(el)
     return nil
 end
 
+-- Pandoc document hook: validates plots, serializes definitions, and injects client assets
 function Pandoc(doc)
     if not has_dynamic_plot then return doc end
 

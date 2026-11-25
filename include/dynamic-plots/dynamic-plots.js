@@ -9,6 +9,7 @@
     "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"
   ];
 
+  // Lazily loads the Plotly library from the CDN once per page
   function loadPlotly() {
     if (window.Plotly) return Promise.resolve();
     const store = (window.__quartoWidgetLibs = window.__quartoWidgetLibs || {});
@@ -22,9 +23,11 @@
     }));
   }
 
+  // Checks whether a string contains LaTeX math delimiters
   const hasMathDelimiters = (str) =>
     typeof str === "string" && /(\$\$?[\s\S]+?\$\$?|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\])/.test(str);
 
+  // Strips LaTeX delimiters and commands to produce plain sizing and trace text
   const toSizingText = (str) => !str ? "" : String(str)
     .replace(/\\\(|\\\)|\\\[|\\\]|\$\$/g, "")
     .replace(/\$([^$]+)\$/g, "$1")
@@ -32,6 +35,7 @@
     .replace(/\\[a-zA-Z]+/g, "x")
     .replace(/[{}^_]/g, "");
 
+  // Formats slider readout values using fixed or exponential notation
   const formatNumber = (val) => {
     if (!Number.isFinite(val)) return String(val);
     const abs = Math.abs(val);
@@ -42,6 +46,7 @@
     return s === "-0" ? "0" : s;
   };
 
+  // Converts any CSS color string into a cached RGBA value with the given opacity
   const colorToRgba = (() => {
     const cache = new Map();
     const ctx = document.createElement("canvas").getContext("2d");
@@ -64,8 +69,10 @@
     };
   })();
 
+  // Resolves a curve's explicit color or assigns one from the default colorway
   const resolveCurveColor = (spec) => spec.color || TRACE_COLORWAY[spec.colorIdx % TRACE_COLORWAY.length];
 
+  // Applies a resolved color to line, marker, or surface trace properties
   function applyTraceColor(trace, color) {
     if (trace.type === "scatter" || trace.type === "scatter3d") {
       trace.line = { ...(trace.line || {}), color };
@@ -76,9 +83,11 @@
     return trace;
   }
 
+  // Extracts curve IDs referenced by the lower and upper bounds of a shading rule
   const shadeCurveIds = (rule) =>
     [rule.fromKind === "curve" ? rule.from : null, rule.toKind === "curve" ? rule.to : null].filter(Boolean);
 
+  // Compiles validated math expressions into JIT-evaluated JavaScript functions
   const MathCompiler = (() => {
     const CONSTS = { pi: Math.PI, e: Math.E };
     const FUNCS = {
@@ -92,6 +101,7 @@
     };
     const TOKEN_RE = /\s*(?:((?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)|([a-zA-Z_]\w*)|([+\-*/^(),[\]]))/y;
 
+    // Tokenizes and parses a math expression into a JavaScript expression string
     function toJsExpr(src) {
       const tokens = [];
       TOKEN_RE.lastIndex = 0;
@@ -168,6 +178,7 @@
       return parseAdd();
     }
 
+    // Generates variable and column declarations prepended to an evaluator body
     function buildVarsPrelude(def, paramNames, includeCols) {
       const declared = new Set(paramNames);
       const lines = [];
@@ -195,6 +206,7 @@
     }
 
     return {
+      // Builds a compiled point-evaluation function for a curve or data file
       compilePointEvaluator(def) {
         const isFile = def.kind === "file";
         const is3d = def.dim === "3d";
@@ -219,7 +231,9 @@
     };
   })();
 
+  // Utilities for sampling linear or logarithmic domains and computing extents
   const Domain = {
+    // Generates evenly spaced sample points along a linear or logarithmic interval
     sampleAxis([min, max], count, scale = "linear") {
       const pts = new Array(count);
       if (scale === "log") {
@@ -232,10 +246,12 @@
       return pts;
     },
 
+    // Samples a parameter from an explicit value list or continuous range
     sampleParam(param, count, scale = "linear") {
       return param.kind === "list" ? param.values : this.sampleAxis([param.min, param.max], count, scale);
     },
 
+    // Computes the finite [min, max] extent of a numeric array
     extent(values, positiveOnly = false) {
       let min = Infinity, max = -Infinity;
       for (let i = 0; i < values.length; i++) {
@@ -248,7 +264,9 @@
     }
   };
 
+  // Prepares curve specifications and evaluates coordinate traces
   const CurveEvaluator = {
+    // Precomputes parameter indices, domain metadata, and the compiled evaluator
     prepare(def) {
       const params = def.params || [];
       const domainParams = params.filter((p) => !p.isSlider);
@@ -269,12 +287,14 @@
       };
     },
 
+    // Populates a parameter vector with current slider values
     buildParamVector(spec, sliderEnv) {
       const vec = new Array(spec.params.length);
       for (const p of spec.sliderParams) vec[spec.paramIndexByName.get(p.name)] = sliderEnv[p.name];
       return vec;
     },
 
+    // Evaluates a curve, data file, or 3D surface into a Plotly trace
     evaluate(spec, sliderEnv, scales, zoomXRange = null) {
       const name = toSizingText(spec.rawLabel);
       const is3d = spec.dim === "3d";
@@ -345,7 +365,9 @@
     }
   };
 
+  // Builds closed-polygon shading traces clipped to directional bounds
   const ShadeBuilder = {
+    // Extracts finite points and ensures an x-sorted array for interpolation
     prepareCurveData(evalRes) {
       const rawPts = [];
       let isSorted = true;
@@ -362,6 +384,7 @@
       return { rawPts, sortedPts };
     },
 
+    // Evaluates or linearly interpolates a curve's y-value at a given x
     sampleYAt(evalData, sliderEnv, x, cursor) {
       const spec = evalData.spec;
       if (spec.isExplicitYX) {
@@ -385,6 +408,7 @@
       return x1 === x0 ? y0 : y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
     },
 
+    // Merges two sorted x-grids over [lo, hi] using a linear two-pointer scan
     mergeSortedGrid(aPts, bPts, lo, hi) {
       const eps = 1e-12 * Math.max(1, Math.abs(lo), Math.abs(hi));
       const xs = [lo];
@@ -405,6 +429,7 @@
       return xs;
     },
 
+    // Clips polygons to intervals where yLower(x) <= yUpper(x) and interpolates crossings
     clipDirectionalPolygons(xs, getYLower, getYUpper) {
       const outX = [], outY = [];
       let segX = [], segBot = [], segTop = [];
@@ -446,6 +471,7 @@
       return { x: outX, y: outY };
     },
 
+    // Constructs a filled Plotly scatter trace for a directional shading rule
     buildTrace(rule, evaluatedMap, sliderEnv, yBounds) {
       const src = rule.fromKind === "curve" ? evaluatedMap.get(rule.from) : null;
       const dst = rule.toKind === "curve" ? evaluatedMap.get(rule.to) : null;
@@ -495,15 +521,19 @@
     }
   };
 
+  // Synchronizes Plotly axis ranges and colors with the active Bootstrap theme
   const ThemeSync = {
+    // Converts linear axis bounds into Plotly's log10 representation when needed
     encodeRange(range, scale) {
       return scale === "log" ? [Math.log10(range[0]), Math.log10(range[1])] : range;
     },
 
+    // Converts Plotly axis range values back into linear domain coordinates
     decodeRange(r0, r1, scale) {
       return scale === "log" ? [Math.pow(10, r0), Math.pow(10, r1)] : [r0, r1];
     },
 
+    // Reads foreground, border, background, and grid colors from CSS custom properties
     getPalette() {
       const s = getComputedStyle(document.body);
       const textColor = s.getPropertyValue("--bs-body-color").trim() || "#212529";
@@ -512,6 +542,7 @@
       return { textColor, borderColor, bgColor, gridColor: `color-mix(in srgb, ${borderColor} 55%, transparent)` };
     },
 
+    // Builds a themed Plotly axis configuration object
     buildAxisTheme(titleText, scale, range, p) {
       const axis = {
         type: scale, automargin: true, color: p.textColor, gridcolor: p.gridColor,
@@ -525,6 +556,7 @@
       return axis;
     },
 
+    // Builds a Plotly.relayout patch for light/dark theme transitions
     getThemeRelayout(is3d) {
       const p = this.getPalette();
       const u = {
@@ -550,6 +582,7 @@
     }
   };
 
+  // Controller managing Plotly rendering, interactive sliders, shading, and math overlays
   class DynamicPlotController {
     constructor(wrapEl, cfg, registry) {
       this.wrapEl = wrapEl;
@@ -572,14 +605,17 @@
       this.mount();
     }
 
+    // Returns the active axis scale configuration
     getScales() {
       return { xscale: this.cfg.xscale, yscale: this.cfg.yscale, zscale: this.cfg.zscale };
     }
 
+    // Returns the active vertical axis bounds for bound-to-curve shading
     getYBounds() {
       return this.zoomYRange || this.cfg.yrange || this.homeYRange || [-1, 1];
     }
 
+    // Checks whether a shading rule and all its referenced curves are visible
     isShadeActive(idx) {
       return Boolean(
         this.shadeVisible[idx] &&
@@ -587,10 +623,12 @@
       );
     }
 
+    // Checks whether a hidden curve is still required by an active shading rule
     isCurveNeededByVisibleShade(curveId) {
       return this.shadeRules.some((r, i) => this.isShadeActive(i) && shadeCurveIds(r).includes(curveId));
     }
 
+    // Deduplicates interactive slider definitions across all curves in the plot
     collectSliders() {
       const seen = new Map();
       for (const spec of this.specs) {
@@ -610,12 +648,14 @@
       return Array.from(seen.values());
     }
 
+    // Builds a map of current slider parameter values
     getSliderEnv() {
       const env = {};
       for (const s of this.sliders) env[s.name] = s.values[s.index];
       return env;
     }
 
+    // Computes the full y-axis extent across all initial and slider states
     computeHomeYRange(initialMap) {
       if (this.cfg.yrange) return this.cfg.yrange;
       const positiveOnly = this.cfg.yscale === "log";
@@ -646,6 +686,7 @@
       return min <= max ? [min, max] : [-1, 1];
     }
 
+    // Evaluates a single curve trace and caches its sorted points for shading
     evaluateCurveAt(idx, sliderEnv, scales) {
       const spec = this.specs[idx];
       const res = CurveEvaluator.evaluate(spec, sliderEnv, scales, this.zoomXRange);
@@ -658,6 +699,7 @@
       return entry;
     }
 
+    // Evaluates all shading and curve traces for initial plot rendering
     evaluateAll() {
       const sliderEnv = this.getSliderEnv();
       const scales = this.getScales();
@@ -682,6 +724,7 @@
       return [...shadeTraces, ...curveTraces];
     }
 
+    // Incrementally updates affected curves, shading polygons, and trace visibility
     restyleTraces({ sliderName = null, resampleZoom = false, syncVis = false } = {}) {
       if (!this.canvas || this.isUpdating) return;
       this.isUpdating = true;
@@ -743,6 +786,7 @@
       }
     }
 
+    // Creates a toggleable legend checkbox item with a styled trace swatch
     buildLegendItem(entry) {
       const item = document.createElement("label");
       item.className = "dynamic-plot-curve-toggle";
@@ -771,6 +815,7 @@
       return item;
     }
 
+    // Builds the collapsible legend sidebar for curves and labeled shading regions
     buildSidebar(bodyEl) {
       if (this.cfg.legend === false) return;
       const items = [
@@ -810,6 +855,7 @@
       bodyEl.appendChild(wrap);
     }
 
+    // Creates a slider control row with optional play/pause animation button
     buildSliderRow(s) {
       const row = document.createElement("div");
       row.className = "dynamic-plot-slider-row";
@@ -864,6 +910,7 @@
       return row;
     }
 
+    // Mounts interactive slider controls beneath the plot canvas
     buildControls() {
       if (this.sliders.length === 0) return;
       const controls = document.createElement("div");
@@ -875,6 +922,7 @@
       this.stageEl.appendChild(controls);
     }
 
+    // Updates a slider's active step index, readout text, and dependent traces
     setSliderIndex(slider, idx) {
       slider.index = idx;
       if (slider.inputEl) slider.inputEl.value = String(idx);
@@ -882,6 +930,7 @@
       this.restyleTraces({ sliderName: slider.name });
     }
 
+    // Starts animation playback across a slider's discrete steps
     startPlay(slider) {
       if (slider.isPlaying || slider.values.length < 2) return;
       slider.isPlaying = true;
@@ -902,6 +951,7 @@
       slider.playRaf = requestAnimationFrame(step);
     }
 
+    // Stops active animation playback for a slider
     stopPlay(slider) {
       if (slider.playRaf !== null) {
         cancelAnimationFrame(slider.playRaf);
@@ -913,6 +963,7 @@
       }
     }
 
+    // Constructs the initial 2D or 3D Plotly layout object
     buildLayout(palette) {
       const layout = {
         height: this.cfg.height,
@@ -941,6 +992,7 @@
       return layout;
     }
 
+    // Positions a rendered HTML math label over a hidden SVG axis title
     placeMathNode(svgEl, htmlContent, rotate = 0) {
       if (!svgEl || !this.stageEl) return;
       const stageRect = this.stageEl.getBoundingClientRect();
@@ -958,6 +1010,7 @@
       this.mathLayer.appendChild(span);
     }
 
+    // Re-renders LaTeX axis title overlays after layout or resize changes
     syncMathOverlays() {
       if (!this.mathLayer || !this.canvas) return;
       this.mathLayer.innerHTML = "";
@@ -969,6 +1022,7 @@
       }
     }
 
+    // Binds Plotly zoom/pan relayout handlers and a container resize observer
     attachEvents() {
       this.canvas.on("plotly_relayout", (ev) => {
         if (!this.is3d && !this.isUpdating && ev) {
@@ -1008,6 +1062,7 @@
       }).observe(this.stageEl);
     }
 
+    // Builds the plot DOM structure, renders Plotly, and initializes listeners
     mount() {
       if (this.cfg.width) {
         this.wrapEl.style.width = `${this.cfg.width}px`;
@@ -1041,6 +1096,7 @@
       this.syncMathOverlays();
     }
 
+    // Updates Plotly colors and math overlays when the document theme changes
     syncTheme() {
       if (!this.canvas?.layout) return;
       Plotly.relayout(this.canvas, ThemeSync.getThemeRelayout(this.is3d));
@@ -1048,6 +1104,7 @@
     }
   }
 
+  // Pre-renders math labels, loads Plotly, and mounts all dynamic plot controllers
   async function initDynamicPlots() {
     const wraps = Array.from(document.querySelectorAll(".dynamic-plot-wrap"));
     if (wraps.length === 0) return;
