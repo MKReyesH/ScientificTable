@@ -28,6 +28,7 @@ local has_dynamic_table = false
 local has_table_math = false
 local inspire_keys = {}
 local inspire_keys_seen = {}
+local table_bibliographies = {}
 
 -- Percent-encodes URL query strings
 local function url_encode(str)
@@ -71,9 +72,8 @@ local function index_bibtex_entries(raw_bib, entries_by_key)
     end
 end
 
--- Fetches BibTeX records from INSPIRE-HEP in batches and writes an ordered temporary .bib file
-local function write_temp_inspire_bibtex(keys)
-    if #keys == 0 then return nil end
+-- Fetches the BibTeX records once per document, in batches.
+local function fetch_inspire_entries(keys)
 
     local entries_by_key = {}
     local batch_size = 50
@@ -96,53 +96,46 @@ local function write_temp_inspire_bibtex(keys)
         end
     end
 
-    -- Reorder entries to match initial CSV row sequence
-    local ordered_entries = {}
-    for _, key in ipairs(keys) do
-        if entries_by_key[key] then
-            table.insert(ordered_entries, entries_by_key[key])
-        end
-    end
-    if #ordered_entries == 0 then return nil end
-
-    local raw_tmp = os.tmpname()
-    os.remove(raw_tmp)
-    local tmp_bib = raw_tmp .. ".bib"
-
-    local out = io.open(tmp_bib, "w")
-    if not out then
-        io.stderr:write(string.format("[%s] Warning: Could not create temporary BibTeX file '%s'.\n", TAG, tmp_bib))
-        return nil
-    end
-
-    out:write(table.concat(ordered_entries, "\n\n") .. "\n")
-    out:close()
-    return tmp_bib
+    return entries_by_key
 end
 
--- Appends the temporary .bib file path to document bibliography metadata
-local function append_meta_bibliography(meta, bib_path)
-    local list = pandoc.MetaList({})
-    local existing = {}
+local function render_bibliography(keys, entries, meta, table_index)
+    local records = {}
+    local citations = pandoc.Inlines{}
+    for _, key in ipairs(keys) do
+        if entries[key] then
+            table.insert(records, entries[key])
+            citations:insert(pandoc.Cite({pandoc.Str("@" .. key)}, {pandoc.Citation(key, "NormalCitation")}))
+            citations:insert(pandoc.Space())
+        end
+    end
+    if #records == 0 then return {} end
 
-    local function add_entry(val)
-        local str = U.trim(pandoc.utils.stringify(val))
-        if str ~= "" and not existing[str] then
-            existing[str] = true
-            list:insert(pandoc.MetaString(str))
+    local references = pandoc.read(table.concat(records, "\n\n"), "bibtex").meta.references
+    local table_doc = pandoc.utils.citeproc(pandoc.Pandoc({}, {
+        references = references,
+        nocite = citations,
+        csl = meta.csl,
+        lang = meta.lang,
+        ["link-bibliography"] = meta["link-bibliography"]
+    }))
+
+    local bibliography = table_doc.blocks[1]
+    if not bibliography then return {} end
+    bibliography.identifier = ""
+    for _, entry in ipairs(bibliography.content) do
+        local key = entry.identifier:match("^ref%-(.+)$")
+        if key then
+            entry.attributes["data-cite-key"] = key
+            entry.identifier = "dynamic-table-ref-" .. table_index .. "-" .. key
         end
     end
 
-    if meta.bibliography then
-        if pandoc.utils.type(meta.bibliography) == "List" then
-            for _, item in ipairs(meta.bibliography) do add_entry(item) end
-        else
-            add_entry(meta.bibliography)
-        end
-    end
-
-    add_entry(bib_path)
-    meta.bibliography = list
+    local title = meta["reference-section-title"]
+    local heading = pandoc.Header(4, title and pandoc.utils.stringify(title) or "References")
+    local wrapper = pandoc.Div({heading, bibliography}, pandoc.Attr("", {"dynamic-table-refs"}, {style = "display:none;"}))
+    -- Keep the table bibliography opaque to Quarto's document citation and appendix filters.
+    return pandoc.RawBlock("html", pandoc.write(pandoc.Pandoc({wrapper}), "html"))
 end
 
 -- Parses one CSV record per line, supporting quoted fields and escaped quotes
@@ -323,7 +316,7 @@ local function render_table(opts, columns_meta)
     for _, m in ipairs(columns_meta or {}) do meta_by_index[m.index] = m end
 
     -- Resolve column types and collect INSPIRE citation keys
-    local has_inspire = false
+    local inspire_fields = {}
     local final_columns_meta = {}
     for j = 1, #headers do
         local idx = j - 1
@@ -334,13 +327,7 @@ local function render_table(opts, columns_meta)
         end
 
         if col_rule.inspire then
-            has_inspire = true
-            local field = "col_" .. tostring(idx)
-            for _, r in ipairs(rows) do
-                for _, key in ipairs(split_citation_keys(r[field])) do
-                    register_inspire_key(key)
-                end
-            end
+            table.insert(inspire_fields, "col_" .. tostring(idx))
         end
 
         table.insert(final_columns_meta, col_rule)
@@ -356,11 +343,26 @@ local function render_table(opts, columns_meta)
         U.html_escape(opts.sortable)
     )
 
-    if has_inspire then
-        html = html .. '\n<div class="dynamic-table-refs" style="display:none;"></div>'
-    end
+    local table_block = pandoc.RawBlock("html", html)
+    if #inspire_fields == 0 then return table_block end
 
-    return pandoc.RawBlock("html", html)
+    local keys, seen = {}, {}
+    for _, row in ipairs(rows) do
+        for _, field in ipairs(inspire_fields) do
+            for _, key in ipairs(split_citation_keys(row[field])) do
+                if not seen[key] then
+                    seen[key] = true
+                    table.insert(keys, key)
+                    register_inspire_key(key)
+                end
+            end
+        end
+    end
+    if #keys == 0 then return table_block end
+
+    table.insert(table_bibliographies, keys)
+    local marker = pandoc.Div({}, pandoc.Attr("", {}, {["dynamic-table-bibliography"] = tostring(#table_bibliographies)}))
+    return {table_block, marker}
 end
 
 -- Pandoc filter hook for shorthand '!dynamic-table: path.csv' paragraphs
@@ -398,49 +400,20 @@ function Div(el)
     return (opts.src and opts.src ~= "") and render_table(opts, columns_meta) or nil
 end
 
--- Pandoc document hook: generates temporary INSPIRE BibTeX metadata and injects client assets
+-- Renders each table bibliography independently, then injects the shared client assets.
 function Pandoc(doc)
-    if #inspire_keys > 0 then
-        local tmp_bib = write_temp_inspire_bibtex(inspire_keys)
-        if tmp_bib then
-            append_meta_bibliography(doc.meta, tmp_bib)
-
-            -- Preserve existing nocite entries before appending table citation keys
-            local nocite_inlines = {}
-            if doc.meta.nocite then
-                if doc.meta.nocite.t == "MetaInlines" then
-                    for _, item in ipairs(doc.meta.nocite) do
-                        table.insert(nocite_inlines, item)
-                    end
-                elseif doc.meta.nocite.t == "MetaBlocks" then
-                    for _, blk in ipairs(doc.meta.nocite) do
-                        if blk.content then
-                            for _, item in ipairs(blk.content) do
-                                table.insert(nocite_inlines, item)
-                            end
-                        end
-                    end
-                else
-                    local parsed = pandoc.read(pandoc.utils.stringify(doc.meta.nocite), "markdown")
-                    for _, blk in ipairs(parsed.blocks) do
-                        if blk.content then
-                            for _, item in ipairs(blk.content) do
-                                table.insert(nocite_inlines, item)
-                            end
-                        end
-                    end
+    if #table_bibliographies > 0 then
+        local entries = fetch_inspire_entries(inspire_keys)
+        local meta = doc.meta
+        doc = doc:walk({
+            Div = function(div)
+                local index = tonumber(div.attributes["dynamic-table-bibliography"])
+                if index and table_bibliographies[index] then
+                    return render_bibliography(table_bibliographies[index], entries, meta, index)
                 end
             end
-
-            for _, key in ipairs(inspire_keys) do
-                if #nocite_inlines > 0 then
-                    table.insert(nocite_inlines, pandoc.Space())
-                end
-                table.insert(nocite_inlines, pandoc.Cite({ pandoc.Str("@" .. key) }, { pandoc.Citation(key, "NormalCitation") }))
-            end
-            doc.meta.nocite = pandoc.MetaInlines(nocite_inlines)
-        end
-
+        })
+        table_bibliographies = {}
         inspire_keys = {}
         inspire_keys_seen = {}
     end

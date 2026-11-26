@@ -92,13 +92,13 @@
         const frag = document.createDocumentFragment();
         keys.forEach((key, idx) => {
           if (idx > 0) frag.appendChild(document.createTextNode(", "));
-          const targetId = ctx.refTargetIds.get(key);
-          if (targetId) {
-            const label = ctx.refLabels.get(key);
+          const entry = ctx.refEntries.get(key);
+          if (entry) {
+            const label = entry.querySelector(".csl-left-margin")?.textContent.trim();
             const link = document.createElement("a");
-            link.href = `#${targetId}`;
+            link.href = `#${entry.id}`;
             link.textContent = label ? `${label} ${key}` : key;
-            link.addEventListener("click", () => highlightReference(ctx.refEntries.get(key)));
+            link.addEventListener("click", () => highlightReference(entry));
             frag.appendChild(link);
           } else {
             frag.appendChild(document.createTextNode(key));
@@ -151,12 +151,9 @@
     }
   };
 
-  let tableInstanceCounter = 0;
-
   // Controller managing Tabulator lifecycle, math pre-rendering, and live bibliography filtering
   class TabulatorTableController {
     constructor(container) {
-      this.instanceId = ++tableInstanceCounter;
       this.container = container;
       this.headers = JSON.parse(container.dataset.headers || "[]");
       this.rows = JSON.parse(container.dataset.rows || "[]");
@@ -183,8 +180,6 @@
         ? container.nextElementSibling
         : null;
       this.refEntries = new Map();
-      this.refTargetIds = new Map();
-      this.refLabels = new Map();
       this.rowKeysCache = new WeakMap();
 
       this.table = null;
@@ -213,53 +208,16 @@
       return strings;
     }
 
-    // Copies Pandoc-rendered references so table filtering cannot hide document citations.
+    // Indexes the references rendered for this table and the citation keys in each row.
     initBibliography() {
-      if (!this.refsWrap || this.inspireFields.length === 0) return;
+      if (!this.refsWrap) return;
 
-      const allKeys = [];
-      const seen = new Set();
-      this.rows.forEach(row => {
-        const rowKeys = [];
-        this.inspireFields.forEach(field => {
-          parseCitationKeys(row[field]).forEach(key => {
-            rowKeys.push(key);
-            if (!seen.has(key)) {
-              seen.add(key);
-              allKeys.push(key);
-            }
-          });
-        });
-        this.rowKeysCache.set(row, rowKeys);
+      this.refsWrap.querySelectorAll(".csl-entry[data-cite-key]").forEach(entry => {
+        this.refEntries.set(entry.dataset.citeKey, entry);
       });
-
-      const globalRefs = document.getElementById("refs");
-      const globalHeading = document.querySelector("#quarto-bibliography .quarto-appendix-heading");
-
-      const heading = document.createElement("h4");
-      heading.textContent = globalHeading?.textContent.trim() || "References";
-      this.refsWrap.appendChild(heading);
-
-      const listContainer = document.createElement("div");
-      listContainer.className = globalRefs?.className || "references csl-bib-body hanging-indent";
-      listContainer.setAttribute("role", "list");
-      if (globalRefs?.dataset.entrySpacing !== undefined) {
-        listContainer.dataset.entrySpacing = globalRefs.dataset.entrySpacing;
-      }
-      this.refsWrap.appendChild(listContainer);
-
-      allKeys.forEach(key => {
-        const sourceEl = document.getElementById(`ref-${key}`);
-        if (!sourceEl) return;
-
-        const labelText = sourceEl.querySelector(".csl-left-margin")?.textContent.trim() || "";
-        if (labelText) this.refLabels.set(key, labelText);
-
-        const entryEl = sourceEl.cloneNode(true);
-        entryEl.id = `dynamic-table-ref-${this.instanceId}-${key}`;
-        this.refTargetIds.set(key, entryEl.id);
-        listContainer.appendChild(entryEl);
-        this.refEntries.set(key, entryEl);
+      this.rows.forEach(row => {
+        const keys = this.inspireFields.flatMap(field => parseCitationKeys(row[field]));
+        this.rowKeysCache.set(row, keys);
       });
     }
 
