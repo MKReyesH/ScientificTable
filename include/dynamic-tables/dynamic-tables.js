@@ -27,30 +27,6 @@
     return `$${formatted}$`;
   }
 
-  // Reuse Quarto's popup library with the table's own reference lookup.
-  function bindCitationPreviews(container, entries) {
-    window.tippy.delegate(container, {
-      target: ".dynamic-table-citation",
-      content: button => entries.get(button.dataset.citeKey)?.cloneNode(true) ?? "",
-      // Keep the popup after its button in tab order and outside the scrolling cell.
-      popperOptions: {strategy: "fixed"},
-      trigger: "mouseenter focus click",
-      interactive: true,
-      interactiveBorder: 10,
-      maxWidth: 500,
-      arrow: false,
-      theme: "quarto",
-      placement: "bottom-start"
-    });
-    container.addEventListener("keydown", event => {
-      if (event.key !== "Escape") return;
-      const preview = event.target.closest(".dynamic-table-citation, [data-tippy-root]")?._tippy;
-      if (!preview?.state.isVisible) return;
-      preview.reference.focus({preventScroll: true});
-      preview.hide();
-    });
-  }
-
   // Builds a unified Bootstrap-styled select control for header filters and unit switchers
   function createSelectMenu(options, onChange, selectedValue = "") {
     const select = document.createElement("select");
@@ -71,43 +47,8 @@
     return select;
   }
 
-  // Composable registry of column cell formatters and header controls
+  // Header controls composed with the column's display formatter.
   const ColumnFeatures = {
-    number: (colDef, colCfg, ctx) => {
-      colDef.formatter = (cell) => ctx.formatValue(colCfg, cell.getValue());
-    },
-
-    latex: (colDef) => {
-      const baseFormatter = colDef.formatter;
-      colDef.formatter = (cell, formatterParams, onRendered) => {
-        const raw = baseFormatter ? baseFormatter(cell, formatterParams, onRendered) : cell.getValue();
-        return MathRenderer.get(raw);
-      };
-    },
-
-    inspire: (colDef, entries) => {
-      colDef.formatter = (cell) => {
-        const keys = String(cell.getValue() ?? "").split(/[,;]/).map(key => key.trim()).filter(Boolean);
-        const frag = document.createDocumentFragment();
-        keys.forEach((key, idx) => {
-          if (idx > 0) frag.appendChild(document.createTextNode(", "));
-          if (!entries.has(key)) {
-            frag.appendChild(document.createTextNode(key));
-            return;
-          }
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = "dynamic-table-citation btn btn-link p-0 border-0";
-          button.dataset.citeKey = key;
-          button.textContent = key;
-          const wrapper = document.createElement("span");
-          wrapper.appendChild(button);
-          frag.appendChild(wrapper);
-        });
-        return frag;
-      };
-    },
-
     dropdown: (colDef, colCfg, ctx) => {
       const rawValues = [...new Set(ctx.rows.map(r => r[colCfg.field]).filter(v => v !== null && v !== undefined && v !== ""))].sort();
       const options = [{ label: "All", value: "" }, ...rawValues.map(v => ({ label: v, value: v }))];
@@ -151,7 +92,7 @@
     }
   };
 
-  // Controller managing Tabulator lifecycle, math pre-rendering, and live bibliography filtering
+  // Controller managing Tabulator lifecycle and table-specific rendering.
   class TabulatorTableController {
     constructor(container) {
       this.container = container;
@@ -215,24 +156,18 @@
     // Synchronizes pagination visibility and multi-line row borders
     syncUI() {
       this.syncPagination();
-      this.table?.getRows("visible").forEach(row => row.normalizeHeight(true));
+      this.table?.getRows("visible").forEach(row => row.normalizeHeight());
     }
 
-    // Initializes math cache, bibliography bindings, Tabulator instance, and search filter
+    // Initializes math cache, Tabulator instance, and search filter
     async init() {
       const latexStrings = this.collectInitialLatexStrings();
       if (latexStrings.length > 0) {
         await MathRenderer.prepare(latexStrings);
       }
-      this.container.innerHTML = "";
-      const entries = new Map();
-      const bibliography = this.container.nextElementSibling;
-      if (bibliography?.matches(".dynamic-table-refs") && window.tippy?.delegate) {
-        bibliography.querySelectorAll(".csl-entry[data-cite-key]").forEach(entry => {
-          entries.set(entry.dataset.citeKey, entry);
-        });
-        bindCitationPreviews(this.container, entries);
-      }
+      const source = this.container.nextElementSibling?.querySelector(":scope > .dynamic-table-citations");
+      const citations = new Map(Array.from(source?.children ?? [], node => [node.dataset.citationCell, node]));
+      source?.remove();
 
       let searchInput = null;
       if (this.searchable) {
@@ -262,10 +197,12 @@
         }
 
         if (colCfg.inspire) {
-          ColumnFeatures.inspire(colDef, entries);
-        } else {
-          if (colCfg.type === "number") ColumnFeatures.number(colDef, colCfg, this);
-          if (colCfg.isLatex) ColumnFeatures.latex(colDef, colCfg, this);
+          colDef.formatter = cell => citations.get(`${cell.getRow().getIndex()}-${colCfg.field}`)
+            ?? document.createTextNode(cell.getValue() ?? "");
+        } else if (colCfg.isLatex) {
+          colDef.formatter = cell => MathRenderer.get(this.formatValue(colCfg, cell.getValue()));
+        } else if (colCfg.type === "number") {
+          colDef.formatter = cell => this.formatValue(colCfg, cell.getValue());
         }
 
         if (colCfg.dropdown) ColumnFeatures.dropdown(colDef, colCfg, this);
@@ -286,7 +223,6 @@
         movableColumns: false
       });
 
-      this.table.on("tableBuilt", () => this.syncUI());
       this.table.on("renderComplete", () => this.syncUI());
 
       if (searchInput) {
@@ -317,18 +253,13 @@
     }
   }
 
-  // Mounts Tabulator controllers on all dynamic table containers
   function initDynamicTables() {
-    document.querySelectorAll(".tabulator-container-wrap").forEach(el => {
-      if (!el.dataset.initialized) {
-        el.dataset.initialized = "true";
-        new TabulatorTableController(el);
-      }
-    });
+    document.querySelectorAll(".tabulator-container-wrap").forEach(el => new TabulatorTableController(el));
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initDynamicTables);
+    // Quarto initializes citations on document before the event bubbles to window.
+    window.addEventListener("DOMContentLoaded", initDynamicTables, {once: true});
   } else {
     initDynamicTables();
   }

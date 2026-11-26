@@ -133,9 +133,6 @@
   overflow-wrap: break-word;
 }
 
-.dynamic-table-citation {
-  font: inherit;
-  text-align: inherit;
-  max-width: 100%;
-  overflow-wrap: anywhere;
+.tabulator:has([data-citation-cell]) {
+  transform: none;
 }

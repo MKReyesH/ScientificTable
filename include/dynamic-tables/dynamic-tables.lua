@@ -42,14 +42,14 @@ local function split_citation_keys(raw)
     local keys = {}
     for token in (raw or ""):gmatch("[^,;]+") do
         local key = U.trim(token)
-        if key:match("^[^%s@%[%]]+$") then table.insert(keys, key) end
+        if key ~= "" then table.insert(keys, key) end
     end
     return keys
 end
 
 -- Records unique INSPIRE citation keys in initial CSV row order
 local function register_inspire_key(key)
-    if key ~= "" and not inspire_keys_seen[key] then
+    if not inspire_keys_seen[key] then
         inspire_keys_seen[key] = true
         table.insert(inspire_keys, key)
     end
@@ -98,43 +98,75 @@ local function fetch_inspire_entries(keys)
     return entries_by_key
 end
 
-local function render_bibliography(keys, entries, meta)
-    local records = {}
-    local citations = pandoc.Inlines{}
-    for _, key in ipairs(keys) do
+local function render_citations(table_data, entries, meta, index)
+    local records, keys_by_id = {}, {}
+    local prefix = "dynamic-table-" .. index .. "-"
+    for _, key in ipairs(table_data.keys) do
         if entries[key] then
             table.insert(records, entries[key])
-            citations:insert(pandoc.Cite({pandoc.Str("@" .. key)}, {pandoc.Citation(key, "NormalCitation")}))
-            citations:insert(pandoc.Space())
+            keys_by_id[prefix .. key] = key
         end
     end
     if #records == 0 then return {} end
 
     local references = pandoc.read(table.concat(records, "\n\n"), "bibtex").meta.references
-    local table_doc = pandoc.utils.citeproc(pandoc.Pandoc({}, {
+    for _, reference in ipairs(references) do
+        reference.id = prefix .. pandoc.utils.stringify(reference.id)
+    end
+
+    local cells = pandoc.Blocks{}
+    for _, cell in ipairs(table_data.cells) do
+        local inlines = pandoc.Inlines{}
+        for i, key in ipairs(cell.keys) do
+            if i > 1 then inlines:extend({pandoc.Str(","), pandoc.Space()}) end
+            local label = pandoc.Str(key)
+            local id = prefix .. key
+            inlines:insert(keys_by_id[id] and pandoc.Cite({label}, {pandoc.Citation(id, "NormalCitation")}) or label)
+        end
+        cells:insert(pandoc.Div({pandoc.Plain(inlines)}, pandoc.Attr("", {}, {
+            ["data-citation-cell"] = cell.id
+        })))
+    end
+
+    local table_doc = pandoc.utils.citeproc(pandoc.Pandoc(cells, {
         references = references,
-        nocite = citations,
+        ["link-citations"] = true,
         csl = meta.csl,
         lang = meta.lang,
         ["link-bibliography"] = meta["link-bibliography"]
     }))
 
-    local bibliography = table_doc.blocks[1]
+    local bibliography, bibliography_index = table_doc.blocks:find_if(function(block)
+        return block.t == "Div" and block.identifier == "refs"
+    end)
     if not bibliography then return {} end
+    table_doc.blocks:remove(bibliography_index)
     bibliography.identifier = ""
-    for _, entry in ipairs(bibliography.content) do
-        local key = entry.identifier:match("^ref%-(.+)$")
-        if key then
-            entry.attributes["data-cite-key"] = key
-            entry.identifier = ""
-        end
-    end
 
-    -- Keep the table bibliography opaque to Quarto's document citation and appendix filters.
+    -- Preserve citeproc's links and citation metadata while displaying only the key.
+    table_doc = table_doc:walk({Cite = function(cite)
+        local id = cite.citations[1].id
+        local label = pandoc.Str(keys_by_id[id])
+        local target
+        cite:walk({Link = function(link)
+            if link.target == "#ref-" .. id then target = link end
+        end})
+        if not target then return label end
+        target.content = {label}
+        target.attributes["data-tippy-popperoptions"] = '{"strategy":"fixed"}'
+        cite.content = {target}
+        return cite
+    end})
+
+    -- Quarto scans these links at page load. Tabulator moves the same nodes into cells.
+    -- The raw HTML keeps this table's citations out of the main document's citeproc pass.
     return pandoc.RawBlock("html", table.concat({
         '<details class="dynamic-table-refs quarto-appendix-contents">',
         '<summary class="fw-semibold py-2">Table references</summary>',
         pandoc.write(pandoc.Pandoc({bibliography}), "html"),
+        '<div class="dynamic-table-citations" hidden>',
+        pandoc.write(pandoc.Pandoc(table_doc.blocks), "html"),
+        '</div>',
         '</details>'
     }, "\n"))
 end
@@ -292,7 +324,7 @@ local function render_table(opts, columns_meta)
     local rows = {}
     for i = 2, #lines do
         local raw_row = parse_csv_line(lines[i])
-        local row_obj = {}
+        local row_obj = {id = i - 2}
         for j = 1, #headers do
             row_obj["col_" .. tostring(j - 1)] = U.trim(raw_row[j] or "")
         end
@@ -335,11 +367,15 @@ local function render_table(opts, columns_meta)
     local table_block = pandoc.RawBlock("html", html)
     if #inspire_fields == 0 then return table_block end
 
-    local keys, seen = {}, {}
-    for _, row in ipairs(rows) do
+    local keys, seen, cells = {}, {}, {}
+    for row_index, row in ipairs(rows) do
         for _, field in ipairs(inspire_fields) do
-            for _, key in ipairs(split_citation_keys(row[field])) do
-                if not seen[key] then
+            local cell_keys = split_citation_keys(row[field])
+            if #cell_keys > 0 then
+                table.insert(cells, {id = (row_index - 1) .. "-" .. field, keys = cell_keys})
+            end
+            for _, key in ipairs(cell_keys) do
+                if not seen[key] and key:match("^[^%s@%[%]]+$") then
                     seen[key] = true
                     table.insert(keys, key)
                     register_inspire_key(key)
@@ -349,7 +385,7 @@ local function render_table(opts, columns_meta)
     end
     if #keys == 0 then return table_block end
 
-    table.insert(table_bibliographies, keys)
+    table.insert(table_bibliographies, {keys = keys, cells = cells})
     local marker = pandoc.Div({}, pandoc.Attr("", {}, {["dynamic-table-bibliography"] = tostring(#table_bibliographies)}))
     return {table_block, marker}
 end
@@ -398,7 +434,7 @@ function Pandoc(doc)
             Div = function(div)
                 local index = tonumber(div.attributes["dynamic-table-bibliography"])
                 if index and table_bibliographies[index] then
-                    return render_bibliography(table_bibliographies[index], entries, meta)
+                    return render_citations(table_bibliographies[index], entries, meta, index)
                 end
             end
         })
