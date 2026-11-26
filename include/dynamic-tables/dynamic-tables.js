@@ -213,7 +213,7 @@
       return strings;
     }
 
-    // Relocates Pandoc-rendered references below the table using native Quarto bibliography classes
+    // Copies Pandoc-rendered references so table filtering cannot hide document citations.
     initBibliography() {
       if (!this.refsWrap || this.inspireFields.length === 0) return;
 
@@ -255,34 +255,12 @@
         const labelText = sourceEl.querySelector(".csl-left-margin")?.textContent.trim() || "";
         if (labelText) this.refLabels.set(key, labelText);
 
-        let entryEl;
-        if (sourceEl.closest(".dynamic-table-refs")) {
-          const scopedId = `ref-t${this.instanceId}-${key}`;
-          entryEl = sourceEl.cloneNode(true);
-          entryEl.id = scopedId;
-          entryEl.classList.remove("is-highlighted");
-          entryEl.style.display = "";
-          this.refTargetIds.set(key, scopedId);
-        } else {
-          entryEl = sourceEl;
-          this.refTargetIds.set(key, `ref-${key}`);
-        }
-
+        const entryEl = sourceEl.cloneNode(true);
+        entryEl.id = `dynamic-table-ref-${this.instanceId}-${key}`;
+        this.refTargetIds.set(key, entryEl.id);
         listContainer.appendChild(entryEl);
         this.refEntries.set(key, entryEl);
       });
-
-      if (globalRefs && !globalRefs.querySelector(".csl-entry")) {
-        globalRefs.style.display = "none";
-        const quartoAppendix = globalRefs.closest("#quarto-appendix");
-        if (quartoAppendix) {
-          const hasOtherEntries = Array.from(quartoAppendix.querySelectorAll(".csl-entry"))
-            .some(el => !el.closest(".dynamic-table-refs"));
-          if (!hasOtherEntries) {
-            quartoAppendix.style.display = "none";
-          }
-        }
-      }
     }
 
     // Hides the pagination footer when all active rows fit within the current page size

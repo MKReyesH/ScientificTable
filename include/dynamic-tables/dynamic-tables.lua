@@ -134,7 +134,7 @@ local function append_meta_bibliography(meta, bib_path)
     end
 
     if meta.bibliography then
-        if meta.bibliography.t == "MetaList" then
+        if pandoc.utils.type(meta.bibliography) == "List" then
             for _, item in ipairs(meta.bibliography) do add_entry(item) end
         else
             add_entry(meta.bibliography)
@@ -145,7 +145,7 @@ local function append_meta_bibliography(meta, bib_path)
     meta.bibliography = list
 end
 
--- Parses an RFC-4180 CSV line supporting quoted fields and escaped quotes
+-- Parses one CSV record per line, supporting quoted fields and escaped quotes
 local function parse_csv_line(line)
     local res, pos, len = {}, 1, #line
     while pos <= len do
@@ -171,6 +171,9 @@ local function parse_csv_line(line)
                 pos = comma_pos + 1
             end
         end
+    end
+    if line:sub(-1) == "," then
+        table.insert(res, "")
     end
     return res
 end

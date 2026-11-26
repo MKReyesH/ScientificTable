@@ -6,6 +6,8 @@ Standard Markdown tables, as shown in the [Quarto Markdown Guide](/doc/Examples/
 
 # Quick One-Line Insertion
 
+Use one record per line in the CSV, including the header. Enclose fields that contain commas in double quotes.
+
 To render a CSV file with default interactive settings, write a standalone paragraph starting with `!dynamic-table:` followed by the file path:
 
 ```markdown
@@ -66,7 +68,7 @@ col 3: header="Discovery", unsortable
 Three specialized column tags support physical unit scaling, LaTeX scientific notation, and automated bibliography management:
 
 - `units(Unit1: factor1, Unit2: factor2, ...)`: Implies `number` and adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor.
-- `latexnum`: Implies both `number` and `latex`, and transforms numeric cells into inline math expressions (`1.057e-1` displayed as $1.06 \times 10^{-1}$) that update automatically whenever the user switches units.
+- `latexnum`: Implies both `number` and `latex`. It displays numeric cells as inline math using the same magnitude thresholds as `number`. For example, `1.057e-4` displays as $1.06 \times 10^{-4}$. The formatting updates when the user switches units.
 - `inspire`: Implies `string` and treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons, with or without a leading `@`). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP in batches, turns each valid key into a clickable `[N] CitationKey` link that highlights the target entry on click, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated.
 
 ```markdown
