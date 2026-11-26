@@ -6,16 +6,16 @@ Static figures, as shown in the [Quarto Markdown Guide](/doc/Examples/example1.q
 
 # Basic 2D Curves and Canvas Options
 
-Dynamic plots separate **curve definitions** from the **plot canvas**. A `::: {.plot-function id="..."}` block registers a mathematical curve under a unique `id` without rendering anything on its own; a `::: {.dynamic-plot}` block then renders one or more registered IDs onto a shared interactive canvas.
+Dynamic plots use tilde-fenced code blocks so formulas are read literally. A `~~~ {#curve .plot-function}` block registers a mathematical curve under a unique ID. A `~~~ {.dynamic-plot}` block renders one or more registered curves on a shared interactive canvas.
 
 In `.plot-function`, top-level bracketed parameters define the curve's **domain**:
 
 - **Explicit functions $y(x)$:** Write `x: [min, max]` to set the horizontal domain and define `y` as an expression in `x`. Explicit 2D curves automatically resample at higher resolution when zooming or panning.
 - **Parametric curves $(x(t), y(t))$:** Declare a parameter such as `t: [0, 2 * pi]` and define both `x` and `y` in terms of `t`.
-- **Expressions and styling:** Write formulas in backticks so Markdown preserves JavaScript operators such as `**`. Use explicit multiplication (`2 * x`), JavaScript powers (`x ** 2`), and parentheses to negate a power (`-(x ** 2)`). Math names such as `sin`, `sqrt`, `pi`, and `e` are available directly. Bounds, slider values, and shading constants use the same math syntax. The browser checks and evaluates these settings when the plot loads.
+- **Expressions and styling:** Use explicit multiplication (`2 * x`), JavaScript powers (`x ** 2`), and parentheses to negate a power (`-(x ** 2)`). Math names such as `sin`, `sqrt`, `pi`, and `e` are available directly. Bounds, slider values, and shading constants use the same math syntax. The browser checks and evaluates these settings when the plot loads.
 - **Curve options:** `points` sets the sample count (integer $\ge 2$, default `100`), `label` sets the legend title (supports inline LaTeX math and defaults to the curve ID), and `color` sets the trace color. `mode` selects `lines`, `markers`, or `lines+markers` (default `lines`). `smooth` enables spline interpolation on 2D curves (default `true`).
 
-The `::: {.dynamic-plot}` block mounts the canvas and configures axes and layout:
+The `~~~ {.dynamic-plot}` block mounts the canvas and configures axes and layout:
 
 - `curves`: Comma-separated list of curve IDs to plot together (required).
 - `xlabel`, `ylabel`: Axis titles, supporting inline LaTeX math (`$ ... $`, `\( ... \)`).
@@ -25,46 +25,46 @@ The `::: {.dynamic-plot}` block mounts the canvas and configures axes and layout
 - `legend`: Shows or hides the collapsible right-hand legend sidebar (`true` or `false`, default `true`).
 
 ```markdown
-::: {.plot-function id="wave-sin"}
+~~~ {#wave-sin .plot-function}
 x: [0, 8]
-y: `sin(2 * x) * exp(-0.2 * x)`
+y: sin(2 * x) * exp(-0.2 * x)
 label: $e^{-0.2x}\sin(2x)$
-:::
+~~~
 
-::: {.plot-function id="circle-param"}
+~~~ {#circle-param .plot-function}
 t: [0, 2 * pi]
-x: `4 + 0.8 * cos(t)`
-y: `0.8 * sin(t)`
+x: 4 + 0.8 * cos(t)
+y: 0.8 * sin(t)
 label: $(x - 4)^2 + y^2 = 0.8^2$
 color: crimson
-:::
+~~~
 
-::: {.dynamic-plot}
+~~~ {.dynamic-plot}
 curves: wave-sin, circle-param
 xlabel: $x$
 ylabel: $y(x)$
-:::
+~~~
 ```
 
-::: {.plot-function id="wave-sin"}
+~~~ {#wave-sin .plot-function}
 x: [0, 8]
-y: `sin(2 * x) * exp(-0.2 * x)`
+y: sin(2 * x) * exp(-0.2 * x)
 label: $e^{-0.2x}\sin(2x)$
-:::
+~~~
 
-::: {.plot-function id="circle-param"}
+~~~ {#circle-param .plot-function}
 t: [0, 2 * pi]
-x: `4 + 0.8 * cos(t)`
-y: `0.8 * sin(t)`
+x: 4 + 0.8 * cos(t)
+y: 0.8 * sin(t)
 label: $(x - 4)^2 + y^2 = 0.8^2$
 color: crimson
-:::
+~~~
 
-::: {.dynamic-plot}
+~~~ {.dynamic-plot}
 curves: wave-sin, circle-param
 xlabel: $x$
 ylabel: $y(x)$
-:::
+~~~
 
 # Interactive Sliders, Helper Variables, and Shaded Regions
 
@@ -84,16 +84,16 @@ In 2D plots, `.dynamic-plot` supports a **`shade:`** block using the same entry-
 - **Indented options:** `xrange: [min, max]` (not valid for closed-curve `curve1 -> curve1` rules), `color`, `opacity` in `[0, 1]` (default `0.2`), and `label` (adds a toggleable area entry to the legend).
 
 ```markdown
-::: {.plot-function id="gauss-fixed"}
+~~~ {#gauss-fixed .plot-function}
 x: [-4, 6]
 vars:
-  z = `(x - 0.5) / 1.1`
-y: `exp(-0.5 * z**2)`
+  z = (x - 0.5) / 1.1
+y: exp(-0.5 * z**2)
 label: $f_1(x)$
 color: #1f77b4
-:::
+~~~
 
-::: {.plot-function id="gauss-moving"}
+~~~ {#gauss-moving .plot-function}
 x: [-4, 6]
 sliders:
   mu: [-1.5, 3.5]
@@ -103,13 +103,13 @@ sliders:
   sigma: [0.6, 1.0, 1.4, 1.8]
     label: Width $\sigma$
 vars:
-  z = `(x - mu) / sigma`
-y: `0.85 * exp(-0.5 * z**2)`
+  z = (x - mu) / sigma
+y: 0.85 * exp(-0.5 * z**2)
 label: $f_2(x)$
 color: #ff7f0e
-:::
+~~~
 
-::: {.dynamic-plot}
+~~~ {.dynamic-plot}
 curves: gauss-fixed, gauss-moving
 xlabel: $x$
 ylabel: Density
@@ -118,19 +118,19 @@ shade:
     color: #2ca02c
     opacity: 0.22
     label: Excess $f_2(x) \ge f_1(x)$
-:::
+~~~
 ```
 
-::: {.plot-function id="gauss-fixed"}
+~~~ {#gauss-fixed .plot-function}
 x: [-4, 6]
 vars:
-  z = `(x - 0.5) / 1.1`
-y: `exp(-0.5 * z**2)`
+  z = (x - 0.5) / 1.1
+y: exp(-0.5 * z**2)
 label: $f_1(x)$
 color: #1f77b4
-:::
+~~~
 
-::: {.plot-function id="gauss-moving"}
+~~~ {#gauss-moving .plot-function}
 x: [-4, 6]
 sliders:
   mu: [-1.5, 3.5]
@@ -140,13 +140,13 @@ sliders:
   sigma: [0.6, 1.0, 1.4, 1.8]
     label: Width $\sigma$
 vars:
-  z = `(x - mu) / sigma`
-y: `0.85 * exp(-0.5 * z**2)`
+  z = (x - mu) / sigma
+y: 0.85 * exp(-0.5 * z**2)
 label: $f_2(x)$
 color: #ff7f0e
-:::
+~~~
 
-::: {.dynamic-plot}
+~~~ {.dynamic-plot}
 curves: gauss-fixed, gauss-moving
 xlabel: $x$
 ylabel: Density
@@ -155,11 +155,11 @@ shade:
     color: #2ca02c
     opacity: 0.22
     label: Excess $f_2(x) \ge f_1(x)$
-:::
+~~~
 
 # Plotting External Data Files
 
-Unlike `.plot-function`, a `::: {.plot-file id="..."}` block takes its sample points directly from the rows of a `.csv` (comma-separated) or whitespace/tab-delimited numeric file rather than domain parameters (blank lines and comment lines starting with `#`, `%`, or `//` are ignored automatically):
+Unlike `.plot-function`, a `~~~ {#data .plot-file}` block takes its sample points directly from the rows of a `.csv` (comma-separated) or whitespace/tab-delimited numeric file rather than domain parameters (blank lines and comment lines starting with `#`, `%`, or `//` are ignored automatically):
 
 - `src`: Path to the data file (required). Each data row must have the same number of columns, with a finite number in every field.
 - `skip`: Number of leading non-comment header rows to ignore, integer $\ge 0$ (default `0`).
@@ -169,92 +169,92 @@ Unlike `.plot-function`, a `::: {.plot-file id="..."}` block takes its sample po
 A `.plot-file` trace can be overlaid directly with analytical `.plot-function` curves on the same canvas:
 
 ```markdown
-::: {.plot-file id="damped-data"}
+~~~ {#damped-data .plot-file}
 src: data/example-plot-damped.csv
 skip: 1
-x: `c0`
-y: `c1`
+x: c0
+y: c1
 label: Measured amplitude
 mode: markers
 color: #ff7f0e
-:::
+~~~
 
-::: {.plot-function id="damped-model"}
+~~~ {#damped-model .plot-function}
 x: [0, 10]
-y: `exp(-0.35 * x) * cos(2 * x)`
+y: exp(-0.35 * x) * cos(2 * x)
 label: $e^{-0.35t}\cos(2t)$
 color: #1f77b4
-:::
+~~~
 
-::: {.dynamic-plot}
+~~~ {.dynamic-plot}
 curves: damped-model, damped-data
 xlabel: Time $t$ [s]
 ylabel: Amplitude $A(t)$ [m]
-:::
+~~~
 ```
 
-::: {.plot-file id="damped-data"}
+~~~ {#damped-data .plot-file}
 src: data/example-plot-damped.csv
 skip: 1
-x: `c0`
-y: `c1`
+x: c0
+y: c1
 label: Measured amplitude
 mode: markers
 color: #ff7f0e
-:::
+~~~
 
-::: {.plot-function id="damped-model"}
+~~~ {#damped-model .plot-function}
 x: [0, 10]
-y: `exp(-0.35 * x) * cos(2 * x)`
+y: exp(-0.35 * x) * cos(2 * x)
 label: $e^{-0.35t}\cos(2t)$
 color: #1f77b4
-:::
+~~~
 
-::: {.dynamic-plot}
+~~~ {.dynamic-plot}
 curves: damped-model, damped-data
 xlabel: Time $t$ [s]
 ylabel: Amplitude $A(t)$ [m]
-:::
+~~~
 
 Combining an integer slider in `sliders:` with dynamic column indexing (`c(k)`) sweeps interactively across columns of a multi-column dataset:
 
 ```markdown
-::: {.plot-file id="wave-sweep"}
+~~~ {#wave-sweep .plot-file}
 src: data/example-plot-sweep.csv
 sliders:
   k: [1..7]
     label: Time index $k$
     play: true
-x: `c0`
-y: `c(k)`
+x: c0
+y: c(k)
 label: Wave amplitude
 smooth: true
-:::
+~~~
 
-::: {.dynamic-plot}
+~~~ {.dynamic-plot}
 curves: wave-sweep
 xlabel: $x$ [m]
 ylabel: $\psi(x, t_k)$
-:::
+~~~
 ```
 
-::: {.plot-file id="wave-sweep"}
+~~~ {#wave-sweep .plot-file}
 src: data/example-plot-sweep.csv
 sliders:
   k: [1..7]
     label: Time index $k$
     play: true
-x: `c0`
-y: `c(k)`
+x: c0
+y: c(k)
 label: Wave amplitude
 smooth: true
-:::
+~~~
 
-::: {.dynamic-plot}
+~~~ {.dynamic-plot}
 curves: wave-sweep
 xlabel: $x$ [m]
 ylabel: $\psi(x, t_k)$
-:::
+~~~
 
 # 3D Curves and Surfaces
 
@@ -266,61 +266,61 @@ Adding a `z` expression switches a `.plot-function` to 3D (all curves in a `.dyn
 - `zlabel`, `zscale`, `zrange`: Configure the third axis in `.dynamic-plot`. The 3D axis titles `xlabel`, `ylabel`, and `zlabel` are plain text and default to `x`, `y`, and `z`.
 
 ```markdown
-::: {.plot-function id="ripple-surface"}
+~~~ {#ripple-surface .plot-function}
 x: [-4, 4]
 y: [-4, 4]
 vars:
-  r = `hypot(x, y)`
-z: `sin(2 * r) / (1 + 0.4 * r)`
+  r = hypot(x, y)
+z: sin(2 * r) / (1 + 0.4 * r)
 points: 45
 label: Ripple surface
 color: #1f77b4
-:::
+~~~
 
-::: {.plot-function id="spiral-3d"}
+~~~ {#spiral-3d .plot-function}
 t: [0, 4 * pi]
 vars:
-  r = `0.28 * t`
-x: `r * cos(t)`
-y: `r * sin(t)`
-z: `0.25 + 0.12 * t`
+  r = 0.28 * t
+x: r * cos(t)
+y: r * sin(t)
+z: 0.25 + 0.12 * t
 label: Spiral path
 color: #d62728
-:::
+~~~
 
-::: {.dynamic-plot}
+~~~ {.dynamic-plot}
 curves: ripple-surface, spiral-3d
 xlabel: x
 ylabel: y
 zlabel: z(x, y)
-:::
+~~~
 ```
 
-::: {.plot-function id="ripple-surface"}
+~~~ {#ripple-surface .plot-function}
 x: [-4, 4]
 y: [-4, 4]
 vars:
-  r = `hypot(x, y)`
-z: `sin(2 * r) / (1 + 0.4 * r)`
+  r = hypot(x, y)
+z: sin(2 * r) / (1 + 0.4 * r)
 points: 45
 label: Ripple surface
 color: #1f77b4
-:::
+~~~
 
-::: {.plot-function id="spiral-3d"}
+~~~ {#spiral-3d .plot-function}
 t: [0, 4 * pi]
 vars:
-  r = `0.28 * t`
-x: `r * cos(t)`
-y: `r * sin(t)`
-z: `0.25 + 0.12 * t`
+  r = 0.28 * t
+x: r * cos(t)
+y: r * sin(t)
+z: 0.25 + 0.12 * t
 label: Spiral path
 color: #d62728
-:::
+~~~
 
-::: {.dynamic-plot}
+~~~ {.dynamic-plot}
 curves: ripple-surface, spiral-3d
 xlabel: x
 ylabel: y
 zlabel: z(x, y)
-:::
+~~~

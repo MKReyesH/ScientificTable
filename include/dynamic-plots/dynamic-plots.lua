@@ -92,6 +92,15 @@ local function strip_quotes(s)
     return s:match('^"(.*)"$') or s:match("^'(.*)'$") or s
 end
 
+local function plot_lines(text)
+    local lines = {}
+    for line in text:gmatch("[^\r\n]+") do
+        line = U.trim(line)
+        if line ~= "" then table.insert(lines, line) end
+    end
+    return lines
+end
+
 -- Parses a boolean option string
 local function parse_bool(val, key, context)
     if val == nil then return nil end
@@ -372,12 +381,12 @@ local function register_curve_def(el, kind)
     local tag_name = is_fn and ".plot-function" or ".plot-file"
     local id = U.trim(el.identifier)
     if not is_valid_id(id) then
-        fail("'%s' block requires a valid 'id' attribute (e.g. ::: {%s id=\"c1\"})", tag_name, tag_name)
+        fail("'%s' block requires a valid ID (e.g. ~~~ {#c1 %s})", tag_name, tag_name)
     end
     local context = tag_name .. "#" .. id
 
     local kv, vars, domain_params, slider_params, seen_params = parse_curve_block(
-        U.extract_lines_from_div(el),
+        plot_lines(el.text),
         is_fn and FUNCTION_KEYS or FILE_KEYS,
         is_fn and {} or { "src", "x", "y" },
         is_fn,
@@ -456,7 +465,7 @@ end
 local function render_plot_canvas(el)
     local id = U.trim(el.identifier)
     local context = (id ~= "") and (".dynamic-plot#" .. id) or ".dynamic-plot"
-    local kv, shade = parse_plot_block(U.extract_lines_from_div(el), context)
+    local kv, shade = parse_plot_block(plot_lines(el.text), context)
 
     local curves = {}
     for item in kv.curves:gmatch("[^,]+") do
@@ -554,8 +563,8 @@ local function validate_plots()
     end
 end
 
--- Pandoc filter hook for '.plot-function', '.plot-file', and '.dynamic-plot' divs
-function Div(el)
+-- Pandoc filter hook for literal plot configuration blocks.
+function CodeBlock(el)
     if el.classes:includes("plot-function") then return register_curve_def(el, "function")
     elseif el.classes:includes("plot-file") then return register_curve_def(el, "file")
     elseif el.classes:includes("dynamic-plot") then return render_plot_canvas(el)
