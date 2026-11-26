@@ -87,149 +87,144 @@
   const shadeCurveIds = (rule) =>
     [rule.fromKind === "curve" ? rule.from : null, rule.toKind === "curve" ? rule.to : null].filter(Boolean);
 
-  // Compiles validated math expressions into JIT-evaluated JavaScript functions
+  // JavaScript parses native expressions after the filter checks their tokens and names.
   const MathCompiler = (() => {
-    const CONSTS = { pi: Math.PI, e: Math.E };
-    const FUNCS = {
-      sin: Math.sin, cos: Math.cos, tan: Math.tan,
-      asin: Math.asin, acos: Math.acos, atan: Math.atan, atan2: Math.atan2,
-      sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh,
-      asinh: Math.asinh, acosh: Math.acosh, atanh: Math.atanh,
-      exp: Math.exp, log: Math.log, ln: Math.log, log10: Math.log10, log2: Math.log2,
-      sqrt: Math.sqrt, abs: Math.abs, sign: Math.sign,
-      floor: Math.floor, ceil: Math.ceil, min: Math.min, max: Math.max, hypot: Math.hypot
-    };
-    const TOKEN_RE = /\s*(?:((?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)|([a-zA-Z_]\w*)|([+\-*/^(),[\]]))/y;
+    const math = Object.fromEntries(Object.getOwnPropertyNames(Math)
+      .filter((name) => name !== "random" && ["number", "function"].includes(typeof Math[name]))
+      .map((name) => [name, Math[name]]));
+    Object.assign(math, { pi: Math.PI, e: Math.E, ln: Math.log });
+    const mathNames = Object.keys(math);
+    const mathScope = new Set(mathNames);
+    const bindMath = `const { ${mathNames.join(", ")} } = $math;`;
+    const token = /(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?|[A-Za-z_]\w*|\s+|[+\-*/(),]/y;
 
-    // Tokenizes and parses a math expression into a JavaScript expression string
-    function toJsExpr(src) {
-      const tokens = [];
-      TOKEN_RE.lastIndex = 0;
-      while (TOKEN_RE.lastIndex < src.length) {
-        const m = TOKEN_RE.exec(src);
-        if (!m) break;
-        if (m[1] !== undefined) tokens.push({ t: "num", v: String(Number(m[1])) });
-        else if (m[2] !== undefined) tokens.push({ t: "id", v: m[2] });
-        else if (m[3] !== undefined) tokens.push({ t: "op", v: m[3] });
+    function check(source, scope) {
+      if (/\/\/|\/\*|\+\+|--/.test(source)) throw new Error(`Invalid operator in "${source}"`);
+
+      token.lastIndex = 0;
+      while (token.lastIndex < source.length) {
+        const start = token.lastIndex;
+        const match = token.exec(source);
+        if (!match) throw new Error(`Invalid token at column ${start + 1} in "${source}"`);
+        const [word] = match;
+        if (/^[A-Za-z_]/.test(word) && !scope.has(word)) {
+          throw new Error(`Unknown or disallowed name "${word}" in "${source}"`);
+        }
       }
-
-      let pos = 0;
-      const peek = () => tokens[pos];
-      const next = () => tokens[pos++];
-      const isOp = (tok, v) => tok && tok.t === "op" && tok.v === v;
-
-      const parseAdd = () => {
-        let lhs = parseMul();
-        while (isOp(peek(), "+") || isOp(peek(), "-")) lhs = `${lhs} ${next().v} ${parseMul()}`;
-        return lhs;
-      };
-
-      const parseMul = () => {
-        let lhs = parseUnary();
-        while (true) {
-          if (isOp(peek(), "*") || isOp(peek(), "/")) lhs = `${lhs} ${next().v} ${parseUnary()}`;
-          else if (peek() && (peek().t === "id" || peek().t === "num" || isOp(peek(), "("))) lhs = `${lhs} * ${parseUnary()}`;
-          else break;
-        }
-        return lhs;
-      };
-
-      const parseUnary = () => {
-        if (isOp(peek(), "+")) { next(); return parseUnary(); }
-        if (isOp(peek(), "-")) { next(); return `-(${parseUnary()})`; }
-        return parsePow();
-      };
-
-      const parsePow = () => {
-        const base = parseAtom();
-        if (isOp(peek(), "^")) { next(); return `(${base} ** ${parseUnary()})`; }
-        return base;
-      };
-
-      const parseAtom = () => {
-        const tok = next();
-        if (!tok) return "NaN";
-        if (tok.t === "num") return tok.v;
-        if (isOp(tok, "(")) {
-          const inner = parseAdd();
-          next();
-          return `(${inner})`;
-        }
-        const name = tok.v;
-        if (name === "c" && isOp(peek(), "[")) {
-          next();
-          const idx = parseAdd();
-          next();
-          return `($row ? $row[Math.round(${idx})] : NaN)`;
-        }
-        if (name in FUNCS) {
-          next();
-          const args = [];
-          if (!isOp(peek(), ")")) {
-            args.push(parseAdd());
-            while (isOp(peek(), ",")) { next(); args.push(parseAdd()); }
-          }
-          next();
-          return `$F.${name}(${args.join(", ")})`;
-        }
-        return name in CONSTS ? `$C.${name}` : name;
-      };
-
-      return parseAdd();
     }
 
-    // Generates variable and column declarations prepended to an evaluator body
-    function buildVarsPrelude(def, paramNames, includeCols) {
-      const declared = new Set(paramNames);
-      const lines = [];
-      if (includeCols) {
-        const numCols = def.rows?.[0]?.length || 0;
-        if (numCols > 0) {
-          const colDecls = [];
-          for (let c = 0; c < numCols; c++) {
-            colDecls.push(`c${c} = $row[${c}]`);
-            declared.add(`c${c}`);
-          }
-          lines.push(`const ${colDecls.join(", ")};`);
-        }
-      }
-      for (const v of def.vars || []) {
-        const exprJs = toJsExpr(v.expr);
-        if (declared.has(v.name)) {
-          lines.push(`${v.name} = ${exprJs};`);
-        } else {
-          declared.add(v.name);
-          lines.push(`let ${v.name} = ${exprJs};`);
-        }
-      }
-      return lines;
+    function compile(args, body) {
+      const factory = new Function("$math", `"use strict";\n${bindMath}\nreturn (${args.join(", ")}) => {\n${body}\n};`);
+      return factory(math);
     }
 
-    return {
-      // Builds a compiled point-evaluation function for a curve or data file
-      compilePointEvaluator(def) {
-        const isFile = def.kind === "file";
-        const is3d = def.dim === "3d";
-        const paramNames = (def.params || []).map((p) => p.name);
-        const lines = buildVarsPrelude(def, paramNames, isFile);
-
-        lines.push(`const $x = ${toJsExpr(def.x)};`);
-        lines.push(`const $y = ${toJsExpr(def.y)};`);
-        lines.push(`$out[0] = Number.isFinite($x) ? $x : null;`);
-        lines.push(`$out[1] = Number.isFinite($y) ? $y : null;`);
-        if (is3d) {
-          lines.push(`const $z = ${toJsExpr(def.z)};`);
-          lines.push(`$out[2] = Number.isFinite($z) ? $z : null;`);
+    function constants(source, context) {
+      try {
+        check(source, mathScope);
+        const values = compile([], `return [${source}];`)();
+        for (const value of values) {
+          if (!Number.isFinite(value)) throw new Error("Expected finite numeric values");
         }
-
-        const args = isFile ? ["$F", "$C", "$out", "$row", ...paramNames] : ["$F", "$C", "$out", ...paramNames];
-        const rawFn = new Function(...args, lines.join("\n"));
-        return isFile
-          ? (out, row, paramVals) => rawFn(FUNCS, CONSTS, out, row, ...paramVals)
-          : (out, paramVals) => rawFn(FUNCS, CONSTS, out, ...paramVals);
+        return values;
+      } catch (error) {
+        throw new Error(`${context}: ${error.message}`);
       }
-    };
+    }
+
+    function compilePointEvaluator(def) {
+      const isFile = def.kind === "file";
+      const paramNames = (def.params || []).map((p) => p.name);
+      const columns = isFile ? Array.from(def.rows[0], (_, i) => `c${i}`) : [];
+      const inputs = [...paramNames, ...columns, ...(isFile ? ["c"] : [])];
+      const scope = new Set(mathScope);
+      for (const name of inputs) {
+        if (scope.has(name)) throw new Error(`Duplicate or reserved input name "${name}"`);
+        scope.add(name);
+      }
+
+      const lines = columns.map((name, i) => `const ${name} = $row[${i}];`);
+      if (isFile) lines.push("const c = (index) => $row[$round(index)];");
+      const helpers = new Set();
+      for (const { name, expr } of def.vars || []) {
+        if (scope.has(name) && !helpers.has(name)) throw new Error(`Helper "${name}" shadows an input or math name`);
+        check(expr, scope);
+        lines.push(`${helpers.has(name) ? "" : "let "}${name} = (${expr});`);
+        scope.add(name);
+        helpers.add(name);
+      }
+
+      const coordinates = def.dim === "3d" ? ["x", "y", "z"] : ["x", "y"];
+      coordinates.forEach((axis, index) => {
+        check(def[axis], scope);
+        lines.push(`const $${axis} = ${def[axis]};`);
+        lines.push(`$out[${index}] = $finite($${axis}) ? $${axis} : null;`);
+      });
+
+      const evaluate = compile(["$out", "$row", "$round", "$finite", ...paramNames], lines.join("\n"));
+      return isFile
+        ? (out, row, paramVals) => evaluate(out, row, Math.round, Number.isFinite, ...paramVals)
+        : (out, paramVals) => evaluate(out, null, Math.round, Number.isFinite, ...paramVals);
+    }
+
+    return { constants, compilePointEvaluator };
   })();
+
+  // Resolves constant expressions and validates the resulting numeric ranges once at startup.
+  const PlotOptions = {
+    range(values, context, scale) {
+      if (values.length !== 2 || values[0] >= values[1]) {
+        throw new Error(`${context} requires [min, max] with min < max`);
+      }
+      if (scale === "log" && values[0] <= 0) {
+        throw new Error(`${context} requires positive bounds on a logarithmic axis`);
+      }
+      return values;
+    },
+
+    constant(source, context) {
+      const values = MathCompiler.constants(source, context);
+      if (values.length !== 1) throw new Error(`${context} requires one number`);
+      return values[0];
+    },
+
+    parameter(param, defaultSteps) {
+      const context = `Parameter "${param.name}"`;
+      const values = param.integerRange
+        ? param.integerRange.map((expr) => this.constant(expr, context))
+        : MathCompiler.constants(param.domain, context);
+
+      if (!param.integerRange && values.length === 2) {
+        const [min, max] = this.range(values, context);
+        return { ...param, kind: "range", min, max, steps: param.steps ?? defaultSteps };
+      }
+      if (param.steps !== undefined) throw new Error(`'steps' for ${context} requires a [min, max] range`);
+      if (param.integerRange) {
+        const [min, max] = this.range(values, context);
+        if (!values.every(Number.isSafeInteger)) throw new Error(`${context} requires integer bounds`);
+        return { ...param, kind: "list", values: Array.from({ length: max - min + 1 }, (_, i) => min + i) };
+      }
+      if (values.length < 3) throw new Error(`${context} requires a range or at least three values`);
+      return { ...param, kind: "list", values };
+    },
+
+    canvas(config) {
+      const resolved = { ...config };
+      for (const axis of ["x", "y", "z"]) {
+        const key = `${axis}range`;
+        if (config[key] !== undefined) {
+          resolved[key] = this.range(MathCompiler.constants(config[key], key), key, config[`${axis}scale`]);
+        }
+      }
+      resolved.shade = (config.shade || []).map((rule) => ({
+        ...rule,
+        from: rule.fromKind === "const" ? this.constant(rule.from, "Shading lower bound") : rule.from,
+        to: rule.toKind === "const" ? this.constant(rule.to, "Shading upper bound") : rule.to,
+        xrange: rule.xrange === undefined ? undefined
+          : this.range(MathCompiler.constants(rule.xrange, "Shading xrange"), "Shading xrange", config.xscale)
+      }));
+      return resolved;
+    }
+  };
 
   // Utilities for sampling linear or logarithmic domains and computing extents
   const Domain = {
@@ -247,8 +242,25 @@
     },
 
     // Samples a parameter from an explicit value list or continuous range
-    sampleParam(param, count, scale = "linear") {
-      return param.kind === "list" ? param.values : this.sampleAxis([param.min, param.max], count, scale);
+    sampleParam(param, count) {
+      return param.kind === "list" ? param.values : this.sampleAxis([param.min, param.max], count);
+    },
+
+    // Samples the explicit horizontal domain over the portion visible on its axis.
+    sampleX(param, count, scale, view) {
+      let { min, max } = param;
+      if (param.kind === "list") return this.sampleParam(param, count);
+      if (view) {
+        const lo = Math.max(min, view[0]);
+        const hi = Math.min(max, view[1]);
+        if (lo < hi) [min, max] = [lo, hi];
+      }
+      if (scale === "log") {
+        if (max <= 0) return [];
+        // When the domain includes zero, start one linear sample step inside the positive range.
+        if (min <= 0) min = Math.max(Number.MIN_VALUE, max / count);
+      }
+      return this.sampleAxis([min, max], count, scale);
     },
 
     // Computes the finite [min, max] extent of a numeric array
@@ -267,8 +279,8 @@
   // Prepares curve specifications and evaluates coordinate traces
   const CurveEvaluator = {
     // Precomputes parameter indices, domain metadata, and the compiled evaluator
-    prepare(def) {
-      const params = def.params || [];
+    prepare(def, defaultSteps) {
+      const params = (def.params || []).map((param) => PlotOptions.parameter(param, defaultSteps));
       const domainParams = params.filter((p) => !p.isSlider);
       const sliderParams = params.filter((p) => p.isSlider);
       const paramIndexByName = new Map(params.map((p, idx) => [p.name, idx]));
@@ -320,8 +332,8 @@
         const [p0, p1] = spec.domainParams;
         const idx0 = spec.paramIndexByName.get(p0.name);
         const idx1 = spec.paramIndexByName.get(p1.name);
-        const uVals = Domain.sampleParam(p0, spec.points, scales.xscale);
-        const vVals = Domain.sampleParam(p1, spec.points, scales.yscale);
+        const uVals = Domain.sampleParam(p0, spec.points);
+        const vVals = Domain.sampleParam(p1, spec.points);
         const X = new Array(vVals.length), Y = new Array(vVals.length), Z = new Array(vVals.length);
         const flatX = [], flatY = [], flatZ = [];
 
@@ -341,13 +353,9 @@
 
       const [p0] = spec.domainParams;
       const idx0 = spec.paramIndexByName.get(p0.name);
-      let sampleDomain = p0;
-      if (!is3d && zoomXRange && p0.name === "x" && p0.kind === "range") {
-        const lo = Math.max(p0.min, zoomXRange[0]);
-        const hi = Math.min(p0.max, zoomXRange[1]);
-        if (lo < hi) sampleDomain = { ...p0, min: lo, max: hi };
-      }
-      const pVals = Domain.sampleParam(sampleDomain, spec.points, p0.name === "x" ? scales.xscale : "linear");
+      const pVals = spec.isExplicitYX
+        ? Domain.sampleX(p0, spec.points, scales.xscale, zoomXRange)
+        : Domain.sampleParam(p0, spec.points);
       const n = pVals.length;
       const xs = new Array(n), ys = new Array(n), zs = is3d ? new Array(n) : null;
 
@@ -367,26 +375,31 @@
 
   // Builds closed-polygon shading traces clipped to directional bounds
   const ShadeBuilder = {
-    // Extracts finite points and ensures an x-sorted array for interpolation
-    prepareCurveData(evalRes) {
-      const rawPts = [];
-      let isSorted = true;
-      let prevX = -Infinity;
-      for (let i = 0; i < evalRes.xs.length; i++) {
-        const x = evalRes.xs[i], y = evalRes.ys[i];
-        if (x !== null && y !== null && Number.isFinite(x) && Number.isFinite(y)) {
-          rawPts.push([x, y]);
-          if (x < prevX) isSorted = false;
-          prevX = x;
+    // Preserves gaps and sorts points by x within each uninterrupted segment.
+    prepareSegments({ xs, ys }) {
+      const paths = [];
+      let path = null;
+      for (let i = 0; i < xs.length; i++) {
+        if (Number.isFinite(xs[i]) && Number.isFinite(ys[i])) {
+          if (!path) {
+            path = [];
+            paths.push(path);
+          }
+          path.push([xs[i], ys[i]]);
+        } else {
+          path = null;
         }
       }
-      const sortedPts = isSorted ? rawPts : rawPts.slice().sort((a, b) => a[0] - b[0]);
-      return { rawPts, sortedPts };
+      return paths.map((points) => {
+        if (points.some(([x], i) => i > 0 && x < points[i - 1][0])) {
+          points.sort((a, b) => a[0] - b[0]);
+        }
+        return points;
+      });
     },
 
     // Evaluates or linearly interpolates a curve's y-value at a given x
-    sampleYAt(evalData, sliderEnv, x, cursor) {
-      const spec = evalData.spec;
+    sampleYAt(spec, pts, sliderEnv, x, cursor) {
       if (spec.isExplicitYX) {
         const paramVec = CurveEvaluator.buildParamVector(spec, sliderEnv);
         paramVec[spec.paramIndexByName.get("x")] = x;
@@ -394,8 +407,6 @@
         spec.evalPoint(out, paramVec);
         return out[1];
       }
-      const pts = evalData.sortedPts;
-      if (pts.length === 0) return null;
       const eps = 1e-12 * Math.max(1, Math.abs(x));
       if (x < pts[0][0] - eps || x > pts[pts.length - 1][0] + eps) return null;
       if (x <= pts[0][0] + eps) return pts[0][1];
@@ -471,7 +482,7 @@
       return { x: outX, y: outY };
     },
 
-    // Constructs a filled Plotly scatter trace for a directional shading rule
+    // Constructs a filled Plotly scatter trace for a shading rule.
     buildTrace(rule, evaluatedMap, sliderEnv, yBounds) {
       const src = rule.fromKind === "curve" ? evaluatedMap.get(rule.from) : null;
       const dst = rule.toKind === "curve" ? evaluatedMap.get(rule.to) : null;
@@ -482,6 +493,7 @@
         mode: "lines",
         line: { width: 0 },
         fill: "toself",
+        connectgaps: false,
         fillcolor: colorToRgba(color, rule.opacity),
         hoveron: "fills",
         hoverinfo: rule.label ? "name+x+y" : "skip",
@@ -489,35 +501,42 @@
       };
 
       if (src && dst && rule.from === rule.to) {
-        return { ...baseTrace, x: src.rawPts.map((p) => p[0]), y: src.rawPts.map((p) => p[1]) };
+        return src.shadeSegments[0]?.length === src.xs.length
+          ? { ...baseTrace, x: src.xs, y: src.ys }
+          : { ...baseTrace, x: [], y: [] };
       }
 
-      const curves = [src, dst].filter(Boolean);
-      if (curves.some((c) => c.sortedPts.length < 2)) return { ...baseTrace, x: [], y: [] };
-
-      let lo = Math.max(...curves.map((c) => c.sortedPts[0][0]));
-      let hi = Math.min(...curves.map((c) => c.sortedPts[c.sortedPts.length - 1][0]));
-      if (rule.xrange) {
-        lo = Math.max(lo, rule.xrange[0]);
-        hi = Math.min(hi, rule.xrange[1]);
-      }
-      if (!Number.isFinite(lo) || !Number.isFinite(hi) || lo >= hi) return { ...baseTrace, x: [], y: [] };
-
-      const xs = this.mergeSortedGrid(src ? src.sortedPts : [], dst ? dst.sortedPts : [], lo, hi);
-      if (xs.length < 2) return { ...baseTrace, x: [], y: [] };
-
+      const grids = (curve) => curve
+        ? curve.shadeSegments.filter((pts) => pts.length >= 2)
+        : [[]];
       const constY = (kind, val) => (kind === "const" ? val : (val === "bottom" ? yBounds[0] : yBounds[1]));
       const yFromConst = src ? null : constY(rule.fromKind, rule.from);
       const yToConst = dst ? null : constY(rule.toKind, rule.to);
-      const srcCursor = { idx: 0 };
-      const dstCursor = { idx: 0 };
 
-      const poly = this.clipDirectionalPolygons(
-        xs,
-        (x) => (src ? this.sampleYAt(src, sliderEnv, x, srcCursor) : yFromConst),
-        (x) => (dst ? this.sampleYAt(dst, sliderEnv, x, dstCursor) : yToConst)
-      );
-      return { ...baseTrace, ...poly };
+      const srcGrids = grids(src), dstGrids = grids(dst);
+      const outX = [], outY = [];
+      for (const a of srcGrids) {
+        for (const b of dstGrids) {
+          const lo = Math.max(a[0]?.[0] ?? -Infinity, b[0]?.[0] ?? -Infinity, rule.xrange?.[0] ?? -Infinity);
+          const hi = Math.min(a.at(-1)?.[0] ?? Infinity, b.at(-1)?.[0] ?? Infinity, rule.xrange?.[1] ?? Infinity);
+          if (lo >= hi) continue;
+
+          const xs = this.mergeSortedGrid(a, b, lo, hi);
+          const srcCursor = { idx: 0 }, dstCursor = { idx: 0 };
+          const poly = this.clipDirectionalPolygons(
+            xs,
+            (x) => src ? this.sampleYAt(src.spec, a, sliderEnv, x, srcCursor) : yFromConst,
+            (x) => dst ? this.sampleYAt(dst.spec, b, sliderEnv, x, dstCursor) : yToConst
+          );
+          if (poly.x.length === 0) continue;
+          if (outX.length > 0) { outX.push(null); outY.push(null); }
+          for (let i = 0; i < poly.x.length; i++) {
+            outX.push(poly.x[i]);
+            outY.push(poly.y[i]);
+          }
+        }
+      }
+      return { ...baseTrace, x: outX, y: outY };
     }
   };
 
@@ -628,20 +647,25 @@
       return this.shadeRules.some((r, i) => this.isShadeActive(i) && shadeCurveIds(r).includes(curveId));
     }
 
-    // Deduplicates interactive slider definitions across all curves in the plot
+    // Shares compatible sliders and samples each slider's values once.
     collectSliders() {
       const seen = new Map();
       for (const spec of this.specs) {
         for (const p of spec.sliderParams) {
-          if (!seen.has(p.name)) {
+          const domain = JSON.stringify(p.kind === "range" ? [p.min, p.max, p.steps] : p.values);
+          const slider = seen.get(p.name);
+          if (slider) {
+            if (slider.kind !== p.kind || slider.domain !== domain) {
+              throw new Error(`Conflicting definitions for shared slider "${p.name}"`);
+            }
+            slider.play ||= Boolean(p.play);
+          } else {
             seen.set(p.name, {
-              name: p.name, label: p.label,
-              values: Domain.sampleParam(p, p.steps, "linear"),
+              name: p.name, label: p.label, kind: p.kind, domain,
+              values: Domain.sampleParam(p, p.steps),
               play: Boolean(p.play), isPlaying: false, playRaf: null, playBtn: null,
               index: 0, inputEl: null, valueEl: null
             });
-          } else if (p.play) {
-            seen.get(p.name).play = true;
           }
         }
       }
@@ -655,7 +679,11 @@
       return env;
     }
 
-    // Computes the full y-axis extent across all initial and slider states
+    getXSampleRange() {
+      return this.zoomXRange || (this.cfg.xscale === "log" ? this.cfg.xrange : null);
+    }
+
+    // Estimates the initial y-axis extent by sweeping one slider at a time.
     computeHomeYRange(initialMap) {
       if (this.cfg.yrange) return this.cfg.yrange;
       const positiveOnly = this.cfg.yscale === "log";
@@ -673,27 +701,54 @@
       if (this.sliders.length > 0) {
         const scales = this.getScales();
         const baseEnv = this.getSliderEnv();
+        const xRange = this.getXSampleRange();
         for (const s of this.sliders) {
           for (let i = 0; i < s.values.length; i++) {
             if (i === s.index) continue;
             const env = { ...baseEnv, [s.name]: s.values[i] };
             for (const spec of this.specs) {
-              if (spec.sliderNames.has(s.name)) absorb(CurveEvaluator.evaluate(spec, env, scales, null).ys);
+              if (spec.sliderNames.has(s.name)) absorb(CurveEvaluator.evaluate(spec, env, scales, xRange).ys);
             }
           }
         }
       }
-      return min <= max ? [min, max] : [-1, 1];
+      return min <= max ? [min, max] : (positiveOnly ? [0.1, 10] : [-1, 1]);
     }
 
-    // Evaluates a single curve trace and caches its sorted points for shading
+    // Extends the automatic y range as the user explores combinations of slider values.
+    expandHomeYRange(evaluatedMap) {
+      if (this.is3d || this.cfg.yrange || this.sliders.length === 0) return false;
+      const previous = this.homeYRange;
+      let [min, max] = previous;
+      this.specs.forEach((spec, idx) => {
+        if (!this.curveVisible[idx]) return;
+        const entry = evaluatedMap.get(spec.id);
+        const extent = entry && Domain.extent(entry.ys, this.cfg.yscale === "log");
+        if (extent) {
+          min = Math.min(min, extent[0]);
+          max = Math.max(max, extent[1]);
+        }
+      });
+      if (min === previous[0] && max === previous[1]) return false;
+      this.homeYRange = [min, max];
+      return !this.zoomYRange;
+    }
+
+    applyHomeYRange() {
+      Plotly.relayout(this.canvas, {
+        "yaxis.range": ThemeSync.encodeRange(this.cfg.yrange || this.homeYRange, this.cfg.yscale),
+        "yaxis.autorange": false
+      });
+    }
+
+    // Evaluates a curve trace and caches its uninterrupted segments for shading.
     evaluateCurveAt(idx, sliderEnv, scales) {
       const spec = this.specs[idx];
-      const res = CurveEvaluator.evaluate(spec, sliderEnv, scales, this.zoomXRange);
+      const res = CurveEvaluator.evaluate(spec, sliderEnv, scales, this.getXSampleRange());
       const color = resolveCurveColor(spec);
       applyTraceColor(res.trace, color);
-      const pts = this.is3d ? { rawPts: [], sortedPts: [] } : ShadeBuilder.prepareCurveData(res);
-      const entry = { ...res, ...pts, spec, color };
+      const shadeSegments = this.shadeRules.length > 0 ? ShadeBuilder.prepareSegments(res) : [];
+      const entry = { ...res, shadeSegments, spec, color };
       this.evalCache[idx] = entry;
       this.evalDirty[idx] = false;
       return entry;
@@ -755,12 +810,14 @@
           if (this.evalCache[idx]) evaluatedMap.set(spec.id, this.evalCache[idx]);
         });
 
+        const expandedY = (sliderName !== null || syncVis) && this.expandHomeYRange(evaluatedMap);
         if (shadeCount > 0) {
           const yBounds = this.getYBounds();
           this.shadeRules.forEach((rule, idx) => {
             if (!this.isShadeActive(idx)) return;
             const stale = sliderName !== null
-              ? shadeCurveIds(rule).some((id) => this.specById.get(id).sliderNames.has(sliderName))
+              ? (expandedY && (rule.fromKind === "bound" || rule.toKind === "bound")) ||
+                shadeCurveIds(rule).some((id) => this.specById.get(id).sliderNames.has(sliderName))
               : true;
             if (stale) {
               const trace = ShadeBuilder.buildTrace(rule, evaluatedMap, sliderEnv, yBounds);
@@ -781,6 +838,7 @@
           ];
           Plotly.restyle(this.canvas, { visible: vis });
         }
+        if (expandedY) this.applyHomeYRange();
       } finally {
         this.isUpdating = false;
       }
@@ -1031,8 +1089,7 @@
             this.zoomXRange = null;
             this.zoomYRange = null;
             if ((this.sliders.length > 0 || this.hasBoundShade) && this.canvas.layout?.yaxis) {
-              this.canvas.layout.yaxis.range = ThemeSync.encodeRange(this.cfg.yrange || this.homeYRange, this.cfg.yscale);
-              this.canvas.layout.yaxis.autorange = false;
+              this.applyHomeYRange();
             }
             changed = true;
           } else {
@@ -1064,6 +1121,7 @@
 
     // Builds the plot DOM structure, renders Plotly, and initializes listeners
     mount() {
+      const traces = this.evaluateAll();
       if (this.cfg.width) {
         this.wrapEl.style.width = `${this.cfg.width}px`;
         this.wrapEl.style.maxWidth = "100%";
@@ -1087,7 +1145,7 @@
       this.buildSidebar(bodyEl);
       this.wrapEl.appendChild(bodyEl);
 
-      Plotly.newPlot(this.canvas, this.evaluateAll(), this.buildLayout(ThemeSync.getPalette()), {
+      Plotly.newPlot(this.canvas, traces, this.buildLayout(ThemeSync.getPalette()), {
         responsive: true,
         displaylogo: false
       });
@@ -1110,21 +1168,24 @@
     if (wraps.length === 0) return;
 
     const registry = new Map();
-    const configsByIdx = new Map();
+    const curveErrors = new Map();
     const mathStrings = [];
+    const { defs, configs, sliderSteps } = JSON.parse(document.querySelector("script.dynamic-plot-data").textContent);
 
-    document.querySelectorAll("script.dynamic-plot-def").forEach((el) => {
-      const def = JSON.parse(el.textContent);
-      registry.set(def.id, CurveEvaluator.prepare(def));
+    defs.forEach((def) => {
+      try {
+        registry.set(def.id, CurveEvaluator.prepare(def, sliderSteps));
+      } catch (error) {
+        curveErrors.set(def.id, `Invalid expression: ${error.message}`);
+        return;
+      }
       if (hasMathDelimiters(def.label)) mathStrings.push(def.label);
       for (const p of def.params || []) {
         if (p.isSlider && hasMathDelimiters(p.label)) mathStrings.push(p.label);
       }
     });
 
-    document.querySelectorAll("script.dynamic-plot-cfg").forEach((el) => {
-      const cfg = JSON.parse(el.textContent);
-      configsByIdx.set(el.dataset.idx, cfg);
+    configs.forEach((cfg) => {
       if (hasMathDelimiters(cfg.xlabel)) mathStrings.push(cfg.xlabel);
       if (hasMathDelimiters(cfg.ylabel)) mathStrings.push(cfg.ylabel);
       for (const rule of cfg.shade || []) {
@@ -1139,9 +1200,27 @@
 
     const controllers = wraps
       .filter((w) => !w.dataset.initialized)
-      .map((w) => {
+      .flatMap((w) => {
         w.dataset.initialized = "true";
-        return new DynamicPlotController(w, configsByIdx.get(w.dataset.plotIdx), registry);
+        const cfg = configs[Number(w.dataset.plotIdx) - 1];
+        const failedCurve = cfg.curves.find((id) => curveErrors.has(id));
+        let errorMessage;
+        if (failedCurve) {
+          errorMessage = `Cannot plot curve "${failedCurve}": ${curveErrors.get(failedCurve)}`;
+        } else {
+          try {
+            return [new DynamicPlotController(w, PlotOptions.canvas(cfg), registry)];
+          } catch (error) {
+            errorMessage = `Cannot render plot: ${error.message}`;
+          }
+        }
+
+        const message = document.createElement("p");
+        message.className = "alert alert-danger m-3";
+        message.setAttribute("role", "alert");
+        message.textContent = errorMessage;
+        w.appendChild(message);
+        return [];
       });
 
     if (controllers.length === 0) return;
