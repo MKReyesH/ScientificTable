@@ -38,6 +38,15 @@
 
 /*Appendices style*/
 
+.csl-entry[id^="ref-"]:target {
+  animation: citation-highlight 3s ease-out;
+}
+
+@keyframes citation-highlight {
+  from { background-color: var(--bs-primary-bg-subtle); }
+  to { background-color: transparent; }
+}
+
 div#quarto-appendix section,
 div#quarto-appendix section ul,
 div#quarto-appendix section ol,

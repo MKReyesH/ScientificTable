@@ -366,11 +366,8 @@ div.csl-indent {
   overflow-wrap: break-word;
 }
 
-.dynamic-table-citation {
-  font: inherit;
-  text-align: inherit;
-  max-width: 100%;
-  overflow-wrap: anywhere;
+.tabulator:has([data-citation-cell]) {
+  transform: none;
 }
 
 </style>
@@ -718,7 +715,7 @@ window.Quarto = {
 <p>To render a CSV file with default interactive settings, write a standalone paragraph starting with <code>!dynamic-table:</code> followed by the file path:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>!dynamic-table: data/example-table.csv</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This enables clickable column sorting and pagination (15 rows per page, hidden automatically when all rows fit on a single page):</p>
-<div class="tabulator-container-wrap" data-headers="[&quot;Sector&quot;,&quot;Particle&quot;,&quot;Mass [GeV]&quot;,&quot;Discovery&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\mu^-$&quot;,&quot;col_2&quot;:&quot;0.1057&quot;,&quot;col_3&quot;:&quot;Neddermeyer:1937md&quot;},{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\tau^-$&quot;,&quot;col_2&quot;:&quot;1.777&quot;,&quot;col_3&quot;:&quot;Perl:1975bf&quot;},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$b$&quot;,&quot;col_2&quot;:&quot;4.18&quot;,&quot;col_3&quot;:&quot;Herb:1977ek&quot;},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$t$&quot;,&quot;col_2&quot;:&quot;172.7&quot;,&quot;col_3&quot;:&quot;CDF:1995wbb&quot;},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$W^\\pm$&quot;,&quot;col_2&quot;:&quot;80.38&quot;,&quot;col_3&quot;:&quot;UA1:1983crd&quot;},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$Z^0$&quot;,&quot;col_2&quot;:&quot;91.19&quot;,&quot;col_3&quot;:&quot;UA1:1983mne&quot;},{&quot;col_0&quot;:&quot;Scalar Boson&quot;,&quot;col_1&quot;:&quot;$H^0$&quot;,&quot;col_2&quot;:&quot;125.25&quot;,&quot;col_3&quot;:&quot;ATLAS:2012yve, CMS:2012qbp&quot;}]" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;string&quot;}]" data-searchable="false" data-perpage="15" data-sortable="true"></div>
+<div class="tabulator-container-wrap" data-headers="[&quot;Sector&quot;,&quot;Particle&quot;,&quot;Mass [GeV]&quot;,&quot;Discovery&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\mu^-$&quot;,&quot;col_2&quot;:&quot;0.1057&quot;,&quot;col_3&quot;:&quot;Neddermeyer:1937md&quot;,&quot;id&quot;:0},{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\tau^-$&quot;,&quot;col_2&quot;:&quot;1.777&quot;,&quot;col_3&quot;:&quot;Perl:1975bf&quot;,&quot;id&quot;:1},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$b$&quot;,&quot;col_2&quot;:&quot;4.18&quot;,&quot;col_3&quot;:&quot;Herb:1977ek&quot;,&quot;id&quot;:2},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$t$&quot;,&quot;col_2&quot;:&quot;172.7&quot;,&quot;col_3&quot;:&quot;CDF:1995wbb&quot;,&quot;id&quot;:3},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$W^\\pm$&quot;,&quot;col_2&quot;:&quot;80.38&quot;,&quot;col_3&quot;:&quot;UA1:1983crd&quot;,&quot;id&quot;:4},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$Z^0$&quot;,&quot;col_2&quot;:&quot;91.19&quot;,&quot;col_3&quot;:&quot;UA1:1983mne&quot;,&quot;id&quot;:5},{&quot;col_0&quot;:&quot;Scalar Boson&quot;,&quot;col_1&quot;:&quot;$H^0$&quot;,&quot;col_2&quot;:&quot;125.25&quot;,&quot;col_3&quot;:&quot;ATLAS:2012yve, CMS:2012qbp&quot;,&quot;id&quot;:6}]" data-columns="[{&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:1,&quot;type&quot;:&quot;string&quot;},{&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;index&quot;:3,&quot;type&quot;:&quot;string&quot;}]" data-searchable="false" data-perpage="15" data-sortable="true"></div>
 </section>
 <section id="fenced-block-configuration" class="level1">
 <h1>Fenced Block Configuration</h1>
@@ -752,7 +749,7 @@ window.Quarto = {
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="in">col 2: header="Mass [GeV]", number</span></span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="in">col 3: header="Discovery", unsortable</span></span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="tabulator-container-wrap" data-headers="[&quot;Sector&quot;,&quot;Particle&quot;,&quot;Mass [GeV]&quot;,&quot;Discovery&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\mu^-$&quot;,&quot;col_2&quot;:&quot;0.1057&quot;,&quot;col_3&quot;:&quot;Neddermeyer:1937md&quot;},{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\tau^-$&quot;,&quot;col_2&quot;:&quot;1.777&quot;,&quot;col_3&quot;:&quot;Perl:1975bf&quot;},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$b$&quot;,&quot;col_2&quot;:&quot;4.18&quot;,&quot;col_3&quot;:&quot;Herb:1977ek&quot;},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$t$&quot;,&quot;col_2&quot;:&quot;172.7&quot;,&quot;col_3&quot;:&quot;CDF:1995wbb&quot;},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$W^\\pm$&quot;,&quot;col_2&quot;:&quot;80.38&quot;,&quot;col_3&quot;:&quot;UA1:1983crd&quot;},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$Z^0$&quot;,&quot;col_2&quot;:&quot;91.19&quot;,&quot;col_3&quot;:&quot;UA1:1983mne&quot;},{&quot;col_0&quot;:&quot;Scalar Boson&quot;,&quot;col_1&quot;:&quot;$H^0$&quot;,&quot;col_2&quot;:&quot;125.25&quot;,&quot;col_3&quot;:&quot;ATLAS:2012yve, CMS:2012qbp&quot;}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Sector&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Particle&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Mass [GeV]&quot;,&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;header&quot;:&quot;Discovery&quot;,&quot;index&quot;:3,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="4" data-sortable="true"></div>
+<div class="tabulator-container-wrap" data-headers="[&quot;Sector&quot;,&quot;Particle&quot;,&quot;Mass [GeV]&quot;,&quot;Discovery&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\mu^-$&quot;,&quot;col_2&quot;:&quot;0.1057&quot;,&quot;col_3&quot;:&quot;Neddermeyer:1937md&quot;,&quot;id&quot;:0},{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\tau^-$&quot;,&quot;col_2&quot;:&quot;1.777&quot;,&quot;col_3&quot;:&quot;Perl:1975bf&quot;,&quot;id&quot;:1},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$b$&quot;,&quot;col_2&quot;:&quot;4.18&quot;,&quot;col_3&quot;:&quot;Herb:1977ek&quot;,&quot;id&quot;:2},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$t$&quot;,&quot;col_2&quot;:&quot;172.7&quot;,&quot;col_3&quot;:&quot;CDF:1995wbb&quot;,&quot;id&quot;:3},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$W^\\pm$&quot;,&quot;col_2&quot;:&quot;80.38&quot;,&quot;col_3&quot;:&quot;UA1:1983crd&quot;,&quot;id&quot;:4},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$Z^0$&quot;,&quot;col_2&quot;:&quot;91.19&quot;,&quot;col_3&quot;:&quot;UA1:1983mne&quot;,&quot;id&quot;:5},{&quot;col_0&quot;:&quot;Scalar Boson&quot;,&quot;col_1&quot;:&quot;$H^0$&quot;,&quot;col_2&quot;:&quot;125.25&quot;,&quot;col_3&quot;:&quot;ATLAS:2012yve, CMS:2012qbp&quot;,&quot;id&quot;:6}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Sector&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Particle&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Mass [GeV]&quot;,&quot;index&quot;:2,&quot;type&quot;:&quot;number&quot;},{&quot;header&quot;:&quot;Discovery&quot;,&quot;index&quot;:3,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="4" data-sortable="true"></div>
 </section>
 <section id="scientific-units-latex-math-numbers-and-inspire-hep-citations" class="level2">
 <h2 class="anchored" data-anchor-id="scientific-units-latex-math-numbers-and-inspire-hep-citations">Scientific Units, LaTeX Math Numbers, and INSPIRE-HEP Citations</h2>
@@ -760,7 +757,7 @@ window.Quarto = {
 <ul>
 <li><code>units(Unit1: factor1, Unit2: factor2, ...)</code>: Implies <code>number</code> and adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor.</li>
 <li><code>latexnum</code>: Implies both <code>number</code> and <code>latex</code>. It displays numeric cells as inline math using the same magnitude thresholds as <code>number</code>. For example, <code>1.057e-4</code> displays as <span class="math inline">\(1.06 \times 10^{-4}\)</span>. The formatting updates when the user switches units.</li>
-<li><code>inspire</code> implies <code>string</code> and takes bare INSPIRE-HEP citation keys such as <code>ReyesHung:2023udr</code>. Separate multiple keys with commas or semicolons. If you use commas, quote the entire CSV field. Hover over, focus, or tap a resolved key to preview its reference. Each table has a fixed <strong>Table references</strong> list that starts collapsed and uses the document’s citation style. Citations in the main text <span class="citation" data-cites="ReyesHung:2023udr">[<a href="#ref-ReyesHung:2023udr" role="doc-biblioref">1</a>]</span> use the page bibliography.</li>
+<li><code>inspire</code> implies <code>string</code> and takes bare INSPIRE-HEP citation keys such as <code>ReyesHung:2023udr</code>. Separate multiple keys with commas or semicolons. If you use commas, quote the entire CSV field. Hover over a resolved key for Quarto’s citation preview, or click it to jump to its entry. Each table has a fixed <strong>Table references</strong> list that starts collapsed and uses the document’s citation style. Citations in the main text <span class="citation" data-cites="ReyesHung:2023udr">[<a href="#ref-ReyesHung:2023udr" role="doc-biblioref">1</a>]</span> use the page bibliography.</li>
 </ul>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="in">~~~ {.dynamic-table}</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="in">src: data/example-table.csv</span></span>
@@ -771,48 +768,72 @@ window.Quarto = {
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="in">col 2: header=$m$, latexnum, units(GeV: 1, MeV: 1e3, TeV: 1e-3)</span></span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="in">col 3: header="Discovery", inspire, unsortable</span></span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="tabulator-container-wrap" data-headers="[&quot;Sector&quot;,&quot;Particle&quot;,&quot;Mass [GeV]&quot;,&quot;Discovery&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\mu^-$&quot;,&quot;col_2&quot;:&quot;0.1057&quot;,&quot;col_3&quot;:&quot;Neddermeyer:1937md&quot;},{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\tau^-$&quot;,&quot;col_2&quot;:&quot;1.777&quot;,&quot;col_3&quot;:&quot;Perl:1975bf&quot;},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$b$&quot;,&quot;col_2&quot;:&quot;4.18&quot;,&quot;col_3&quot;:&quot;Herb:1977ek&quot;},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$t$&quot;,&quot;col_2&quot;:&quot;172.7&quot;,&quot;col_3&quot;:&quot;CDF:1995wbb&quot;},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$W^\\pm$&quot;,&quot;col_2&quot;:&quot;80.38&quot;,&quot;col_3&quot;:&quot;UA1:1983crd&quot;},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$Z^0$&quot;,&quot;col_2&quot;:&quot;91.19&quot;,&quot;col_3&quot;:&quot;UA1:1983mne&quot;},{&quot;col_0&quot;:&quot;Scalar Boson&quot;,&quot;col_1&quot;:&quot;$H^0$&quot;,&quot;col_2&quot;:&quot;125.25&quot;,&quot;col_3&quot;:&quot;ATLAS:2012yve, CMS:2012qbp&quot;}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Sector&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Particle&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;$m$&quot;,&quot;index&quot;:2,&quot;latex&quot;:true,&quot;latexnum&quot;:true,&quot;map&quot;:{&quot;GeV&quot;:1,&quot;MeV&quot;:1000,&quot;TeV&quot;:1.0e-3},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;GeV&quot;,&quot;MeV&quot;,&quot;TeV&quot;]},{&quot;header&quot;:&quot;Discovery&quot;,&quot;index&quot;:3,&quot;inspire&quot;:true,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="4" data-sortable="true"></div>
+<div class="tabulator-container-wrap" data-headers="[&quot;Sector&quot;,&quot;Particle&quot;,&quot;Mass [GeV]&quot;,&quot;Discovery&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\mu^-$&quot;,&quot;col_2&quot;:&quot;0.1057&quot;,&quot;col_3&quot;:&quot;Neddermeyer:1937md&quot;,&quot;id&quot;:0},{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\tau^-$&quot;,&quot;col_2&quot;:&quot;1.777&quot;,&quot;col_3&quot;:&quot;Perl:1975bf&quot;,&quot;id&quot;:1},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$b$&quot;,&quot;col_2&quot;:&quot;4.18&quot;,&quot;col_3&quot;:&quot;Herb:1977ek&quot;,&quot;id&quot;:2},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$t$&quot;,&quot;col_2&quot;:&quot;172.7&quot;,&quot;col_3&quot;:&quot;CDF:1995wbb&quot;,&quot;id&quot;:3},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$W^\\pm$&quot;,&quot;col_2&quot;:&quot;80.38&quot;,&quot;col_3&quot;:&quot;UA1:1983crd&quot;,&quot;id&quot;:4},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$Z^0$&quot;,&quot;col_2&quot;:&quot;91.19&quot;,&quot;col_3&quot;:&quot;UA1:1983mne&quot;,&quot;id&quot;:5},{&quot;col_0&quot;:&quot;Scalar Boson&quot;,&quot;col_1&quot;:&quot;$H^0$&quot;,&quot;col_2&quot;:&quot;125.25&quot;,&quot;col_3&quot;:&quot;ATLAS:2012yve, CMS:2012qbp&quot;,&quot;id&quot;:6}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Sector&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Particle&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;$m$&quot;,&quot;index&quot;:2,&quot;latex&quot;:true,&quot;latexnum&quot;:true,&quot;map&quot;:{&quot;GeV&quot;:1,&quot;MeV&quot;:1000,&quot;TeV&quot;:1.0e-3},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;GeV&quot;,&quot;MeV&quot;,&quot;TeV&quot;]},{&quot;header&quot;:&quot;Discovery&quot;,&quot;index&quot;:3,&quot;inspire&quot;:true,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="4" data-sortable="true"></div>
 <details class="dynamic-table-refs quarto-appendix-contents">
 <summary class="fw-semibold py-2">Table references</summary>
 <div class="references csl-bib-body" role="list">
-<div class="csl-entry" data-cite-key="Neddermeyer:1937md" role="listitem">
+<div id="ref-dynamic-table-1-Neddermeyer:1937md" class="csl-entry" role="listitem">
 <div class="csl-left-margin">[1] </div><div class="csl-right-inline">Neddermeyer S H and Anderson C D 1937 <a href="https://doi.org/10.1103/PhysRev.51.884"><span class="nocase">Note
 on the Nature of Cosmic Ray Particles</span></a> <em>Phys. Rev.</em>
 <strong>51</strong> 884–6</div>
 </div>
-<div class="csl-entry" data-cite-key="Perl:1975bf" role="listitem">
+<div id="ref-dynamic-table-1-Perl:1975bf" class="csl-entry" role="listitem">
 <div class="csl-left-margin">[2] </div><div class="csl-right-inline"><span class="nocase">Perl M L et al</span> 1975
 <a href="https://doi.org/10.1103/PhysRevLett.35.1489"><span class="nocase">Evidence for Anomalous Lepton Production in e+ - e-
 Annihilation</span></a> <em>Phys. Rev. Lett.</em> <strong>35</strong>
 1489–92</div>
 </div>
-<div class="csl-entry" data-cite-key="CDF:1995wbb" role="listitem">
+<div id="ref-dynamic-table-1-CDF:1995wbb" class="csl-entry" role="listitem">
 <div class="csl-left-margin">[3] </div><div class="csl-right-inline"><span class="nocase">Abe F et al</span> 1995 <a href="https://doi.org/10.1103/PhysRevLett.74.2626"><span class="nocase">Observation of top quark production in <span class="math inline"><em>p̄</em><em>p</em></span> collisions</span></a>
 <em>Phys. Rev. Lett.</em> <strong>74</strong> 2626–31</div>
 </div>
-<div class="csl-entry" data-cite-key="UA1:1983crd" role="listitem">
+<div id="ref-dynamic-table-1-UA1:1983crd" class="csl-entry" role="listitem">
 <div class="csl-left-margin">[4] </div><div class="csl-right-inline"><span class="nocase">Arnison G et al</span>
 1983 <a href="https://doi.org/10.1016/0370-2693(83)91177-2"><span class="nocase">Experimental Observation of Isolated Large Transverse
 Energy Electrons with Associated Missing Energy at <span class="math inline">$\sqrt{s}= 540$</span> GeV</span></a> <em>Phys.
 Lett. B</em> <strong>122</strong> 103–16</div>
 </div>
-<div class="csl-entry" data-cite-key="UA1:1983mne" role="listitem">
+<div id="ref-dynamic-table-1-UA1:1983mne" class="csl-entry" role="listitem">
 <div class="csl-left-margin">[5] </div><div class="csl-right-inline"><span class="nocase">Arnison G et al</span>
 1983 <a href="https://doi.org/10.1016/0370-2693(83)90188-0"><span class="nocase">Experimental Observation of Lepton Pairs of Invariant
 Mass Around 95-GeV/<span class="math inline"><em>c</em><sup>2</sup></span> at the CERN SPS
 Collider</span></a> <em>Phys. Lett. B</em> <strong>126</strong>
 398–410</div>
 </div>
-<div class="csl-entry" data-cite-key="ATLAS:2012yve" role="listitem">
+<div id="ref-dynamic-table-1-ATLAS:2012yve" class="csl-entry" role="listitem">
 <div class="csl-left-margin">[6] </div><div class="csl-right-inline"><span class="nocase">Aad G et al</span> 2012 <a href="https://doi.org/10.1016/j.physletb.2012.08.020"><span class="nocase">Observation of a new particle in the search for the
 Standard Model Higgs boson with the ATLAS detector at the LHC</span></a>
 <em>Phys. Lett. B</em> <strong>716</strong> 1–29</div>
 </div>
-<div class="csl-entry" data-cite-key="CMS:2012qbp" role="listitem">
+<div id="ref-dynamic-table-1-CMS:2012qbp" class="csl-entry" role="listitem">
 <div class="csl-left-margin">[7] </div><div class="csl-right-inline"><span class="nocase">Chatrchyan S et al</span>
 2012 <a href="https://doi.org/10.1016/j.physletb.2012.08.021"><span class="nocase">Observation of a New Boson at a Mass of 125 GeV with the
 CMS Experiment at the LHC</span></a> <em>Phys. Lett. B</em>
 <strong>716</strong> 30–61</div>
+</div>
+</div>
+<div class="dynamic-table-citations" hidden="">
+<div data-citation-cell="0-col_3">
+<span class="citation" data-cites="dynamic-table-1-Neddermeyer:1937md"><a href="#ref-dynamic-table-1-Neddermeyer:1937md" role="doc-biblioref" data-tippy-popperoptions="{&quot;strategy&quot;:&quot;fixed&quot;}">Neddermeyer:1937md</a></span>
+</div>
+<div data-citation-cell="1-col_3">
+<span class="citation" data-cites="dynamic-table-1-Perl:1975bf"><a href="#ref-dynamic-table-1-Perl:1975bf" role="doc-biblioref" data-tippy-popperoptions="{&quot;strategy&quot;:&quot;fixed&quot;}">Perl:1975bf</a></span>
+</div>
+<div data-citation-cell="2-col_3">
+Herb:1977ek
+</div>
+<div data-citation-cell="3-col_3">
+<span class="citation" data-cites="dynamic-table-1-CDF:1995wbb"><a href="#ref-dynamic-table-1-CDF:1995wbb" role="doc-biblioref" data-tippy-popperoptions="{&quot;strategy&quot;:&quot;fixed&quot;}">CDF:1995wbb</a></span>
+</div>
+<div data-citation-cell="4-col_3">
+<span class="citation" data-cites="dynamic-table-1-UA1:1983crd"><a href="#ref-dynamic-table-1-UA1:1983crd" role="doc-biblioref" data-tippy-popperoptions="{&quot;strategy&quot;:&quot;fixed&quot;}">UA1:1983crd</a></span>
+</div>
+<div data-citation-cell="5-col_3">
+<span class="citation" data-cites="dynamic-table-1-UA1:1983mne"><a href="#ref-dynamic-table-1-UA1:1983mne" role="doc-biblioref" data-tippy-popperoptions="{&quot;strategy&quot;:&quot;fixed&quot;}">UA1:1983mne</a></span>
+</div>
+<div data-citation-cell="6-col_3">
+<span class="citation" data-cites="dynamic-table-1-ATLAS:2012yve"><a href="#ref-dynamic-table-1-ATLAS:2012yve" role="doc-biblioref" data-tippy-popperoptions="{&quot;strategy&quot;:&quot;fixed&quot;}">ATLAS:2012yve</a></span>,
+<span class="citation" data-cites="dynamic-table-1-CMS:2012qbp"><a href="#ref-dynamic-table-1-CMS:2012qbp" role="doc-biblioref" data-tippy-popperoptions="{&quot;strategy&quot;:&quot;fixed&quot;}">CMS:2012qbp</a></span>
 </div>
 </div>
 </details>
@@ -1582,30 +1603,6 @@ window.MathRenderer = window.MathRenderer || {
     return `$${formatted}$`;
   }
 
-  // Reuse Quarto's popup library with the table's own reference lookup.
-  function bindCitationPreviews(container, entries) {
-    window.tippy.delegate(container, {
-      target: ".dynamic-table-citation",
-      content: button => entries.get(button.dataset.citeKey)?.cloneNode(true) ?? "",
-      // Keep the popup after its button in tab order and outside the scrolling cell.
-      popperOptions: {strategy: "fixed"},
-      trigger: "mouseenter focus click",
-      interactive: true,
-      interactiveBorder: 10,
-      maxWidth: 500,
-      arrow: false,
-      theme: "quarto",
-      placement: "bottom-start"
-    });
-    container.addEventListener("keydown", event => {
-      if (event.key !== "Escape") return;
-      const preview = event.target.closest(".dynamic-table-citation, [data-tippy-root]")?._tippy;
-      if (!preview?.state.isVisible) return;
-      preview.reference.focus({preventScroll: true});
-      preview.hide();
-    });
-  }
-
   // Builds a unified Bootstrap-styled select control for header filters and unit switchers
   function createSelectMenu(options, onChange, selectedValue = "") {
     const select = document.createElement("select");
@@ -1626,43 +1623,8 @@ window.MathRenderer = window.MathRenderer || {
     return select;
   }
 
-  // Composable registry of column cell formatters and header controls
+  // Header controls composed with the column's display formatter.
   const ColumnFeatures = {
-    number: (colDef, colCfg, ctx) => {
-      colDef.formatter = (cell) => ctx.formatValue(colCfg, cell.getValue());
-    },
-
-    latex: (colDef) => {
-      const baseFormatter = colDef.formatter;
-      colDef.formatter = (cell, formatterParams, onRendered) => {
-        const raw = baseFormatter ? baseFormatter(cell, formatterParams, onRendered) : cell.getValue();
-        return MathRenderer.get(raw);
-      };
-    },
-
-    inspire: (colDef, entries) => {
-      colDef.formatter = (cell) => {
-        const keys = String(cell.getValue() ?? "").split(/[,;]/).map(key => key.trim()).filter(Boolean);
-        const frag = document.createDocumentFragment();
-        keys.forEach((key, idx) => {
-          if (idx > 0) frag.appendChild(document.createTextNode(", "));
-          if (!entries.has(key)) {
-            frag.appendChild(document.createTextNode(key));
-            return;
-          }
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = "dynamic-table-citation btn btn-link p-0 border-0";
-          button.dataset.citeKey = key;
-          button.textContent = key;
-          const wrapper = document.createElement("span");
-          wrapper.appendChild(button);
-          frag.appendChild(wrapper);
-        });
-        return frag;
-      };
-    },
-
     dropdown: (colDef, colCfg, ctx) => {
       const rawValues = [...new Set(ctx.rows.map(r => r[colCfg.field]).filter(v => v !== null && v !== undefined && v !== ""))].sort();
       const options = [{ label: "All", value: "" }, ...rawValues.map(v => ({ label: v, value: v }))];
@@ -1706,7 +1668,7 @@ window.MathRenderer = window.MathRenderer || {
     }
   };
 
-  // Controller managing Tabulator lifecycle, math pre-rendering, and live bibliography filtering
+  // Controller managing Tabulator lifecycle and table-specific rendering.
   class TabulatorTableController {
     constructor(container) {
       this.container = container;
@@ -1770,24 +1732,18 @@ window.MathRenderer = window.MathRenderer || {
     // Synchronizes pagination visibility and multi-line row borders
     syncUI() {
       this.syncPagination();
-      this.table?.getRows("visible").forEach(row => row.normalizeHeight(true));
+      this.table?.getRows("visible").forEach(row => row.normalizeHeight());
     }
 
-    // Initializes math cache, bibliography bindings, Tabulator instance, and search filter
+    // Initializes math cache, Tabulator instance, and search filter
     async init() {
       const latexStrings = this.collectInitialLatexStrings();
       if (latexStrings.length > 0) {
         await MathRenderer.prepare(latexStrings);
       }
-      this.container.innerHTML = "";
-      const entries = new Map();
-      const bibliography = this.container.nextElementSibling;
-      if (bibliography?.matches(".dynamic-table-refs") && window.tippy?.delegate) {
-        bibliography.querySelectorAll(".csl-entry[data-cite-key]").forEach(entry => {
-          entries.set(entry.dataset.citeKey, entry);
-        });
-        bindCitationPreviews(this.container, entries);
-      }
+      const source = this.container.nextElementSibling?.querySelector(":scope > .dynamic-table-citations");
+      const citations = new Map(Array.from(source?.children ?? [], node => [node.dataset.citationCell, node]));
+      source?.remove();
 
       let searchInput = null;
       if (this.searchable) {
@@ -1817,10 +1773,12 @@ window.MathRenderer = window.MathRenderer || {
         }
 
         if (colCfg.inspire) {
-          ColumnFeatures.inspire(colDef, entries);
-        } else {
-          if (colCfg.type === "number") ColumnFeatures.number(colDef, colCfg, this);
-          if (colCfg.isLatex) ColumnFeatures.latex(colDef, colCfg, this);
+          colDef.formatter = cell => citations.get(`${cell.getRow().getIndex()}-${colCfg.field}`)
+            ?? document.createTextNode(cell.getValue() ?? "");
+        } else if (colCfg.isLatex) {
+          colDef.formatter = cell => MathRenderer.get(this.formatValue(colCfg, cell.getValue()));
+        } else if (colCfg.type === "number") {
+          colDef.formatter = cell => this.formatValue(colCfg, cell.getValue());
         }
 
         if (colCfg.dropdown) ColumnFeatures.dropdown(colDef, colCfg, this);
@@ -1841,7 +1799,6 @@ window.MathRenderer = window.MathRenderer || {
         movableColumns: false
       });
 
-      this.table.on("tableBuilt", () => this.syncUI());
       this.table.on("renderComplete", () => this.syncUI());
 
       if (searchInput) {
@@ -1872,18 +1829,13 @@ window.MathRenderer = window.MathRenderer || {
     }
   }
 
-  // Mounts Tabulator controllers on all dynamic table containers
   function initDynamicTables() {
-    document.querySelectorAll(".tabulator-container-wrap").forEach(el => {
-      if (!el.dataset.initialized) {
-        el.dataset.initialized = "true";
-        new TabulatorTableController(el);
-      }
-    });
+    document.querySelectorAll(".tabulator-container-wrap").forEach(el => new TabulatorTableController(el));
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initDynamicTables);
+    // Quarto initializes citations on document before the event bubbles to window.
+    window.addEventListener("DOMContentLoaded", initDynamicTables, {once: true});
   } else {
     initDynamicTables();
   }
