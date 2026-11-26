@@ -710,6 +710,7 @@ window.Quarto = {
 <p>Standard Markdown tables, as shown in the <a href="../../doc/Examples/example1.html">Quarto Markdown Guide</a>, work well for small static datasets. For larger scientific tables requiring live search, sorting, unit conversions, LaTeX math, or literature references, this template provides a custom <code>dynamic-tables</code> filter that renders interactive Tabulator tables directly from <code>.csv</code> files.</p>
 <section id="quick-one-line-insertion" class="level1">
 <h1>Quick One-Line Insertion</h1>
+<p>Use one record per line in the CSV, including the header. Enclose fields that contain commas in double quotes.</p>
 <p>To render a CSV file with default interactive settings, write a standalone paragraph starting with <code>!dynamic-table:</code> followed by the file path:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>!dynamic-table: data/example-table.csv</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This enables clickable column sorting and pagination (15 rows per page, hidden automatically when all rows fit on a single page):</p>
@@ -754,7 +755,7 @@ window.Quarto = {
 <p>Three specialized column tags support physical unit scaling, LaTeX scientific notation, and automated bibliography management:</p>
 <ul>
 <li><code>units(Unit1: factor1, Unit2: factor2, ...)</code>: Implies <code>number</code> and adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor.</li>
-<li><code>latexnum</code>: Implies both <code>number</code> and <code>latex</code>, and transforms numeric cells into inline math expressions (<code>1.057e-1</code> displayed as <span class="math inline">\(1.06 \times 10^{-1}\)</span>) that update automatically whenever the user switches units.</li>
+<li><code>latexnum</code>: Implies both <code>number</code> and <code>latex</code>. It displays numeric cells as inline math using the same magnitude thresholds as <code>number</code>. For example, <code>1.057e-4</code> displays as <span class="math inline">\(1.06 \times 10^{-4}\)</span>. The formatting updates when the user switches units.</li>
 <li><code>inspire</code>: Implies <code>string</code> and treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons, with or without a leading <code>@</code>). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP in batches, turns each valid key into a clickable <code>[N] CitationKey</code> link that highlights the target entry on click, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated.</li>
 </ul>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
@@ -1738,7 +1739,7 @@ window.MathRenderer = window.MathRenderer || {
       return strings;
     }
 
-    // Relocates Pandoc-rendered references below the table using native Quarto bibliography classes
+    // Copies Pandoc-rendered references so table filtering cannot hide document citations.
     initBibliography() {
       if (!this.refsWrap || this.inspireFields.length === 0) return;
 
@@ -1780,34 +1781,12 @@ window.MathRenderer = window.MathRenderer || {
         const labelText = sourceEl.querySelector(".csl-left-margin")?.textContent.trim() || "";
         if (labelText) this.refLabels.set(key, labelText);
 
-        let entryEl;
-        if (sourceEl.closest(".dynamic-table-refs")) {
-          const scopedId = `ref-t${this.instanceId}-${key}`;
-          entryEl = sourceEl.cloneNode(true);
-          entryEl.id = scopedId;
-          entryEl.classList.remove("is-highlighted");
-          entryEl.style.display = "";
-          this.refTargetIds.set(key, scopedId);
-        } else {
-          entryEl = sourceEl;
-          this.refTargetIds.set(key, `ref-${key}`);
-        }
-
+        const entryEl = sourceEl.cloneNode(true);
+        entryEl.id = `dynamic-table-ref-${this.instanceId}-${key}`;
+        this.refTargetIds.set(key, entryEl.id);
         listContainer.appendChild(entryEl);
         this.refEntries.set(key, entryEl);
       });
-
-      if (globalRefs && !globalRefs.querySelector(".csl-entry")) {
-        globalRefs.style.display = "none";
-        const quartoAppendix = globalRefs.closest("#quarto-appendix");
-        if (quartoAppendix) {
-          const hasOtherEntries = Array.from(quartoAppendix.querySelectorAll(".csl-entry"))
-            .some(el => !el.closest(".dynamic-table-refs"));
-          if (!hasOtherEntries) {
-            quartoAppendix.style.display = "none";
-          }
-        }
-      }
     }
 
     // Hides the pagination footer when all active rows fit within the current page size
@@ -1958,6 +1937,7 @@ window.MathRenderer = window.MathRenderer || {
     initDynamicTables();
   }
 })();
+
 </script>
 
 
