@@ -126,13 +126,16 @@
 .dynamic-table-refs {
   margin-top: 1.5rem;
 }
-.dynamic-table-refs .csl-entry {
-  border-radius: 0.25rem;
-  background-color: transparent;
-  transition: background-color 1.2s ease-out;
+
+.dynamic-table-refs > .csl-bib-body {
+  font-size: 0.9em;
+  opacity: 0.9;
+  overflow-wrap: break-word;
 }
-.dynamic-table-refs .csl-entry.is-highlighted {
-  background-color: var(--bs-tertiary-bg, rgba(128, 128, 128, 0.12));
-  background-color: color-mix(in srgb, var(--bs-link-color, currentColor) 50%, transparent);
-  transition: none;
+
+.dynamic-table-citation {
+  font: inherit;
+  text-align: inherit;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }

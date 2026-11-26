@@ -37,13 +37,12 @@ local function url_encode(str)
     end))
 end
 
--- Splits comma- or semicolon-separated citation keys and strips leading '@'
+-- Splits bare INSPIRE keys separated by commas or semicolons.
 local function split_citation_keys(raw)
     local keys = {}
-    if not raw or raw == "" then return keys end
-    for token in raw:gmatch("[^,;]+") do
-        local key = U.trim(token):gsub("^@", "")
-        if key ~= "" then table.insert(keys, key) end
+    for token in (raw or ""):gmatch("[^,;]+") do
+        local key = U.trim(token)
+        if key:match("^[^%s@%[%]]+$") then table.insert(keys, key) end
     end
     return keys
 end
@@ -99,7 +98,7 @@ local function fetch_inspire_entries(keys)
     return entries_by_key
 end
 
-local function render_bibliography(keys, entries, meta, table_index)
+local function render_bibliography(keys, entries, meta)
     local records = {}
     local citations = pandoc.Inlines{}
     for _, key in ipairs(keys) do
@@ -127,14 +126,17 @@ local function render_bibliography(keys, entries, meta, table_index)
         local key = entry.identifier:match("^ref%-(.+)$")
         if key then
             entry.attributes["data-cite-key"] = key
-            entry.identifier = "dynamic-table-ref-" .. table_index .. "-" .. key
+            entry.identifier = ""
         end
     end
 
-    local heading = pandoc.Header(4, "Table references")
-    local wrapper = pandoc.Div({heading, bibliography}, pandoc.Attr("", {"dynamic-table-refs"}, {style = "display:none;"}))
     -- Keep the table bibliography opaque to Quarto's document citation and appendix filters.
-    return pandoc.RawBlock("html", pandoc.write(pandoc.Pandoc({wrapper}), "html"))
+    return pandoc.RawBlock("html", table.concat({
+        '<details class="dynamic-table-refs quarto-appendix-contents">',
+        '<summary class="fw-semibold py-2">Table references</summary>',
+        pandoc.write(pandoc.Pandoc({bibliography}), "html"),
+        '</details>'
+    }, "\n"))
 end
 
 -- Parses one CSV record per line, supporting quoted fields and escaped quotes
@@ -396,7 +398,7 @@ function Pandoc(doc)
             Div = function(div)
                 local index = tonumber(div.attributes["dynamic-table-bibliography"])
                 if index and table_bibliographies[index] then
-                    return render_bibliography(table_bibliographies[index], entries, meta, index)
+                    return render_bibliography(table_bibliographies[index], entries, meta)
                 end
             end
         })

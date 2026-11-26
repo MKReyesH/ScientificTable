@@ -27,28 +27,28 @@
     return `$${formatted}$`;
   }
 
-  // Parses comma- or semicolon-separated citation keys from a cell value
-  function parseCitationKeys(raw) {
-    if (raw === null || raw === undefined) return [];
-    return String(raw)
-      .split(/[,;]+/)
-      .map(k => k.trim().replace(/^@/, ""))
-      .filter(Boolean);
-  }
-
-  const highlightTimers = new WeakMap();
-
-  // Temporarily highlights a target bibliography entry when clicked from the table
-  function highlightReference(entryEl) {
-    if (!entryEl) return;
-    clearTimeout(highlightTimers.get(entryEl));
-    entryEl.classList.remove("is-highlighted");
-    void entryEl.offsetWidth;
-    entryEl.classList.add("is-highlighted");
-
-    highlightTimers.set(entryEl, setTimeout(() => {
-      entryEl.classList.remove("is-highlighted");
-    }, 1600));
+  // Reuse Quarto's popup library with the table's own reference lookup.
+  function bindCitationPreviews(container, entries) {
+    window.tippy.delegate(container, {
+      target: ".dynamic-table-citation",
+      content: button => entries.get(button.dataset.citeKey)?.cloneNode(true) ?? "",
+      // Keep the popup after its button in tab order and outside the scrolling cell.
+      popperOptions: {strategy: "fixed"},
+      trigger: "mouseenter focus click",
+      interactive: true,
+      interactiveBorder: 10,
+      maxWidth: 500,
+      arrow: false,
+      theme: "quarto",
+      placement: "bottom-start"
+    });
+    container.addEventListener("keydown", event => {
+      if (event.key !== "Escape") return;
+      const preview = event.target.closest(".dynamic-table-citation, [data-tippy-root]")?._tippy;
+      if (!preview?.state.isVisible) return;
+      preview.reference.focus({preventScroll: true});
+      preview.hide();
+    });
   }
 
   // Builds a unified Bootstrap-styled select control for header filters and unit switchers
@@ -85,23 +85,24 @@
       };
     },
 
-    inspire: (colDef, colCfg, ctx) => {
+    inspire: (colDef, entries) => {
       colDef.formatter = (cell) => {
-        const keys = parseCitationKeys(cell.getValue());
-        if (keys.length === 0) return "";
+        const keys = String(cell.getValue() ?? "").split(/[,;]/).map(key => key.trim()).filter(Boolean);
         const frag = document.createDocumentFragment();
         keys.forEach((key, idx) => {
           if (idx > 0) frag.appendChild(document.createTextNode(", "));
-          const entry = ctx.refEntries.get(key);
-          if (entry) {
-            const link = document.createElement("a");
-            link.href = `#${entry.id}`;
-            link.textContent = key;
-            link.addEventListener("click", () => highlightReference(entry));
-            frag.appendChild(link);
-          } else {
+          if (!entries.has(key)) {
             frag.appendChild(document.createTextNode(key));
+            return;
           }
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "dynamic-table-citation btn btn-link p-0 border-0";
+          button.dataset.citeKey = key;
+          button.textContent = key;
+          const wrapper = document.createElement("span");
+          wrapper.appendChild(button);
+          frag.appendChild(wrapper);
         });
         return frag;
       };
@@ -174,13 +175,6 @@
         };
       });
 
-      this.inspireFields = this.columnConfigs.filter(c => c.inspire).map(c => c.field);
-      this.refsWrap = (this.inspireFields.length > 0 && container.nextElementSibling?.classList.contains("dynamic-table-refs"))
-        ? container.nextElementSibling
-        : null;
-      this.refEntries = new Map();
-      this.rowKeysCache = new WeakMap();
-
       this.table = null;
       this.init();
     }
@@ -207,19 +201,6 @@
       return strings;
     }
 
-    // Indexes the references rendered for this table and the citation keys in each row.
-    initBibliography() {
-      if (!this.refsWrap) return;
-
-      this.refsWrap.querySelectorAll(".csl-entry[data-cite-key]").forEach(entry => {
-        this.refEntries.set(entry.dataset.citeKey, entry);
-      });
-      this.rows.forEach(row => {
-        const keys = this.inspireFields.flatMap(field => parseCitationKeys(row[field]));
-        this.rowKeysCache.set(row, keys);
-      });
-    }
-
     // Hides the pagination footer when all active rows fit within the current page size
     syncPagination() {
       if (!this.table) return;
@@ -231,32 +212,9 @@
       footer.style.display = activeRows > pageSize ? "" : "none";
     }
 
-    // Updates reference visibility to match currently visible table rows
-    syncBibliography() {
-      if (!this.refsWrap || this.refEntries.size === 0 || !this.table) return;
-
-      const visibleKeys = new Set();
-      this.table.getRows("visible").forEach(row => {
-        const keys = this.rowKeysCache.get(row.getData());
-        if (keys) {
-          for (let i = 0; i < keys.length; i++) visibleKeys.add(keys[i]);
-        }
-      });
-
-      let visibleCount = 0;
-      this.refEntries.forEach((entryEl, key) => {
-        const show = visibleKeys.has(key);
-        entryEl.style.display = show ? "" : "none";
-        if (show) visibleCount++;
-      });
-
-      this.refsWrap.style.display = visibleCount > 0 ? "" : "none";
-    }
-
-    // Synchronizes pagination visibility, bibliography filtering, and multi-line row borders
+    // Synchronizes pagination visibility and multi-line row borders
     syncUI() {
       this.syncPagination();
-      this.syncBibliography();
       this.table?.getRows("visible").forEach(row => row.normalizeHeight(true));
     }
 
@@ -267,7 +225,14 @@
         await MathRenderer.prepare(latexStrings);
       }
       this.container.innerHTML = "";
-      this.initBibliography();
+      const entries = new Map();
+      const bibliography = this.container.nextElementSibling;
+      if (bibliography?.matches(".dynamic-table-refs") && window.tippy?.delegate) {
+        bibliography.querySelectorAll(".csl-entry[data-cite-key]").forEach(entry => {
+          entries.set(entry.dataset.citeKey, entry);
+        });
+        bindCitationPreviews(this.container, entries);
+      }
 
       let searchInput = null;
       if (this.searchable) {
@@ -297,7 +262,7 @@
         }
 
         if (colCfg.inspire) {
-          ColumnFeatures.inspire(colDef, colCfg, this);
+          ColumnFeatures.inspire(colDef, entries);
         } else {
           if (colCfg.type === "number") ColumnFeatures.number(colDef, colCfg, this);
           if (colCfg.isLatex) ColumnFeatures.latex(colDef, colCfg, this);
