@@ -94,10 +94,9 @@
           if (idx > 0) frag.appendChild(document.createTextNode(", "));
           const entry = ctx.refEntries.get(key);
           if (entry) {
-            const label = entry.querySelector(".csl-left-margin")?.textContent.trim();
             const link = document.createElement("a");
             link.href = `#${entry.id}`;
-            link.textContent = label ? `${label} ${key}` : key;
+            link.textContent = key;
             link.addEventListener("click", () => highlightReference(entry));
             frag.appendChild(link);
           } else {

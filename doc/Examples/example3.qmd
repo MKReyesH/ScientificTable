@@ -69,7 +69,7 @@ Three specialized column tags support physical unit scaling, LaTeX scientific no
 
 - `units(Unit1: factor1, Unit2: factor2, ...)`: Implies `number` and adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor.
 - `latexnum`: Implies both `number` and `latex`. It displays numeric cells as inline math using the same magnitude thresholds as `number`. For example, `1.057e-4` displays as $1.06 \times 10^{-4}$. The formatting updates when the user switches units.
-- `inspire`: Implies `string` and treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons, with or without a leading `@`). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP in batches, turns each valid key into a clickable `[N] CitationKey` link that highlights the target entry on click, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated. Each table has its own **Table references** list. A citation in the main text [@ReyesHung:2023udr] appears in the page bibliography.
+- `inspire` implies `string` and treats cell values as INSPIRE-HEP TeX citation keys. Separate multiple keys with commas or semicolons. A leading `@` is optional. The filter fetches matching BibTeX records at build time and links each resolved key to its entry under **Table references**. The list uses the document’s citation style and updates as rows are searched, filtered, or paginated. Citations in the main text [@ReyesHung:2023udr] use the page bibliography.
 
 ```markdown
 ~~~ {.dynamic-table}
