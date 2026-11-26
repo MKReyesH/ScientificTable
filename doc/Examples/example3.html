@@ -102,9 +102,9 @@ div.csl-indent {
 <link href="../../site_libs/quarto-html/quarto-syntax-highlighting-5de16f5e46225c21e2daa90d340bf64f.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../site_libs/bootstrap/bootstrap-fa075996d0b1a5a6a31264810f41157e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../../site_libs/bootstrap/bootstrap-dark-e0dbc3dfba4df6ba3a9008187d3c8002.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../../site_libs/bootstrap/bootstrap-fa075996d0b1a5a6a31264810f41157e.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-c4c5fc7918a7b26b0cd43bdd134fd77c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-c4c5e8f500077461c7ffe6c603be8ec3.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-c4c5fc7918a7b26b0cd43bdd134fd77c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -756,7 +756,7 @@ window.Quarto = {
 <ul>
 <li><code>units(Unit1: factor1, Unit2: factor2, ...)</code>: Implies <code>number</code> and adds a unit selector to the column header. The first unit listed is active by default; selecting another unit multiplies every numeric cell in the column by its conversion factor.</li>
 <li><code>latexnum</code>: Implies both <code>number</code> and <code>latex</code>. It displays numeric cells as inline math using the same magnitude thresholds as <code>number</code>. For example, <code>1.057e-4</code> displays as <span class="math inline">\(1.06 \times 10^{-4}\)</span>. The formatting updates when the user switches units.</li>
-<li><code>inspire</code>: Implies <code>string</code> and treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons, with or without a leading <code>@</code>). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP in batches, turns each valid key into a clickable <code>[N] CitationKey</code> link that highlights the target entry on click, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated. Each table has its own <strong>Table references</strong> list. A citation in the main text <span class="citation" data-cites="ReyesHung:2023udr">[<a href="#ref-ReyesHung:2023udr" role="doc-biblioref">1</a>]</span> appears in the page bibliography.</li>
+<li><code>inspire</code> implies <code>string</code> and treats cell values as INSPIRE-HEP TeX citation keys. Separate multiple keys with commas or semicolons. A leading <code>@</code> is optional. The filter fetches matching BibTeX records at build time and links each resolved key to its entry under <strong>Table references</strong>. The list uses the document’s citation style and updates as rows are searched, filtered, or paginated. Citations in the main text <span class="citation" data-cites="ReyesHung:2023udr">[<a href="#ref-ReyesHung:2023udr" role="doc-biblioref">1</a>]</span> use the page bibliography.</li>
 </ul>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="in">~~~ {.dynamic-table}</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="in">src: data/example-table.csv</span></span>
@@ -1645,10 +1645,9 @@ window.MathRenderer = window.MathRenderer || {
           if (idx > 0) frag.appendChild(document.createTextNode(", "));
           const entry = ctx.refEntries.get(key);
           if (entry) {
-            const label = entry.querySelector(".csl-left-margin")?.textContent.trim();
             const link = document.createElement("a");
             link.href = `#${entry.id}`;
-            link.textContent = label ? `${label} ${key}` : key;
+            link.textContent = key;
             link.addEventListener("click", () => highlightReference(entry));
             frag.appendChild(link);
           } else {
