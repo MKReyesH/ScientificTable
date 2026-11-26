@@ -8,12 +8,12 @@ Static figures, as shown in the [Quarto Markdown Guide](/doc/Examples/example1.q
 
 Dynamic plots use tilde-fenced code blocks so formulas are read literally. A `~~~ {#curve .plot-function}` block registers a mathematical curve under a unique ID. A `~~~ {.dynamic-plot}` block renders one or more registered curves on a shared interactive canvas.
 
-In `.plot-function`, top-level bracketed parameters define the curve's **domain**:
+In `.plot-function`, top-level bracketed parameters define the curve's domain:
 
-- **Explicit functions $y(x)$:** Write `x: [min, max]` to set the horizontal domain and define `y` as an expression in `x`. Explicit 2D curves automatically resample at higher resolution when zooming or panning.
-- **Parametric curves $(x(t), y(t))$:** Declare a parameter such as `t: [0, 2 * pi]` and define both `x` and `y` in terms of `t`.
-- **Expressions and styling:** Use explicit multiplication (`2 * x`), JavaScript powers (`x ** 2`), and parentheses to negate a power (`-(x ** 2)`). Math names such as `sin`, `sqrt`, `pi`, and `e` are available directly. Bounds, slider values, and shading constants use the same math syntax. The browser checks and evaluates these settings when the plot loads.
-- **Curve options:** `points` sets the sample count (integer $\ge 2$, default `100`), `label` sets the legend title (supports inline LaTeX math and defaults to the curve ID), and `color` sets the trace color. `mode` selects `lines`, `markers`, or `lines+markers` (default `lines`). `smooth` enables spline interpolation on 2D curves (default `true`).
+- Explicit functions $y(x)$: Write `x: [min, max]` to set the horizontal domain and define `y` as an expression in `x`. Explicit 2D curves automatically resample at higher resolution when zooming or panning.
+- Parametric curves $(x(t), y(t))$: Declare a parameter such as `t: [0, 2 * pi]` and define both `x` and `y` in terms of `t`.
+- Expressions and styling: Use explicit multiplication (`2 * x`), JavaScript powers (`x ** 2`), and parentheses to negate a power (`-(x ** 2)`). Math names such as `sin`, `sqrt`, `pi`, and `e` are available directly. Bounds, slider values, and shading constants use the same math syntax. The browser checks and evaluates these settings when the plot loads.
+- Curve options: `points` sets the sample count (integer $\ge 2$, default `100`), `label` sets the legend title (supports inline LaTeX math and defaults to the curve ID), and `color` sets the trace color. `mode` selects `lines`, `markers`, or `lines+markers` (default `lines`). `smooth` enables spline interpolation on 2D curves (default `true`).
 
 The `~~~ {.dynamic-plot}` block mounts the canvas and configures axes and layout:
 
@@ -70,18 +70,18 @@ ylabel: $y(x)$
 
 To make curves interactive or simplify complex formulas, `.plot-function` supports two optional multi-line blocks:
 
-- **`vars:`** Defines intermediate variables (`name = expr`) evaluated sequentially before `x` and `y`. Helper variables cannot shadow domain parameters or sliders.
-- **`sliders:`** Declares interactive UI sliders using one of three domain formats:
-  - **Continuous range `[min, max]`:** Uniformly sampled into `steps` discrete values (default `25`).
-  - **Integer range `[a..b]`:** Discrete integers $a, a+1, \dots, b$ (`a < b`).
-  - **Explicit value list `[v1, v2, v3, ...]`:** Three or more specific numeric values.
+- `vars:` Defines intermediate variables (`name = expr`) evaluated sequentially before `x` and `y`. Helper variables cannot shadow domain parameters or sliders.
+- `sliders:` Declares interactive UI sliders using one of three domain formats:
+  - Continuous range `[min, max]`: Uniformly sampled into `steps` discrete values (default `25`).
+  - Integer range `[a..b]`: Discrete integers $a, a+1, \dots, b$ (`a < b`).
+  - Explicit value list `[v1, v2, v3, ...]`: Three or more specific numeric values.
 
   Each slider entry (`name: [...]`) may be followed by indented option lines: `steps` (integer $\ge 2$ for `[min, max]` ranges, default `25`), `label` (display title above the slider with optional inline LaTeX math; defaults to the parameter name), and `play` (`true` or `false`, default `false`, adding an independent Play/Pause button in front of that slider's row). If multiple curves in the same plot declare sliders with the same name and domain, they automatically share a single synchronized slider. A 2D plot without an explicit `yrange` expands its automatic y-axis bounds when a new slider combination exceeds them.
 
-In 2D plots, `.dynamic-plot` supports a **`shade:`** block using the same entry-plus-options structure. Each entry is written as `lower -> upper`, shading from the lower boundary up to the upper boundary (where $y_{\text{lower}}(x) \le y_{\text{upper}}(x)$):
+In 2D plots, `.dynamic-plot` supports a `shade:` block using the same entry-plus-options structure. Each entry is written as `lower -> upper`, shading from the lower boundary up to the upper boundary (where $y_{\text{lower}}(x) \le y_{\text{upper}}(x)$):
 
 - `lower` and `upper` may each be a curve ID listed in `curves`, a constant expression (such as `0`), or a vertical axis bound (`bottom` on the left to shade everything below a curve, or `top` on the right to shade everything above a curve; at least one side must be a curve ID). Shading stops at gaps in either curve. Writing `curve1 -> curve1` fills the interior of a closed parametric curve with an uninterrupted outline.
-- **Indented options:** `xrange: [min, max]` (not valid for closed-curve `curve1 -> curve1` rules), `color`, `opacity` in `[0, 1]` (default `0.2`), and `label` (adds a toggleable area entry to the legend).
+- Indented options: `xrange: [min, max]` (not valid for closed-curve `curve1 -> curve1` rules), `color`, `opacity` in `[0, 1]` (default `0.2`), and `label` (adds a toggleable area entry to the legend).
 
 ```markdown
 ~~~ {#gauss-fixed .plot-function}
@@ -163,7 +163,7 @@ Unlike `.plot-function`, a `~~~ {#data .plot-file}` block takes its sample point
 
 - `src`: Path to the data file (required). Each data row must have the same number of columns, with a finite number in every field.
 - `skip`: Number of leading non-comment header rows to ignore, integer $\ge 0$ (default `0`).
-- `x`, `y`, `z`: Coordinate expressions (`x` and `y` required; `z` optional for 3D) referencing **0-based columns** (`c0`, `c1`, `c2`, …) or **dynamic column indexing** (`c(expr)`, where the result of `expr` is rounded to the nearest integer to get the column index).
+- `x`, `y`, `z`: Coordinate expressions (`x` and `y` required; `z` optional for 3D) referencing 0-based columns (`c0`, `c1`, `c2`, …) or dynamic column indexing (`c(expr)`, where the result of `expr` is rounded to the nearest integer to get the column index).
 - `vars:`, `sliders:`, `label`, `color`, `mode`, `smooth`: Supported just as in `.plot-function`, except `mode` defaults to `lines+markers` and `smooth` defaults to `false`.
 
 A `.plot-file` trace can be overlaid directly with analytical `.plot-function` curves on the same canvas:
@@ -260,8 +260,8 @@ ylabel: $\psi(x, t_k)$
 
 Adding a `z` expression switches a `.plot-function` to 3D (all curves in a `.dynamic-plot` must share the same dimensionality, either all 2D or all 3D):
 
-- **3D parametric curve:** 1 domain parameter with `x`, `y`, and `z`.
-- **3D surface:** 2 domain parameters with `x`, `y`, and `z`.
+- 3D parametric curve: 1 domain parameter with `x`, `y`, and `z`.
+- 3D surface: 2 domain parameters with `x`, `y`, and `z`.
 - `points`: Sample resolution per domain axis, integer $\ge 2$ (defaults to `100` for curves and `40` per axis for surfaces).
 - `zlabel`, `zscale`, `zrange`: Configure the third axis in `.dynamic-plot`. The 3D axis titles `xlabel`, `ylabel`, and `zlabel` are plain text and default to `x`, `y`, and `z`.
 
