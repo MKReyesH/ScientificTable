@@ -856,12 +856,12 @@ window.Quarto = {
 <section id="basic-2d-curves-and-canvas-options" class="level1">
 <h1>Basic 2D Curves and Canvas Options</h1>
 <p>Dynamic plots use tilde-fenced code blocks so formulas are read literally. A <code>~~~ {#curve .plot-function}</code> block registers a mathematical curve under a unique ID. A <code>~~~ {.dynamic-plot}</code> block renders one or more registered curves on a shared interactive canvas.</p>
-<p>In <code>.plot-function</code>, top-level bracketed parameters define the curve’s <strong>domain</strong>:</p>
+<p>In <code>.plot-function</code>, top-level bracketed parameters define the curve’s domain:</p>
 <ul>
-<li><strong>Explicit functions <span class="math inline">\(y(x)\)</span>:</strong> Write <code>x: [min, max]</code> to set the horizontal domain and define <code>y</code> as an expression in <code>x</code>. Explicit 2D curves automatically resample at higher resolution when zooming or panning.</li>
-<li><strong>Parametric curves <span class="math inline">\((x(t), y(t))\)</span>:</strong> Declare a parameter such as <code>t: [0, 2 * pi]</code> and define both <code>x</code> and <code>y</code> in terms of <code>t</code>.</li>
-<li><strong>Expressions and styling:</strong> Use explicit multiplication (<code>2 * x</code>), JavaScript powers (<code>x ** 2</code>), and parentheses to negate a power (<code>-(x ** 2)</code>). Math names such as <code>sin</code>, <code>sqrt</code>, <code>pi</code>, and <code>e</code> are available directly. Bounds, slider values, and shading constants use the same math syntax. The browser checks and evaluates these settings when the plot loads.</li>
-<li><strong>Curve options:</strong> <code>points</code> sets the sample count (integer <span class="math inline">\(\ge 2\)</span>, default <code>100</code>), <code>label</code> sets the legend title (supports inline LaTeX math and defaults to the curve ID), and <code>color</code> sets the trace color. <code>mode</code> selects <code>lines</code>, <code>markers</code>, or <code>lines+markers</code> (default <code>lines</code>). <code>smooth</code> enables spline interpolation on 2D curves (default <code>true</code>).</li>
+<li>Explicit functions <span class="math inline">\(y(x)\)</span>: Write <code>x: [min, max]</code> to set the horizontal domain and define <code>y</code> as an expression in <code>x</code>. Explicit 2D curves automatically resample at higher resolution when zooming or panning.</li>
+<li>Parametric curves <span class="math inline">\((x(t), y(t))\)</span>: Declare a parameter such as <code>t: [0, 2 * pi]</code> and define both <code>x</code> and <code>y</code> in terms of <code>t</code>.</li>
+<li>Expressions and styling: Use explicit multiplication (<code>2 * x</code>), JavaScript powers (<code>x ** 2</code>), and parentheses to negate a power (<code>-(x ** 2)</code>). Math names such as <code>sin</code>, <code>sqrt</code>, <code>pi</code>, and <code>e</code> are available directly. Bounds, slider values, and shading constants use the same math syntax. The browser checks and evaluates these settings when the plot loads.</li>
+<li>Curve options: <code>points</code> sets the sample count (integer <span class="math inline">\(\ge 2\)</span>, default <code>100</code>), <code>label</code> sets the legend title (supports inline LaTeX math and defaults to the curve ID), and <code>color</code> sets the trace color. <code>mode</code> selects <code>lines</code>, <code>markers</code>, or <code>lines+markers</code> (default <code>lines</code>). <code>smooth</code> enables spline interpolation on 2D curves (default <code>true</code>).</li>
 </ul>
 <p>The <code>~~~ {.dynamic-plot}</code> block mounts the canvas and configures axes and layout:</p>
 <ul>
@@ -897,19 +897,19 @@ window.Quarto = {
 <h1>Interactive Sliders, Helper Variables, and Shaded Regions</h1>
 <p>To make curves interactive or simplify complex formulas, <code>.plot-function</code> supports two optional multi-line blocks:</p>
 <ul>
-<li><strong><code>vars:</code></strong> Defines intermediate variables (<code>name = expr</code>) evaluated sequentially before <code>x</code> and <code>y</code>. Helper variables cannot shadow domain parameters or sliders.</li>
-<li><strong><code>sliders:</code></strong> Declares interactive UI sliders using one of three domain formats:
+<li><code>vars:</code> Defines intermediate variables (<code>name = expr</code>) evaluated sequentially before <code>x</code> and <code>y</code>. Helper variables cannot shadow domain parameters or sliders.</li>
+<li><code>sliders:</code> Declares interactive UI sliders using one of three domain formats:
 <ul>
-<li><strong>Continuous range <code>[min, max]</code>:</strong> Uniformly sampled into <code>steps</code> discrete values (default <code>25</code>).</li>
-<li><strong>Integer range <code>[a..b]</code>:</strong> Discrete integers <span class="math inline">\(a, a+1, \dots, b\)</span> (<code>a &lt; b</code>).</li>
-<li><strong>Explicit value list <code>[v1, v2, v3, ...]</code>:</strong> Three or more specific numeric values.</li>
+<li>Continuous range <code>[min, max]</code>: Uniformly sampled into <code>steps</code> discrete values (default <code>25</code>).</li>
+<li>Integer range <code>[a..b]</code>: Discrete integers <span class="math inline">\(a, a+1, \dots, b\)</span> (<code>a &lt; b</code>).</li>
+<li>Explicit value list <code>[v1, v2, v3, ...]</code>: Three or more specific numeric values.</li>
 </ul>
 Each slider entry (<code>name: [...]</code>) may be followed by indented option lines: <code>steps</code> (integer <span class="math inline">\(\ge 2\)</span> for <code>[min, max]</code> ranges, default <code>25</code>), <code>label</code> (display title above the slider with optional inline LaTeX math; defaults to the parameter name), and <code>play</code> (<code>true</code> or <code>false</code>, default <code>false</code>, adding an independent Play/Pause button in front of that slider’s row). If multiple curves in the same plot declare sliders with the same name and domain, they automatically share a single synchronized slider. A 2D plot without an explicit <code>yrange</code> expands its automatic y-axis bounds when a new slider combination exceeds them.</li>
 </ul>
-<p>In 2D plots, <code>.dynamic-plot</code> supports a <strong><code>shade:</code></strong> block using the same entry-plus-options structure. Each entry is written as <code>lower -&gt; upper</code>, shading from the lower boundary up to the upper boundary (where <span class="math inline">\(y_{\text{lower}}(x) \le y_{\text{upper}}(x)\)</span>):</p>
+<p>In 2D plots, <code>.dynamic-plot</code> supports a <code>shade:</code> block using the same entry-plus-options structure. Each entry is written as <code>lower -&gt; upper</code>, shading from the lower boundary up to the upper boundary (where <span class="math inline">\(y_{\text{lower}}(x) \le y_{\text{upper}}(x)\)</span>):</p>
 <ul>
 <li><code>lower</code> and <code>upper</code> may each be a curve ID listed in <code>curves</code>, a constant expression (such as <code>0</code>), or a vertical axis bound (<code>bottom</code> on the left to shade everything below a curve, or <code>top</code> on the right to shade everything above a curve; at least one side must be a curve ID). Shading stops at gaps in either curve. Writing <code>curve1 -&gt; curve1</code> fills the interior of a closed parametric curve with an uninterrupted outline.</li>
-<li><strong>Indented options:</strong> <code>xrange: [min, max]</code> (not valid for closed-curve <code>curve1 -&gt; curve1</code> rules), <code>color</code>, <code>opacity</code> in <code>[0, 1]</code> (default <code>0.2</code>), and <code>label</code> (adds a toggleable area entry to the legend).</li>
+<li>Indented options: <code>xrange: [min, max]</code> (not valid for closed-curve <code>curve1 -&gt; curve1</code> rules), <code>color</code>, <code>opacity</code> in <code>[0, 1]</code> (default <code>0.2</code>), and <code>label</code> (adds a toggleable area entry to the legend).</li>
 </ul>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="in">~~~ {#gauss-fixed .plot-function}</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="in">x: [-4, 6]</span></span>
@@ -954,7 +954,7 @@ Each slider entry (<code>name: [...]</code>) may be followed by indented option 
 <ul>
 <li><code>src</code>: Path to the data file (required). Each data row must have the same number of columns, with a finite number in every field.</li>
 <li><code>skip</code>: Number of leading non-comment header rows to ignore, integer <span class="math inline">\(\ge 0\)</span> (default <code>0</code>).</li>
-<li><code>x</code>, <code>y</code>, <code>z</code>: Coordinate expressions (<code>x</code> and <code>y</code> required; <code>z</code> optional for 3D) referencing <strong>0-based columns</strong> (<code>c0</code>, <code>c1</code>, <code>c2</code>, …) or <strong>dynamic column indexing</strong> (<code>c(expr)</code>, where the result of <code>expr</code> is rounded to the nearest integer to get the column index).</li>
+<li><code>x</code>, <code>y</code>, <code>z</code>: Coordinate expressions (<code>x</code> and <code>y</code> required; <code>z</code> optional for 3D) referencing 0-based columns (<code>c0</code>, <code>c1</code>, <code>c2</code>, …) or dynamic column indexing (<code>c(expr)</code>, where the result of <code>expr</code> is rounded to the nearest integer to get the column index).</li>
 <li><code>vars:</code>, <code>sliders:</code>, <code>label</code>, <code>color</code>, <code>mode</code>, <code>smooth</code>: Supported just as in <code>.plot-function</code>, except <code>mode</code> defaults to <code>lines+markers</code> and <code>smooth</code> defaults to <code>false</code>.</li>
 </ul>
 <p>A <code>.plot-file</code> trace can be overlaid directly with analytical <code>.plot-function</code> curves on the same canvas:</p>
@@ -1005,8 +1005,8 @@ Each slider entry (<code>name: [...]</code>) may be followed by indented option 
 <h1>3D Curves and Surfaces</h1>
 <p>Adding a <code>z</code> expression switches a <code>.plot-function</code> to 3D (all curves in a <code>.dynamic-plot</code> must share the same dimensionality, either all 2D or all 3D):</p>
 <ul>
-<li><strong>3D parametric curve:</strong> 1 domain parameter with <code>x</code>, <code>y</code>, and <code>z</code>.</li>
-<li><strong>3D surface:</strong> 2 domain parameters with <code>x</code>, <code>y</code>, and <code>z</code>.</li>
+<li>3D parametric curve: 1 domain parameter with <code>x</code>, <code>y</code>, and <code>z</code>.</li>
+<li>3D surface: 2 domain parameters with <code>x</code>, <code>y</code>, and <code>z</code>.</li>
 <li><code>points</code>: Sample resolution per domain axis, integer <span class="math inline">\(\ge 2\)</span> (defaults to <code>100</code> for curves and <code>40</code> per axis for surfaces).</li>
 <li><code>zlabel</code>, <code>zscale</code>, <code>zrange</code>: Configure the third axis in <code>.dynamic-plot</code>. The 3D axis titles <code>xlabel</code>, <code>ylabel</code>, and <code>zlabel</code> are plain text and default to <code>x</code>, <code>y</code>, and <code>z</code>.</li>
 </ul>
