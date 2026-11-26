@@ -758,6 +758,7 @@ window.Quarto = {
 <li><code>latexnum</code>: Implies both <code>number</code> and <code>latex</code>. It displays numeric cells as inline math using the same magnitude thresholds as <code>number</code>. For example, <code>1.057e-4</code> displays as <span class="math inline">\(1.06 \times 10^{-4}\)</span>. The formatting updates when the user switches units.</li>
 <li><code>inspire</code>: Implies <code>string</code> and treats cell values as INSPIRE-HEP TeX citation keys (multiple keys in one cell can be separated by commas or semicolons, with or without a leading <code>@</code>). During compilation, the filter fetches the corresponding BibTeX records from INSPIRE-HEP in batches, turns each valid key into a clickable <code>[N] CitationKey</code> link that highlights the target entry on click, and renders a live reference list directly below the table that updates as rows are searched, filtered, or paginated.</li>
 </ul>
+<p>Each table has its own reference list. Consequently, in you make a citation in the main text <span class="citation" data-cites="ReyesHung:2023udr">[<a href="#ref-ReyesHung:2023udr" role="doc-biblioref">1</a>]</span> they will appear in the page bibliography (end of the page), as usual.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>::: {.dynamic-table}</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>src: data/example-table.csv</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>searchable: true</span>
@@ -768,7 +769,50 @@ window.Quarto = {
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>col 3: header="Discovery", inspire, unsortable</span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>:::</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="tabulator-container-wrap" data-headers="[&quot;Sector&quot;,&quot;Particle&quot;,&quot;Mass [GeV]&quot;,&quot;Discovery&quot;]" data-rows="[{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\mu^-$&quot;,&quot;col_2&quot;:&quot;0.1057&quot;,&quot;col_3&quot;:&quot;Neddermeyer:1937md&quot;},{&quot;col_0&quot;:&quot;Lepton&quot;,&quot;col_1&quot;:&quot;$\\tau^-$&quot;,&quot;col_2&quot;:&quot;1.777&quot;,&quot;col_3&quot;:&quot;Perl:1975bf&quot;},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$b$&quot;,&quot;col_2&quot;:&quot;4.18&quot;,&quot;col_3&quot;:&quot;Herb:1977ek&quot;},{&quot;col_0&quot;:&quot;Quark&quot;,&quot;col_1&quot;:&quot;$t$&quot;,&quot;col_2&quot;:&quot;172.7&quot;,&quot;col_3&quot;:&quot;CDF:1995wbb&quot;},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$W^\\pm$&quot;,&quot;col_2&quot;:&quot;80.38&quot;,&quot;col_3&quot;:&quot;UA1:1983crd&quot;},{&quot;col_0&quot;:&quot;Gauge Boson&quot;,&quot;col_1&quot;:&quot;$Z^0$&quot;,&quot;col_2&quot;:&quot;91.19&quot;,&quot;col_3&quot;:&quot;UA1:1983mne&quot;},{&quot;col_0&quot;:&quot;Scalar Boson&quot;,&quot;col_1&quot;:&quot;$H^0$&quot;,&quot;col_2&quot;:&quot;125.25&quot;,&quot;col_3&quot;:&quot;ATLAS:2012yve, CMS:2012qbp&quot;}]" data-columns="[{&quot;dropdown&quot;:true,&quot;header&quot;:&quot;Sector&quot;,&quot;index&quot;:0,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;Particle&quot;,&quot;index&quot;:1,&quot;latex&quot;:true,&quot;type&quot;:&quot;string&quot;},{&quot;header&quot;:&quot;\\(m\\)&quot;,&quot;index&quot;:2,&quot;latex&quot;:true,&quot;latexnum&quot;:true,&quot;map&quot;:{&quot;GeV&quot;:1,&quot;MeV&quot;:1000,&quot;TeV&quot;:1.0e-3},&quot;type&quot;:&quot;number&quot;,&quot;units&quot;:[&quot;GeV&quot;,&quot;MeV&quot;,&quot;TeV&quot;]},{&quot;header&quot;:&quot;Discovery&quot;,&quot;index&quot;:3,&quot;inspire&quot;:true,&quot;sortable&quot;:false,&quot;type&quot;:&quot;string&quot;}]" data-searchable="true" data-perpage="4" data-sortable="true"></div>
-<div class="dynamic-table-refs" style="display:none;"></div>
+<section class="dynamic-table-refs" style="display:none;">
+<h4 class="anchored">References</h4>
+<div class="references csl-bib-body" role="list">
+<div id="dynamic-table-ref-1-Neddermeyer:1937md" class="csl-entry" data-cite-key="Neddermeyer:1937md" role="listitem">
+<div class="csl-left-margin">[1] </div><div class="csl-right-inline">Neddermeyer S H and Anderson C D 1937 <a href="https://doi.org/10.1103/PhysRev.51.884"><span class="nocase">Note
+on the Nature of Cosmic Ray Particles</span></a> <em>Phys. Rev.</em>
+<strong>51</strong> 884–6</div>
+</div>
+<div id="dynamic-table-ref-1-Perl:1975bf" class="csl-entry" data-cite-key="Perl:1975bf" role="listitem">
+<div class="csl-left-margin">[2] </div><div class="csl-right-inline"><span class="nocase">Perl M L et al</span> 1975
+<a href="https://doi.org/10.1103/PhysRevLett.35.1489"><span class="nocase">Evidence for Anomalous Lepton Production in e+ - e-
+Annihilation</span></a> <em>Phys. Rev. Lett.</em> <strong>35</strong>
+1489–92</div>
+</div>
+<div id="dynamic-table-ref-1-CDF:1995wbb" class="csl-entry" data-cite-key="CDF:1995wbb" role="listitem">
+<div class="csl-left-margin">[3] </div><div class="csl-right-inline"><span class="nocase">Abe F et al</span> 1995 <a href="https://doi.org/10.1103/PhysRevLett.74.2626"><span class="nocase">Observation of top quark production in <span class="math inline"><em>p̄</em><em>p</em></span> collisions</span></a>
+<em>Phys. Rev. Lett.</em> <strong>74</strong> 2626–31</div>
+</div>
+<div id="dynamic-table-ref-1-UA1:1983crd" class="csl-entry" data-cite-key="UA1:1983crd" role="listitem">
+<div class="csl-left-margin">[4] </div><div class="csl-right-inline"><span class="nocase">Arnison G et al</span>
+1983 <a href="https://doi.org/10.1016/0370-2693(83)91177-2"><span class="nocase">Experimental Observation of Isolated Large Transverse
+Energy Electrons with Associated Missing Energy at <span class="math inline">$\sqrt{s}= 540$</span> GeV</span></a> <em>Phys.
+Lett. B</em> <strong>122</strong> 103–16</div>
+</div>
+<div id="dynamic-table-ref-1-UA1:1983mne" class="csl-entry" data-cite-key="UA1:1983mne" role="listitem">
+<div class="csl-left-margin">[5] </div><div class="csl-right-inline"><span class="nocase">Arnison G et al</span>
+1983 <a href="https://doi.org/10.1016/0370-2693(83)90188-0"><span class="nocase">Experimental Observation of Lepton Pairs of Invariant
+Mass Around 95-GeV/<span class="math inline"><em>c</em><sup>2</sup></span> at the CERN SPS
+Collider</span></a> <em>Phys. Lett. B</em> <strong>126</strong>
+398–410</div>
+</div>
+<div id="dynamic-table-ref-1-ATLAS:2012yve" class="csl-entry" data-cite-key="ATLAS:2012yve" role="listitem">
+<div class="csl-left-margin">[6] </div><div class="csl-right-inline"><span class="nocase">Aad G et al</span> 2012 <a href="https://doi.org/10.1016/j.physletb.2012.08.020"><span class="nocase">Observation of a new particle in the search for the
+Standard Model Higgs boson with the ATLAS detector at the LHC</span></a>
+<em>Phys. Lett. B</em> <strong>716</strong> 1–29</div>
+</div>
+<div id="dynamic-table-ref-1-CMS:2012qbp" class="csl-entry" data-cite-key="CMS:2012qbp" role="listitem">
+<div class="csl-left-margin">[7] </div><div class="csl-right-inline"><span class="nocase">Chatrchyan S et al</span>
+2012 <a href="https://doi.org/10.1016/j.physletb.2012.08.021"><span class="nocase">Observation of a New Boson at a Mass of 125 GeV with the
+CMS Experiment at the LHC</span></a> <em>Phys. Lett. B</em>
+<strong>716</strong> 30–61</div>
+</div>
+</div>
+</section>
 
 
 
@@ -778,26 +822,8 @@ window.Quarto = {
 </section>
 
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body" role="list">
-<div id="ref-Neddermeyer:1937md" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[1] </div><div class="csl-right-inline">Neddermeyer S H and Anderson C D 1937 <a href="https://doi.org/10.1103/PhysRev.51.884"><span class="nocase">Note on the Nature of Cosmic Ray Particles</span></a> <em>Phys. Rev.</em> <strong>51</strong> 884–6</div>
-</div>
-<div id="ref-Perl:1975bf" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[2] </div><div class="csl-right-inline"><span class="nocase">Perl M L et al</span> 1975 <a href="https://doi.org/10.1103/PhysRevLett.35.1489"><span class="nocase">Evidence for Anomalous Lepton Production in e+ - e- Annihilation</span></a> <em>Phys. Rev. Lett.</em> <strong>35</strong> 1489–92</div>
-</div>
-<div id="ref-CDF:1995wbb" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[3] </div><div class="csl-right-inline"><span class="nocase">Abe F et al</span> 1995 <a href="https://doi.org/10.1103/PhysRevLett.74.2626"><span class="nocase">Observation of top quark production in <span class="math inline">\(\bar{p}p\)</span> collisions</span></a> <em>Phys. Rev. Lett.</em> <strong>74</strong> 2626–31</div>
-</div>
-<div id="ref-UA1:1983crd" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[4] </div><div class="csl-right-inline"><span class="nocase">Arnison G et al</span> 1983 <a href="https://doi.org/10.1016/0370-2693(83)91177-2"><span class="nocase">Experimental Observation of Isolated Large Transverse Energy Electrons with Associated Missing Energy at <span class="math inline">\(\sqrt{s}= 540\)</span> GeV</span></a> <em>Phys. Lett. B</em> <strong>122</strong> 103–16</div>
-</div>
-<div id="ref-UA1:1983mne" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[5] </div><div class="csl-right-inline"><span class="nocase">Arnison G et al</span> 1983 <a href="https://doi.org/10.1016/0370-2693(83)90188-0"><span class="nocase">Experimental Observation of Lepton Pairs of Invariant Mass Around 95-GeV/<span class="math inline">\(c^2\)</span> at the CERN SPS Collider</span></a> <em>Phys. Lett. B</em> <strong>126</strong> 398–410</div>
-</div>
-<div id="ref-ATLAS:2012yve" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[6] </div><div class="csl-right-inline"><span class="nocase">Aad G et al</span> 2012 <a href="https://doi.org/10.1016/j.physletb.2012.08.020"><span class="nocase">Observation of a new particle in the search for the Standard Model Higgs boson with the ATLAS detector at the LHC</span></a> <em>Phys. Lett. B</em> <strong>716</strong> 1–29</div>
-</div>
-<div id="ref-CMS:2012qbp" class="csl-entry" role="listitem">
-<div class="csl-left-margin">[7] </div><div class="csl-right-inline"><span class="nocase">Chatrchyan S et al</span> 2012 <a href="https://doi.org/10.1016/j.physletb.2012.08.021"><span class="nocase">Observation of a New Boson at a Mass of 125 GeV with the CMS Experiment at the LHC</span></a> <em>Phys. Lett. B</em> <strong>716</strong> 30–61</div>
+<div id="ref-ReyesHung:2023udr" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[1] </div><div class="csl-right-inline">Reyes Hung M A 2023 <em><a href="https://arxiv.org/abs/2307.03462"><span class="nocase">Exploration of possible signals beyond special relativity using high-energy astroparticle physics</span></a></em> PhD thesis (U. Zaragoza (main))</div>
 </div>
 </div></section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -1618,13 +1644,13 @@ window.MathRenderer = window.MathRenderer || {
         const frag = document.createDocumentFragment();
         keys.forEach((key, idx) => {
           if (idx > 0) frag.appendChild(document.createTextNode(", "));
-          const targetId = ctx.refTargetIds.get(key);
-          if (targetId) {
-            const label = ctx.refLabels.get(key);
+          const entry = ctx.refEntries.get(key);
+          if (entry) {
+            const label = entry.querySelector(".csl-left-margin")?.textContent.trim();
             const link = document.createElement("a");
-            link.href = `#${targetId}`;
+            link.href = `#${entry.id}`;
             link.textContent = label ? `${label} ${key}` : key;
-            link.addEventListener("click", () => highlightReference(ctx.refEntries.get(key)));
+            link.addEventListener("click", () => highlightReference(entry));
             frag.appendChild(link);
           } else {
             frag.appendChild(document.createTextNode(key));
@@ -1677,12 +1703,9 @@ window.MathRenderer = window.MathRenderer || {
     }
   };
 
-  let tableInstanceCounter = 0;
-
   // Controller managing Tabulator lifecycle, math pre-rendering, and live bibliography filtering
   class TabulatorTableController {
     constructor(container) {
-      this.instanceId = ++tableInstanceCounter;
       this.container = container;
       this.headers = JSON.parse(container.dataset.headers || "[]");
       this.rows = JSON.parse(container.dataset.rows || "[]");
@@ -1709,8 +1732,6 @@ window.MathRenderer = window.MathRenderer || {
         ? container.nextElementSibling
         : null;
       this.refEntries = new Map();
-      this.refTargetIds = new Map();
-      this.refLabels = new Map();
       this.rowKeysCache = new WeakMap();
 
       this.table = null;
@@ -1739,53 +1760,16 @@ window.MathRenderer = window.MathRenderer || {
       return strings;
     }
 
-    // Copies Pandoc-rendered references so table filtering cannot hide document citations.
+    // Indexes the references rendered for this table and the citation keys in each row.
     initBibliography() {
-      if (!this.refsWrap || this.inspireFields.length === 0) return;
+      if (!this.refsWrap) return;
 
-      const allKeys = [];
-      const seen = new Set();
-      this.rows.forEach(row => {
-        const rowKeys = [];
-        this.inspireFields.forEach(field => {
-          parseCitationKeys(row[field]).forEach(key => {
-            rowKeys.push(key);
-            if (!seen.has(key)) {
-              seen.add(key);
-              allKeys.push(key);
-            }
-          });
-        });
-        this.rowKeysCache.set(row, rowKeys);
+      this.refsWrap.querySelectorAll(".csl-entry[data-cite-key]").forEach(entry => {
+        this.refEntries.set(entry.dataset.citeKey, entry);
       });
-
-      const globalRefs = document.getElementById("refs");
-      const globalHeading = document.querySelector("#quarto-bibliography .quarto-appendix-heading");
-
-      const heading = document.createElement("h4");
-      heading.textContent = globalHeading?.textContent.trim() || "References";
-      this.refsWrap.appendChild(heading);
-
-      const listContainer = document.createElement("div");
-      listContainer.className = globalRefs?.className || "references csl-bib-body hanging-indent";
-      listContainer.setAttribute("role", "list");
-      if (globalRefs?.dataset.entrySpacing !== undefined) {
-        listContainer.dataset.entrySpacing = globalRefs.dataset.entrySpacing;
-      }
-      this.refsWrap.appendChild(listContainer);
-
-      allKeys.forEach(key => {
-        const sourceEl = document.getElementById(`ref-${key}`);
-        if (!sourceEl) return;
-
-        const labelText = sourceEl.querySelector(".csl-left-margin")?.textContent.trim() || "";
-        if (labelText) this.refLabels.set(key, labelText);
-
-        const entryEl = sourceEl.cloneNode(true);
-        entryEl.id = `dynamic-table-ref-${this.instanceId}-${key}`;
-        this.refTargetIds.set(key, entryEl.id);
-        listContainer.appendChild(entryEl);
-        this.refEntries.set(key, entryEl);
+      this.rows.forEach(row => {
+        const keys = this.inspireFields.flatMap(field => parseCitationKeys(row[field]));
+        this.rowKeysCache.set(row, keys);
       });
     }
 
