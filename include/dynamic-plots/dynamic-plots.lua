@@ -86,21 +86,6 @@ local function is_valid_id(name)
     return type(name) == "string" and name:match("^[a-zA-Z_][%w_%-]*$") ~= nil
 end
 
--- Removes matching leading and trailing single or double quotes
-local function strip_quotes(s)
-    if type(s) ~= "string" then return s end
-    return s:match('^"(.*)"$') or s:match("^'(.*)'$") or s
-end
-
-local function plot_lines(text)
-    local lines = {}
-    for line in text:gmatch("[^\r\n]+") do
-        line = U.trim(line)
-        if line ~= "" then table.insert(lines, line) end
-    end
-    return lines
-end
-
 -- Parses a boolean option string
 local function parse_bool(val, key, context)
     if val == nil then return nil end
@@ -242,7 +227,7 @@ local function parse_curve_block(lines, reserved_keys, required_keys, allow_doma
                             slider.steps = parse_int(opt_val, "steps", 2, ctx)
                         elseif opt == "label" then
                             if opt_val == "" then fail("Option 'label' for slider '%s' in %s cannot be empty", slider.name, ctx) end
-                            slider.label = strip_quotes(opt_val)
+                            slider.label = U.strip_quotes(opt_val)
                         elseif opt == "play" then
                             slider.play = parse_bool(opt_val, "play", ctx)
                         end
@@ -309,10 +294,10 @@ local function parse_plot_block(lines, context)
                 end,
                 function(rule, opt, opt_val, ctx)
                     if opt == "xrange" then rule.xrange = parse_range(opt_val, "xrange", ctx)
-                    elseif opt == "color" then rule.color = strip_quotes(opt_val)
+                    elseif opt == "color" then rule.color = U.strip_quotes(opt_val)
                     elseif opt == "opacity" then rule.opacity = parse_float(opt_val, "opacity", 0, 1, ctx)
                     elseif opt == "label" then
-                        rule.label = strip_quotes(opt_val)
+                        rule.label = U.strip_quotes(opt_val)
                         track_math(rule.label)
                     end
                 end,
@@ -386,7 +371,7 @@ local function register_curve_def(el, kind)
     local context = tag_name .. "#" .. id
 
     local kv, vars, domain_params, slider_params, seen_params = parse_curve_block(
-        plot_lines(el.text),
+        U.literal_lines(el.text),
         is_fn and FUNCTION_KEYS or FILE_KEYS,
         is_fn and {} or { "src", "x", "y" },
         is_fn,
@@ -412,7 +397,7 @@ local function register_curve_def(el, kind)
         end
     else
         local skip = parse_int(kv.skip, "skip", 0, context) or DEFAULTS.skip
-        rows = read_numeric_matrix(strip_quotes(kv.src), skip, context)
+        rows = read_numeric_matrix(U.strip_quotes(kv.src), skip, context)
     end
 
     local params = {}
@@ -437,7 +422,7 @@ local function register_curve_def(el, kind)
             or (subtype == "surface" and DEFAULTS.points_surface or DEFAULTS.points_curve)
     end
 
-    local label = strip_quotes(kv.label) or id
+    local label = U.strip_quotes(kv.label) or id
     track_math(label)
 
     table.insert(plot_defs, {
@@ -453,7 +438,7 @@ local function register_curve_def(el, kind)
         z       = kv.z,
         points  = points,
         label   = label,
-        color   = strip_quotes(kv.color),
+        color   = U.strip_quotes(kv.color),
         mode    = parse_enum(kv.mode, "mode", MODES, context) or (is_fn and "lines" or "lines+markers"),
         smooth  = is_fn and (parse_bool(kv.smooth, "smooth", context) ~= false)
                         or (parse_bool(kv.smooth, "smooth", context) or false)
@@ -465,7 +450,7 @@ end
 local function render_plot_canvas(el)
     local id = U.trim(el.identifier)
     local context = (id ~= "") and (".dynamic-plot#" .. id) or ".dynamic-plot"
-    local kv, shade = parse_plot_block(plot_lines(el.text), context)
+    local kv, shade = parse_plot_block(U.literal_lines(el.text), context)
 
     local curves = {}
     for item in kv.curves:gmatch("[^,]+") do
@@ -474,9 +459,9 @@ local function render_plot_canvas(el)
     end
     if #curves == 0 then fail("Key 'curves' in %s must list at least one curve ID", context) end
 
-    local xlabel = strip_quotes(kv.xlabel)
-    local ylabel = strip_quotes(kv.ylabel)
-    local zlabel = strip_quotes(kv.zlabel)
+    local xlabel = U.strip_quotes(kv.xlabel)
+    local ylabel = U.strip_quotes(kv.ylabel)
+    local zlabel = U.strip_quotes(kv.zlabel)
     track_math(xlabel)
     track_math(ylabel)
     track_math(zlabel)

@@ -127,6 +127,22 @@ function U.trim(s)
     return s and s:match("^%s*(.-)%s*$") or ""
 end
 
+-- Reads trimmed, nonempty configuration lines from a literal block.
+function U.literal_lines(text)
+    local lines = {}
+    for line in text:gmatch("[^\r\n]+") do
+        line = U.trim(line)
+        if line ~= "" then table.insert(lines, line) end
+    end
+    return lines
+end
+
+-- Removes matching single or double quotes around a configuration value.
+function U.strip_quotes(s)
+    if type(s) ~= "string" then return s end
+    return s:match('^"(.*)"$') or s:match("^'(.*)'$") or s
+end
+
 -- Escapes special HTML characters for safe attribute injection
 function U.html_escape(s)
     return s and (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;")) or ""
@@ -172,54 +188,6 @@ function U.open_data_file(src, script_dir)
     end
 
     return nil
-end
-
--- Serializes Pandoc inline nodes while preserving LaTeX math delimiters and quotes
-function U.stringify_inline_with_math(inline)
-    if not inline then return "" end
-
-    if inline.t == "Math" then
-        local is_display = inline.mathtype == "DisplayMath" or inline.mathtype == pandoc.DisplayMath
-        return is_display and ("\\[" .. inline.text .. "\\]") or ("\\(" .. inline.text .. "\\)")
-    end
-
-    local children = inline.content or inline.c
-    if type(children) == "table" then
-        local res = {}
-        for _, child in ipairs(children) do
-            table.insert(res, U.stringify_inline_with_math(child))
-        end
-        local joined = table.concat(res)
-        if inline.t == "Quoted" then
-            local q = (inline.quotetype == "SingleQuote" or inline.quotetype == pandoc.SingleQuote) and "'" or '"'
-            return q .. joined .. q
-        end
-        return joined
-    end
-
-    return pandoc.utils.stringify(inline)
-end
-
--- Extracts logical configuration lines from a Pandoc Div block
-function U.extract_lines_from_div(el)
-    local lines = {}
-    for _, block in ipairs(el.content) do
-        if block.content then
-            local current = {}
-            for _, inline in ipairs(block.content) do
-                if inline.t == "SoftBreak" or inline.t == "LineBreak" then
-                    local l = U.trim(table.concat(current))
-                    if l ~= "" then table.insert(lines, l) end
-                    current = {}
-                else
-                    table.insert(current, U.stringify_inline_with_math(inline))
-                end
-            end
-            local final = U.trim(table.concat(current))
-            if final ~= "" then table.insert(lines, final) end
-        end
-    end
-    return lines
 end
 
 -- Injects HTML into a Quarto document location ('in-header' or 'after-body')

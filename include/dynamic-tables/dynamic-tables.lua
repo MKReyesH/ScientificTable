@@ -131,8 +131,7 @@ local function render_bibliography(keys, entries, meta, table_index)
         end
     end
 
-    local title = meta["reference-section-title"]
-    local heading = pandoc.Header(4, title and pandoc.utils.stringify(title) or "References")
+    local heading = pandoc.Header(4, "Table references")
     local wrapper = pandoc.Div({heading, bibliography}, pandoc.Attr("", {"dynamic-table-refs"}, {style = "display:none;"}))
     -- Keep the table bibliography opaque to Quarto's document citation and appendix filters.
     return pandoc.RawBlock("html", pandoc.write(pandoc.Pandoc({wrapper}), "html"))
@@ -191,18 +190,18 @@ local function parse_column_rule(line)
     local body = U.trim(line:match(":%s*(.*)$") or "")
     local rule = { index = col_idx }
 
-    -- Extract quoted or unquoted header title before comma-splitting flags
-    local raw_header = body:match('header%s*=%s*(%b"")')
-        or body:match("header%s*=%s*(%b'')")
-        or body:match('header%s*=%s*(.-)%s*,')
-        or body:match('header%s*=%s*(.*)$')
-    if raw_header then
-        local clean_hdr = U.trim(raw_header):gsub('^["\'“]+', ''):gsub('["\'”]+$', '')
-        if clean_hdr ~= "" then rule.header = clean_hdr end
-        body = body:gsub('header%s*=%s*%b""%s*,?', '', 1)
-                   :gsub("header%s*=%s*%b''%s*,?", '', 1)
-                   :gsub('header%s*=%s*.-,', '', 1)
-                   :gsub('header%s*=%s*.*$', '', 1)
+    -- A quoted header can contain commas. Remove its entire option before splitting tags.
+    local first, last, header = body:find('header%s*=%s*(%b"")%s*,?')
+    if not first then
+        first, last, header = body:find("header%s*=%s*(%b'')%s*,?")
+    end
+    if not first then
+        first, last, header = body:find("header%s*=%s*([^,]*),?")
+    end
+    if first then
+        local title = U.strip_quotes(U.trim(header))
+        if title ~= "" then rule.header = title end
+        body = body:sub(1, first - 1) .. body:sub(last + 1)
     end
 
     -- Extract unit conversion map
@@ -233,27 +232,13 @@ local function parse_column_rule(line)
             rule.type = "number"
         elseif tag == "latex" then
             rule.latex = true
-            has_table_math = true
         elseif tag == "latexnum" then
             rule.latexnum = true
             rule.latex = true
             rule.type = "number"
-            has_table_math = true
         elseif tag == "inspire" then
             rule.inspire = true
             rule.type = "string"
-        end
-    end
-
-    -- Normalize math delimiters based on whether header LaTeX rendering is active
-    if rule.header then
-        if U.has_math(rule.header) then
-            has_table_math = true
-        end
-        if rule.latex then
-            rule.header = rule.header:gsub("%$([^%$]+)%$", "\\(%1\\)")
-        else
-            rule.header = rule.header:gsub("\\%((.-)\\%)", "$%1$")
         end
     end
 
@@ -326,6 +311,8 @@ local function render_table(opts, columns_meta)
             col_rule.type = auto_detect_column_type(rows, j)
         end
 
+        has_table_math = has_table_math or col_rule.latex == true
+
         if col_rule.inspire then
             table.insert(inspire_fields, "col_" .. tostring(idx))
         end
@@ -375,8 +362,8 @@ function Para(p)
     return render_table(opts, {})
 end
 
--- Pandoc filter hook for '::: {.dynamic-table}' fenced divs
-function Div(el)
+-- Pandoc filter hook for literal table configuration blocks.
+function CodeBlock(el)
     if not el.classes:includes("dynamic-table") then return nil end
     local opts = default_table_options()
     local columns_meta = {}
@@ -385,7 +372,7 @@ function Div(el)
         apply_table_option(opts, k, v)
     end
 
-    for _, line in ipairs(U.extract_lines_from_div(el)) do
+    for _, line in ipairs(U.literal_lines(el.text)) do
         if not line:match("^#") then
             local key, val = line:match("^([%w_%-]+):%s*(.*)$")
             if key and val then
